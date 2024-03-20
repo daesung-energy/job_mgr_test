@@ -1,4 +1,0 @@
-*.json
-/logs/*
-!/logs/
-model.py
