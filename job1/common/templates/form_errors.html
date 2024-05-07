@@ -1,0 +1,19 @@
+<!-- users>form_errors.html -->
+
+{% if form.errors %}
+  {% for field in form %}
+    {% for error in field.errors %}
+    <!-- 필드 오류를 출력한다. -->
+    <div>
+      <strong style="color:white">{{ field.label }} 입력이 필요합니다.</strong>
+    </div>
+    {% endfor %}
+  {% endfor %}
+  {% for error in form.non_field_errors %}
+
+  <!-- 넌필드 오류를 출력한다. -->
+  <div>
+    <strong style="color:white">정확한 아이디와 비밀번호를 입력하십시오.</strong>
+  </div>
+  {% endfor %}
+{% endif %}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- meta 태그 : 뷰포트를 설정을 위한 메타 정보 지정 -->
+    <!-- width=device-width는 장치의 너비에 맞게 뷰포트를 조정하라는 의미 -->
+    <!-- initial-scale=1.0은 초기 확대/축소 비율을 1로 설정하라는 의미 -->
+    <title>대성에너지(주) - 직무관리프로그램</title>
+    <!-- title 태그 : 웹 사이트의 제목을 지정 -->
+    <link rel="icon" href="/img/daesung_image.jpg" />
+    <!-- link 태그 : 웹 사이트 제목 앞에 오는 아이콘을 지정 -->
+    <link href="/css/seed_style.css" rel="stylesheet" type="text/css" />
+    <!-- link 태그 : 외부 css 스타일시트인 seed_style.css를 연결하여 해당 스타일 시트를 사용 -->
+    <style>
+      /* 개별 스타일을 지정하고자 할때는 외부 css로도 가능하지만 해당 시트에 스타일을 지정하기도 한다. */
+      body {
+        background: url("/img/login_main.png") no-repeat center center fixed;
+        /* 배경이미지 설정 : URL("/img/login_main.png"), 반복하지 않고, 배경이미지가 좌 우 둘다 가운데 정렬, 배경이미지가 스크롤되지 않고 고정  */
+        -webkit-background-size: cover;
+        /* webkit(웹킷) 브라우저에서 배경 이미지의 크기 조절 방법을 지정 : cover 이미지가 가능한 한 요소의 전체 영역을 채우도록 크기를 조절하라는 의미 */
+        /* 구형 버전의 Safari 브라우저, 구형 모바일 브라우저에서 webkit을 함께 사용 */
+        -moz-background-size: cover;
+        /* Mozilla(모질라) 브라우저에서 배경 이미지의 크기 조절 방법을 지정 : cover 이미지가 가능한 한 요소의 전체 영역을 채우도록 크기를 조절하라는 의미 */
+        /* 구형 버전의 Firefox 브라우저, 구형 모바일 브라우저에서 moz를 함께 사용 */
+        -o-background-size: cover;
+        /* Opera(오페라) 브라우저에서 배경 이미지의 크기 조절 방법을 지정 : cover 이미지가 가능한 한 요소의 전체 영역을 채우도록 크기를 조절하라는 의미 */
+        /* 구형 버전의 Opera 브라우저, 구형 모바일 브라우저에서 Opera를 함께 사용 */
+        background-size: cover;
+        /* 위 3가지 브라우저 또한 최신 버전은 해당 css 코드를 이용하여 배경이미지를 지정할 수 있다. */
+        /* cover 이미지가 가능한 한 요소의 전체 영역을 채우도록 크기를 조절하라는 의미 */
+        overflow: hidden;
+        /* 해당 시트의 요소 내용이 넘치는 경우 해당 부분을 숨김 처리하도록 설정하는 css 속성 */
+      }
+      /* background-size 속성은 CSS에서 사용되며, 배경 이미지의 크기를 조절하는 데에 쓰인다.
+         auto: 배경 이미지의 원래 크기를 유지.
+         cover: 배경 이미지가 가능한 한 요소의 전체 영역을 채우도록 크기를 조절. 이미지 비율이 유지되면서 요소에 꽉 차게 표시.
+         contain: 배경 이미지가 가능한 한 요소 내에 전체적으로 보이도록 크기를 조절. 이미지 비율이 유지되면서 요소 내에서 최대한 많은 부분이 표시.
+         <length>: 길이 값을 직접 지정하여 배경 이미지의 너비와 높이를 설정 
+                   예) background-size: 200px 300px;는 너비가 200픽셀, 높이가 300픽셀인 크기로 배경 이미지를 조절.
+                   또한, 여러 개의 값들을 사용하여 가로와 세로의 크기를 각각 지정할 수도 있습니다. 
+                   예) background-size: 100% auto;는 가로 방향으로 요소의 전체 너비만큼, 세로 방향은 원래 이미지 비율을 유지하면서 자동으로 크기를 조절. */
+    </style>
+  </head>
+  <body>
+    <warp>
+      <!-- contents 영역 -->
+      <contents>
+        <div class="login_wrap">
+          <form class="login">
+            <h1>직무관리프로그램</h1>
+            <!-- fieldset -->
+            <fieldset>
+              <!-- logo -->
+              <div class="login_logo">
+                <img
+                  src="img/daesung_logo.png"
+                  width="150px"
+                  alt="대성에너지 로고"
+                />
+                <!-- img 태그 : src로 경로를 지정, 넓이를 개별 지정(나중에 %로 css style 조정) -->
+              </div>
+              <!-- field_wrap -->
+              <div class="field_wrap">
+                <p>
+                  <!-- <label for="user_id"></label> -->
+                  <!-- label 태그로 input 창 앞에 설명이나 문구를 작성 : id로 묶어주어야 함. -->
+                  <input type="text" id="user_id" placeholder="아이디" />
+                  <!-- input 태그 : input의 타입에는 여러가지가 있으며 그중 text 태그 사용 -->
+                  <!-- placeholder : input 태그에 표시할 글자 "아이디" -->
+                </p>
+                <p>
+                  <!-- <label for="user_pw"></label> -->
+                  <input type="password" id="user_pw" placeholder="비밀번호" />
+                  <!-- input 태그 : input의 타입에는 여러가지가 있으며 그중 password 태그 사용 -->
+                  <!-- placeholder : input 태그에 표시할 글자 "비밀번호" -->
+                </p>
+              </div>
+              <!--button-->
+              <a href="/01_table_main.html" class="login_btn"><p>로그인</p></a>
+              <!-- a 태그를 이용하여 눌렀을때 해당 URL로 이동하도록 설정, class지정으로 css 스타일 태그에서 디자인 수정 -->
+            </fieldset>
+          </form>
+        </div>
+      </contents>
+      <div>
+        <!-- copyright -->
+        <copyright>
+          <p>©2023 Management Information Team. All Rights Researved.</p>
+        </copyright>
+      </div>
+    </warp>
+  </body>
+</html>

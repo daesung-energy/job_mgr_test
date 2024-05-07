@@ -1,0 +1,58 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+    <wrap>
+    <div id = "bs103" style="margin-left: 50px; margin-top:50px;">
+        <div style="padding-left: 20px;">
+            <a href="{% url 'BS101' %}"><span name="span1" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">회기 등록</span></a>
+            <span style="padding-right: 40px"></span>
+            <a href="{% url 'BS103' %}"><span name="span1" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">회기 마감</span></a>
+        </div>
+        <form action = "{% url 'BS103_1' %}" method="POST" id="BS103_1"> <!--post 메소드를 활용해서 create_bs_prd로 갈 것이다.-->
+            {% csrf_token %}
+            <!-- 회기 선택 박스 -->
+            <div class="list-box-prd">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">
+                            <p>회 기</p>
+                            </th>
+                            <th>
+                            <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                            {% for item in prd %}
+                            <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                            {% endfor %}
+                            </select>
+                            </th>
+                        </tr>
+                    </thead>
+                </table>           
+            </div>
+        </form>
+
+        <form action = "{% url 'BS103_2' %}" method="POST" id="BS103_2">
+            {% csrf_token %}
+            <input type="hidden" name="prd_cd" value={{ prd_cd_selected }}>
+            <div>
+                <div class="input-date">
+                    <div class="input-date1">
+                        <label for="job_srv_fix_dt" style="font-family: Seed-Medium;">회기 최종 마감일</label>                
+                        <input type="date" id="currentDate" value={{ today_date }} name="prd_end_dt"/>
+                    </div>
+                </div>
+                <div>
+                {% if register_act == "yes" %}
+                <button form="BS103_2" class="register" onclick="return confirm('해당 직무조사의 최종확정 처리하시겠습니까?');" type="submit">최종 마감</button> 
+                {% else %}
+                <button class="del_disabled" disabled>최종 마감</button> 
+                {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+    </wrap>
+</body>
+
+{% endblock %}

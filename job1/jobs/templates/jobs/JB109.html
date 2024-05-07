@@ -1,0 +1,485 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+    <wrap>
+        <div id="JB109" style="padding-left: 50px; margin-top:50px;">
+        <!-- 회기 선택 form -->
+            <form action = "{% url 'JB109_1' %}" method="POST" id="JB109_1">
+            {% csrf_token %}
+            <!-- 회기 선택 박스 -->
+            <div class="list-box-prd">
+                <table id="prd">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">
+                            <p>회 기</p>
+                            </th>
+                            <th>
+                            <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                            {% for item in prd_list %}
+                            <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                            {% endfor %}
+                            </select>
+                            </th>
+                        </tr>
+                    </thead>
+                </table>           
+            </div>
+            </form>
+
+        <!-- 탭 선택에 따라 값을 다르게 하여 submit한다. 그 값은 view파일에서 어떤 탭인지 구분할 수 있는 key값(span)으로 쓰인다. -->
+        <form action = "{% url 'JB109_2' %}" method="POST" id="JB109_2">
+            {% csrf_token %}
+            <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+            <div style="padding-left: 20px;">
+                <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">업무량 분석</span>
+                <span style="padding-right: 40px"></span>
+                <span name="span2" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">업무량 구성비</span>
+                <span style="padding-right: 40px"></span>
+                <span name="span3" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">적정인력 산정</span>
+            </div>
+        </form>
+
+        <!-- 부서 선택 div -->
+        <div style="padding-top:20px;">
+            
+            <!-- 부서 정보 선택 -->
+            <p> 
+                <!-- 부서 선택 form -->
+                <form method="POST" id="JB109_3" action="{% url 'JB109_3' %}">
+                {% csrf_token %}
+                <!-- 회기, 탭 선택값 -->
+                <input type="hidden" name="prd_cd_selected" value="{{ prd_cd_selected }}">
+                <input type="hidden" name="tab" value="tab1">
+                <span class="label-text2">부서</span>
+                <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
+                <select name="dept_selected" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
+                    {% if dept_selected_key == "former" %}
+                    <option>부서선택</option>
+                    {% endif %}
+                    {% for item in dept_list %}
+                    <option value="{{ item.dept_cd }}" {%if dept_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
+                    {% endfor %}
+                </select>
+                {% if dept_selected_key == "latter" %}
+                <span style="margin-left: 795px;">
+                    <button class="save" onclick="printTableContent('job_analysis')">인쇄</button>
+                    <button class="save" onclick="exportToExcel('job_analysis')">다운로드</button> 
+                </span>
+                {% else %}
+                <span style="margin-left: 795px;">
+                    <button class="del_disabled" disabled>인쇄</button>
+                    <button class="del_disabled" disabled>다운로드</button> 
+                </span>
+                {% endif %}
+            </form>
+            </p>
+        </div>
+        {% if tab == 'tab1' %}
+        {% if dept_selected_key == "former" %}
+        <div id="JB109_3" style="width:1300px;">
+            <!-- <span style="padding-left:1130px;"><input type="text" class="input-text2" readonly value={{ overless }}></span> -->
+            <span style="padding-left:1150px;"><label style="background-color: beige; font-family: Seed-Medium;"></label></span>
+        <div id="업무량분석" class="list-box">
+        <table id="job_analysis_former">
+            <thead>                
+                <tr>
+                    <th colspan=4><p>업무량 분석 결과</p></th>
+                    <th colspan=3><p>환산 PO 계산</p></th>
+                    <th colspan=2><p>적정 인력 산정</p><br><br><br><p>(※ G3 기준 환산)</p></th>
+                    <th rowspan=2><p>과부족 여부</p><br><br><br><p>(ⓒ=ⓐ-ⓑ)</p></th>
+                </tr>
+                <tr>
+                    <th><p>업무등급</p></th>
+                    <th><p>과업수</p></th>
+                    <th><p>연간 업무량</p></th>
+                    <th><p>인력 산정</p></th>
+                    <th><p>PO</p></th>
+                    <th><p>업무량 가중치</p></th>
+                    <th><p>환산PO(ⓐ)</p></th>
+                    <th><p>환산 업무량</p></th>
+                    <th><p>적정 인력 산정</p><br><br><br><p>(ⓑ)</p></th>
+                </tr>
+            </thead>
+            <tbody>
+            <tr style="height: 50px;">
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+            </tr>
+            <tr style="height: 50px;">
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+              </tr>
+              <tr style="height: 50px;">
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+              </tr>
+              <tr style="height: 50px;">
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+              </tr>
+              <tr style="height: 50px;">
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+              </tr>
+             <tr style="height: 50px;">
+              <td style="text-align: center;"><p>합계</p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+              <td style="text-align: center;"><p></p></td>
+             </tr>
+            </tbody>
+            </table>
+        </div>
+        </div>
+        {% endif %}
+
+        {% if dept_selected_key == "latter" %}
+        <div style="margin-top:20px; margin-bottom:20px; margin-left:1035px; background-color: yellow;">
+            
+        </div>
+        <!-- 업무량 분석 div -->
+        <div id="JB109_3" style="width:1300px;">
+            <!-- <span style="padding-left:1130px;"><input type="text" class="input-text2" readonly value={{ overless }}></span> -->
+            <span style="padding-left:1185px;"><label style="background-color: yellow; font-family: Seed-Medium; font-size: 20px;  border: 1px solid #1c7293; border-radius: 1px; border-color: black; padding: 15px;">{{ overless }}</label></span>
+            <div id="업무량분석" class="list-box">
+                <table id="job_analysis">
+                <thead>                
+                    <tr>
+                        <th colspan=4><p>업무량 분석 결과</p></th>
+                        <th colspan=3><p>환산 PO 계산</p></th>
+                        <th colspan=2><p>적정 인력 산정(※ G3 기준 환산)</th>
+                        <th rowspan=2><p>과부족 여부</p><p style="padding-top:12px;">(ⓒ=ⓐ-ⓑ)</p></th>
+                    </tr>
+                    <tr>
+                        <th><p>업무등급</p></th>
+                        <th><p>과업수</p></th>
+                        <th><p>연간 업무량</p></th>
+                        <th><p>인력 산정</p></th>
+                        <th><p>PO</p></th>
+                        <th><p>업무량 가중치</p></th>
+                        <th><p>환산PO(ⓐ)</p></th>
+                        <th><p>환산 업무량</p></th>
+                        <th><p>적정 인력 산정</p><p style="padding-top:10px;">(ⓑ)</p></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for index, row in analysis.iterrows %}
+                <tr style="height: 50px; text-align: center;">
+                <td><p>{{ row.work_grade }}</p></td>
+                <td><p>{{ row.task_count }}</p></td>
+                <td class="number-format"><p>{{ row.prfrm_tm_ann }}</p></td>
+                <td><p>{{ row.po_result }}</p></td>
+                <td><p>{{ row.po }}</p></td>
+                <td><p>{{ row.workload_wt }}</p></td>
+                <td style="background-color: rgba(235, 238, 177, 0.984);"><p>{{ row.po_cal }}</p></td>
+                <td class="number-format"><p>{{ row.prfrm_tm_ann_cal }}</p></td>
+                <td style="background-color: rgb(177, 211, 225);"><p>{{ row.po_right }}</p></td>
+                <td><p>{{ row.overless }}</p></td>
+                </tr>
+                {% endfor %}
+                <tr style="height: 50px;">
+                <td style="text-align: center;"><p>합계</p></td>
+                <!-- {% for item in sum %}
+                <td style="text-align: center;"><p> {{ item }}</p></td>
+                {% endfor %} -->
+                <td style="text-align: center;"><p> {{ sum_1 }}</p></td>
+                <td class="number-format" style="text-align: center;"><p> {{ sum_2 }}</p></td>
+                <td style="text-align: center;"><p> {{ sum_3 }}</p></td>
+                <td style="text-align: center;"><p> {{ sum_4 }}</p></td>
+                <td style="text-align: center;"><p> </p></td>
+                <td style="text-align: center;"><p> {{ sum_5 }}</p></td>
+                <td class="number-format" style="text-align: center;"><p> {{ sum_6 }}</p></td>
+                <td style="text-align: center;"><p> {{ sum_7 }}</p></td>
+                <td style="text-align: center;"><p> {{ sum_8 }}</p></td>
+                </tr>
+                </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+    </wrap>
+    
+    <script>
+
+        //프린트
+        function printTableContent(tableId) {
+            var table = document.getElementById(tableId);
+            var content = table.outerHTML; // 테이블 제목을 사용하지 않음
+            var originalDocument = document.body.innerHTML;
+
+            // 표의 내용을 현재 문서로 설정하여 프린트
+            document.body.innerHTML = content;
+
+            // 프린트 대화 상자 열기
+            window.print();
+
+            // 원래 문서로 복원
+            document.body.innerHTML = originalDocument;
+            if (!table) {
+                alert("Table not found!");
+                return;
+            }
+        }
+
+        //-----------------엑셀로 저장-----------------
+        // 행사이즈 조절
+        function autoSizeColumns(worksheet) {
+
+        //각 행 마다 가장 긴 글자 수를 기준으로 각 열 넓이 자동 조정
+        worksheet.columns.forEach((column, columnIndex) => {
+            let maxColumnLength = 0;
+            column.eachCell({ includeEmpty: true }, cell => {
+                const cellValue = cell.value ? cell.value.toString() : '';
+                let cellLength = 0;
+
+                // 각 문자에 대해 길이 측정
+                for (let char of cellValue) {
+                    if (char.match(/[\uac00-\ud7a3]/)) { // 한글과 같은 폭이 넓은 문자 처리
+                        cellLength += 2;
+                    } else if (char.match(/[\u0020-\u007E]/)) { // 기본 ASCII 문자
+                        cellLength += 1;
+                    } else {
+                        cellLength += 1.5; // 그 외 다른 문자 (일반적으로 넓은 문자)
+                    }
+                }
+
+                // 현재 셀의 길이가 저장된 최대 길이보다 크다면 업데이트
+                if (cellLength * 2 > maxColumnLength) {
+                    maxColumnLength = cellLength * 2;
+                }
+                // 열의 너비를 최대 길이에 따라 설정, 최소 너비는 10으로 설정
+                column.width = maxColumnLength < 10 ? 10 : maxColumnLength + 2; // 약간의 여유 공간 추가
+            });
+        });
+        }
+
+        function exportToExcel(tableId) {
+            const fileName = prompt('파일 이름을 입력하세요.');
+            if (fileName === null || fileName.trim() === '') {
+                alert('파일 이름을 입력하세요.');
+                return;
+            }
+
+            const table = document.getElementById(tableId);
+            if (!table) {
+                alert("Table not found!");
+                return;
+            }
+
+            const prd_cd_selected = document.querySelector("input[name='prd_cd_selected']").value;
+            const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Sheet 1');
+
+            const headerRow = worksheet.getRow(1);
+            headerRow.getCell(1).value = "회기: " + prd_cd_selected;
+            headerRow.getCell(2).value = "부서: " + dept_selected;
+            headerRow.commit();
+
+            let currentExcelRow = 3;
+            let mergeMap = [];
+
+            Array.from(table.rows).forEach((htmlRow, rowIndex) => {
+                const excelRow = worksheet.getRow(currentExcelRow);
+                let currentExcelColumn = 1;
+
+                Array.from(htmlRow.cells).forEach(htmlCell => {
+                    while (mergeMap[currentExcelColumn] > currentExcelRow) {
+                        currentExcelColumn++;
+                    }
+
+                    const excelCell = excelRow.getCell(currentExcelColumn);
+                    excelCell.value = htmlCell.innerText;
+                    applyStylesToCell(excelCell, htmlCell);
+
+                    const colSpan = htmlCell.colSpan || 1;
+                    const rowSpan = htmlCell.rowSpan || 1;
+
+                    if (colSpan > 1 || rowSpan > 1) {
+                        let mergeEndColumn = currentExcelColumn + colSpan - 1;
+                        let mergeEndRow = currentExcelRow + rowSpan - 1;
+                        worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn);
+
+                        for (let col = currentExcelColumn; col <= mergeEndColumn; col++) {
+                            mergeMap[col] = mergeEndRow;
+                        }
+                    }
+
+                    currentExcelColumn += colSpan;
+                });
+
+                currentExcelRow++;
+            });
+
+            worksheet.columns.forEach(column => {
+                column.width = 20;
+            });
+
+            workbook.xlsx.writeBuffer().then(function(buffer) {
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+
+                const confirmation = confirm(`파일 이름: ${fileName}.xlsx \n파일을 다운로드하시겠습니까?`);
+                if (confirmation) {
+                    const anchor = document.createElement('a');
+                    anchor.href = url;
+                    anchor.download = fileName + '.xlsx';
+                    anchor.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            }).catch(error => {
+                console.error('Error writing excel file', error);
+                alert('Error exporting table to excel file. Check the console for more details.');
+            });
+        }
+
+        function applyStylesToCell(excelCell, htmlElement) {
+            const cssStyle = window.getComputedStyle(htmlElement);
+            excelCell.style = {
+                font: {
+                    bold: cssStyle.fontWeight === 'bold' || parseInt(cssStyle.fontWeight) >= 600,
+                    color: { argb: colorToArgb(cssStyle.color) }
+                },
+                fill: {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: colorToArgb(cssStyle.backgroundColor) }
+                },
+                alignment: {
+                    horizontal: cssStyle.textAlign,
+                    vertical: 'middle'
+                },
+                border: {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                }
+            };
+        }
+
+        function colorToArgb(color) {
+            if (!color || color === 'transparent' || color.includes('rgba(0, 0, 0, 0)')) {
+                return 'FFFFFFFF'; // Use white for fully transparent colors
+            }
+
+            const rgba = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/);
+            if (rgba) {
+                const r = parseInt(rgba[1]).toString(16).padStart(2, '0');
+                const g = parseInt(rgba[2]).toString(16).padStart(2, '0');
+                const b = parseInt(rgba[3]).toString(16).padStart(2, '0');
+                const a = rgba[4] ? Math.round(parseFloat(rgba[4]) * 255).toString(16).padStart(2, '0') : 'FF';
+                if (a === '00') {
+                    return 'FFFFFFFF'; // Convert fully transparent to white
+                }
+                return a + r + g + b; // ARGB
+            } else {
+                // Handle named colors and hex colors
+                const canvas = document.createElement("canvas");
+                canvas.height = 1;
+                canvas.width = 1;
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, 1, 1);
+                const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+                if (a === 0) {
+                    return 'FFFFFFFF'; // Convert fully transparent to white
+                }
+                return `FF${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+            }
+        }
+
+
+
+
+        window.addEventListener('load', function() {
+            // 모든 'number-format' 클래스를 가진 요소 찾기
+            const numberElements = document.querySelectorAll('.number-format p');
+
+            // 각 요소에 대해 숫자 형식 변경
+            numberElements.forEach(element => {
+                // 요소의 텍스트를 float으로 변환하고, 로케일 문자열로 포맷
+                const formattedNumber = parseFloat(element.innerText).toLocaleString('en-US', {
+                    minimumFractionDigits: 1, // 최소 소수점 자릿수
+                    maximumFractionDigits: 1  // 최대 소수점 자릿수
+                });
+                element.innerText = formattedNumber;
+            });
+        });
+
+        function submitForm(spanName) { // submit하는 폼
+        // 폼을 가져옵니다.
+        var form = document.getElementById("JB109_2");
+
+        // 추가 작업이 필요하다면 여기에서 수행합니다.
+
+        // spanName을 폼에 추가하거나 다른 처리를 수행할 수 있습니다.
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "span_name";
+        input.value = spanName;
+        form.appendChild(input);
+
+        // 폼을 제출합니다.
+        form.submit();
+        }
+    </script>
+
+
+</body>
+
+
+
+
+{% endblock %}

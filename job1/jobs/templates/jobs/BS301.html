@@ -1,0 +1,167 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <wrap>
+      <div id = "bs301" style="padding-left: 50px; padding-top: 50px;">
+        <form action = "{% url 'BS301_1' %}" method="POST">
+        {% csrf_token %}
+        <div class="list-box-prd">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 100px;">
+                  <p>회 기</p>
+                </th>
+                <th>
+                  <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()" >
+                    {% for item in prd %}
+                    <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                    {% endfor %}
+                  </select>
+                </th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+        </form>
+
+        <div>
+          <a href="{% url 'BS301' %}" class="link" data-href="{% url 'BS301' %}"><span style="font-family: Seed-Regular; padding: 20px;"><u> 부서 관리 </u></span></a>
+          <a href="#" class="link" data-href="{% url 'BS302' %}"><span style="font-family: Seed-Regular; padding: 20px;" ><u> 조직 그룹 </u></span></a>
+          <a href="{% url 'BS303' %}" class="link" data-href="{% url 'BS303' %}"><span style="font-family: Seed-Regular; padding: 20px;"><u> 직위 관리 </u></span></a>
+        </div>
+
+        <div style="padding-top: 40px;">
+          <span style="font-family: Seed-Medium; padding-left: 30px;"> 부서코드 </span>
+          <span style="font-family: Seed-Medium; padding-left: 50px;"> 부서명 </span>
+          <span style="font-family: Seed-Medium; padding-left: 45px;"> 부서 TO </span>
+        </div>
+
+        <form action = "{% url 'BS301_2' %}" method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="prd_cd" value={{ prd_cd_selected }}>
+          <!-- 부서 리스트가 나타나는 div -->
+          <div id="bs301_1" style="padding-left: 20px; padding-top:10px;">
+            {% for index, row in dept_list.iterrows %}
+              <div class="container">
+                <input type="text" class="input-text2" name="dept_cd" value="{{ row.dept_cd }}" readonly>
+                <input type="text" class="input-text5" name="dept_nm" value="{{ row.dept_nm }}">
+                <input type="number" class="input-text2" name="dept_to" value="{{ row.dept_to }}" step="1" style="text-align: center;">
+                <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
+              </div>
+            {% endfor %}
+          </div>
+          <!-- 버튼 control -->
+          <div id="bs301_2" style="padding-top: 20px; padding-left: 12px; padding-bottom: 20px;">
+            {% if activate == "no" %}
+            <button type=button class="del_disabled" disabled>행추가</button>
+            <button type=button class="del_disabled" disabled>저장</button>
+            <button type=button class="del_disabled" disabled>취소</button>
+            {% endif %}
+            {% if activate == "yes" %}
+            <button type=button class="add" onclick="addForm()">행추가</button>
+            <button type="submit" class="save" name="action" value="action1">저장</button>
+            <button type="submit" class="cancel" name="action" value="action2">취소</button>
+            {% endif %}
+          </div>
+        </form>
+        
+      </div>
+    </wrap>
+</body>
+
+<script>
+  function addForm() {
+    // Create container div
+    const container = document.createElement('div');
+    container.className = 'container';
+
+    // Create input elements
+    const input1 = document.createElement('input');
+    input1.type = 'text';
+    input1.name = 'dept_cd';
+    input1.placeholder = '부서코드';
+    input1.className = 'input-text2';
+
+    const input2 = document.createElement('input');
+    input2.type = 'text';
+    input2.name = 'dept_nm';
+    input2.placeholder = '부서명';
+    input2.className = 'input-text5';
+
+    const input3 = document.createElement('input');
+    input3.type = 'number';
+    input3.name = 'dept_to';
+    input3.className = 'input-text2';
+
+    // Create delete button
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '-';
+    deleteButton.className = 'del_small'
+    deleteButton.onclick = function() {
+      // Remove the container when the delete button is clicked
+      container.remove();
+    };
+
+    // Append elements to the container
+    container.appendChild(input1);
+    container.appendChild(input2);
+    container.appendChild(input3);
+    container.appendChild(deleteButton);
+
+    // Append the container to the formContainer div
+    document.getElementById('bs301_1').appendChild(container);
+  }
+
+  function deleteForm(button) {
+    // Find the parent container and remove it
+    const container = button.parentNode;
+    container.remove();
+  }
+
+  // // JavaScript 코드
+  // document.addEventListener('DOMContentLoaded', function() {
+  //           // 모든 링크 요소를 선택
+  //           var links = document.querySelectorAll('.link');
+
+  //           // 이전에 선택한 링크 정보를 로컬 스토리지에서 가져오기
+  //           var selectedLinkIndex = localStorage.getItem('selectedLinkIndex');
+
+  //           // 초기에 선택한 링크가 있으면 해당 링크에 볼드 스타일 추가
+  //           if (selectedLinkIndex !== null) {
+  //               links[selectedLinkIndex].classList.add('bold-link');
+  //           }
+
+  //           // 각 링크에 클릭 이벤트 리스너 추가
+  //           links.forEach(function(link, index) {
+  //               link.addEventListener('click', function(event) {
+  //                   // 현재 클릭한 링크의 인덱스를 로컬 스토리지에 저장
+  //                   localStorage.setItem('selectedLinkIndex', index);
+
+  //                   // 이전에 선택한 링크에 대한 볼드 스타일 제거
+  //                   links.forEach(function(link) {
+  //                       link.classList.remove('bold-link');
+  //                   });
+
+  //                   // 현재 클릭한 링크에 볼드 스타일 추가
+  //                   link.classList.add('bold-link');
+  //               });
+  //           });
+
+  //           // 페이지 이동 시 현재 선택한 링크로 이동
+  //           if (selectedLinkIndex !== null) {
+  //               var currentLocation = window.location.href;
+  //               var targetLocation = links[selectedLinkIndex].getAttribute('data-href');
+
+  //               // 현재 위치와 목표 위치가 다를 때만 페이지 이동
+  //               if (currentLocation !== targetLocation) {
+  //                   window.location.href = targetLocation;
+  //               }
+  //           }
+  //       });
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+@media print {
+
+    /* 프린트할 때 숨길 요소를 선택하여 display: none; 설정 */
+    button,
+    #fileInput,
+    #filter-text-box {
+        display: none;
+    }
+}
+
+/* AG Grid 헤더 셀 라벨의 스타일 */
+.ag-header-cell-label {
+    text-align: right;
+    /* 헤더 셀 라벨을 오른쪽 정렬 */
+    font-weight: bold;
+    /* 헤더 셀 라벨에 볼드체 적용 */
+}
+
+/* 숫자 열에 대한 사용자 지정 스타일 */
+.numeric .ag-header-cell-label {
+    color: red;
+    /* 숫자 열의 헤더 셀 라벨 색상을 빨간색으로 지정 */
+}
+
+/* 텍스트 열에 대한 사용자 지정 스타일 */
+.text .ag-header-cell-label {
+    color: blue;
+    /* 텍스트 열의 헤더 셀 라벨 색상을 파란색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}
+
+/* 날짜 열에 대한 사용자 지정 스타일 */
+.date .ag-header-cell-label {
+    color: orangered;
+    /* 날짜 열의 헤더 셀 라벨 색상을 주홍색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}
+
+/* 연락처 열에 대한 사용자 지정 스타일 */
+.mobile .ag-header-cell-label {
+    color: tomato;
+    /* 연락처 열의 헤더 셀 라벨 색상을 토마토색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}
+
+/* 금액 열에 대한 사용자 지정 스타일 */
+.number .ag-header-cell-label {
+    color: lightblue;
+    /* 금액 열의 헤더 셀 라벨 색상을 연한 파란색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}

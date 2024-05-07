@@ -1,0 +1,110 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+  <wrap>
+    <div id = "bs101" style="padding-left: 50px; margin-top:50px;">
+      <div class = "bs_prd" >
+        <div style="padding-left: 20px;">
+          <a href="{% url 'BS101' %}"><span name="span1" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">회기 등록</span></a>
+          <span style="padding-right: 40px"></span>
+          <a href="{% url 'BS103' %}"><span name="span1" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">회기 마감</span></a>
+        </div>
+
+        <form action = "{% url 'create_bs_prd' %}" method="POST">  <!--create_bs_prd가 url이고, method는 POST-->
+          {% csrf_token %}
+
+          <!-- 회기 선택 박스 -->
+          <div class="list-box-prd">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 100px;">
+                  <p>회 기</p>
+                  </th>
+                  <th>
+                  <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="checkPrdStatus()">
+                  {% for item in prd %}
+                  <option value="{{ item.prd_cd }}" data-done="{{ item.prd_done_yn }}"
+                   {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                  {% endfor %}
+                  </select>
+                  </th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <!-- 인포 메시지  -->
+          <div class="sub-line">
+            <div class="info-message"> 
+            <!-- 회기 복사/삭제 전 -->
+              {% if modified == 'n' %}
+              <div class="info-message1_2">
+                <h3><img src="{% static 'img/info blue.png' %}" alt="" style="width: 30px;"/> Info message</h3>
+              </div>
+              {% else %}
+              <div class="info-message2_2">
+                <h3><img src="{% static 'img/info green.png' %}" alt="" style="width: 30px;"/> Info message</h3>
+                <br>
+                {% if messages %}
+                <div id="messages" style="padding-left: 50px; border: 1px solid #ccc; overflow-y: scroll;
+                min-height:150px; max-height: 150px; width:490px; flex-wrap: wrap; margin-left:20px;">
+                  {% for message in messages %}
+                    <p>{{ message }}</p>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <button type="submit" id="finaliseButton" onclick="return confirm('이전 직무조사 자료를 복사하여 불러오시겠습니까?');" name="action" value="action1">복사/생성</button>
+          <button type="submit" id="finaliseButton2" onclick="return confirm('해당 회기의 직무조사 자료를 삭제하시겠습니까?');" name="action" value="action2">삭제</button>
+          <!-- <button class="back" onclick="location.href='/jobs/BS101'">취소</button> -->
+        </form>
+      </div>
+    </div>
+  </wrap>
+  <script>
+    //  var messagesContainer = document.getElementById('messages');
+    //   if (messagesContainer) {
+    //     var messages = messagesContainer.getElementsByTagName('span');
+    //     for (var i = 0; i < messages.length; i++) {
+    //       alert(messages[i].textContent);
+    //     }
+    //   }
+
+    function checkPrdStatus() {
+      // select 박스에서 선택된 옵션의 data-done 값을 확인
+      const selectedOption = document.querySelector('#selectOptions').selectedOptions[0];
+      const isDone = selectedOption.getAttribute('data-done');
+      
+      // 버튼의 disabled 속성을 변경
+      const finaliseButton = document.getElementById('finaliseButton');
+      if (isDone === 'Y') {
+          finaliseButton.disabled = false; // 활성화
+          finaliseButton.className = 'register';
+      } else {
+          finaliseButton.disabled = true; // 비활성화
+          finaliseButton.className = 'del_disabled';
+      }
+
+      const finaliseButton2 = document.getElementById('finaliseButton2');
+      if (isDone === 'Y') {
+          finaliseButton2.disabled = true; // 비활성화
+          finaliseButton2.className = 'del_disabled';
+      } else {
+          finaliseButton2.disabled = false; // 활성화
+          finaliseButton2.className = 'del';
+      }
+      }
+      
+      // 페이지 로드 시 최초 실행
+      document.addEventListener('DOMContentLoaded', function() {
+          checkPrdStatus(); // 페이지가 로드되면 현재 선택된 항목에 따라 버튼 상태 초기화
+      });
+  </script>
+
+</body>
+
+{% endblock %}

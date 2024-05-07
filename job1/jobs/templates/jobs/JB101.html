@@ -1,0 +1,896 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+<wrap>
+  <!-- header 영역 -->
+  <!-- {{ user_name }} : 사용자 계정을 활용할 수 있음. -->
+  
+  <!-- 전체 div -->
+  <div id = "jb101" style="margin-left: 50px; margin-top:50px;">
+  
+    <!-- 회기와 탭 선택을 하면 1차 submit한다. submit하면 해당 회기 및 탭에 대한 정보를 띄운다. -->
+    <div>
+      <form id="jb101_0" action="{% url 'JB101' %}" method="POST">
+        {% csrf_token %}
+
+        <!-- 회기 선택 박스 -->
+        <div class="list-box-prd">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 100px;">
+                <p>회 기</p>
+                </th>
+                <th>
+                <select name="prd_cd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                {% for item in prd_list %}
+                <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                {% endfor %}
+                </select>
+                </th>
+              </tr>
+            </thead>
+          </table>           
+        </div>
+      </form>
+
+      <form id="jb101_1" action="{% url 'jb101_1' %}" method="POST">
+        {% csrf_token %}
+
+        <input type="hidden" name="prd_cd_selected" value= {{ prd_cd_selected }}>
+
+        <!-- 탭 선택에 따라 값을 다르게 하여 submit한다. 그 값은 view파일에서 어떤 탭인지 구분할 수 있는 key값(span)으로 쓰인다. -->
+        <div style="padding-left: 20px;">
+          <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %}l style="cursor: pointer; font-family: Seed-Medium;">부서 정보</span>
+          <span style="padding-right: 40px"></span>
+          <span name="span2" onclick="submitForm('span2')" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">부서원</span>
+          <span style="padding-right: 40px"></span>
+          <span name="span3" onclick="submitForm('span3')" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">부서원 그룹</span>
+        </div>
+      </form>
+    </div>
+
+    <!-- 부서 선택 div -->
+    <div id="jb101_2" style="margin-top:20px;">
+      <!-- 직위 리스트 -->
+      <ul id="posList" style="display:none;">
+        {% for item in pos_list %}
+        <li data-value="{{ item }}">{{ item }}</li>
+        {% endfor %}
+      </ul>
+      <!-- 직책 리스트 -->
+      <ul id="ttlList" style="display:none;">
+        {% for item in ttl_list %}
+        <li data-value="{{ item }}">{{ item }}</li>
+        {% endfor %}
+      </ul>
+      <!-- 부서 선택 form -->
+      <form id="jb101_2" action="{% url 'jb101_2' %}" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="prd_cd_selected" value= {{ prd_cd_selected }}>
+        <input type="hidden" name="tab" value= {{ tab }}>
+        
+        <p class="label-text2"> 부서
+        <!-- 부서 정보들을 모두 표시하고 onchange되면 submit 해서 해당 부서(display_dept)원들을 불러옴 -->
+          <select class="select-combox" name="dept_selected" onchange="this.form.submit()" style="margin-left: 62px;">
+              {% if status == 'tab_before' %}
+                  <option> {{ dept_login_nm}} </option>
+              {% else %}
+              {% for item in dept_list %}
+                  <option value={{ item.dept_cd }} {%if dept_selected == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
+              {% endfor %}
+              {% endif %}
+          </select>
+          <!-- 부서원 명수 계산해주기 -->
+          {% if tab == "tab2" %}
+          <!-- <span style="margin-left: 70px;"> ※{{ mbr_count }}명 </span> -->
+          <span style="margin-left: 8px;" id="result"> 명 </span>
+          {% endif %}
+        </p>
+      </form>
+    </div>
+
+    <!-- 여기까지는 회기와 탭 선택, 부서 선택까지의 form이다. 탭 선택에 따라 다르지 않은 부분이다. -->
+
+    <!-- 탭에 따른 라벨링 -->
+    {% if tab == "tab1" %}
+    <div style="padding-top: 20px;">
+        <span style="font-family: Seed-Medium; padding-left:20px;"> 부서 성과책임 </span>
+    </div>
+    {% endif %}
+    {% if tab == "tab2" %}
+    <div style="padding-top: 20px;">
+        <span style="font-family: Seed-Medium; padding-left:20px;"> 부서원 </span>
+    </div>
+    {% endif %}
+    {% if tab == "tab3" %}
+    <div style="padding-top: 20px;">
+        <span style="font-family: Seed-Medium; padding-left:20px;"> 부서원 그룹 </span>
+    </div>
+    {% endif %}
+
+    <!-- 여기부터는 탭에 따라 다르게 표시되는 부분이다. 분기해야 하는데, form jb101_3은 tab1과 tab2에 대해서만 작동하며 그에 대해서만 submit할 수 있다. -->
+
+    <!-- 부서정보 / 부서원 편집 form (tab1, tab2) -->
+    <form id="jb101_3" action = "{% url 'jb101_3' %}" method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+      <input type="hidden" name="tab" value={{ tab }}>
+      <input type="hidden" name="dept_selected" value={{ dept_selected }}>
+        
+      <!-- 부서 기본정보의 편집 div (tab1, tab2) -->
+      <div>
+        <!-- 부서 정보 탭 -->
+        {% if tab == "tab1" %}
+          <div id="jb101_3_1" style="padding-left: 50px; padding-top:10px;">
+            {% for row in dept_resp_list %}
+              <input type="hidden" name="dept_resp_ordr" value="{{ row.dept_resp_ordr }}" readonly>
+              <input type="text" class="input-text7" style="width: 800px; text-align: left;" name="dept_resp" value="{{ row.dept_resp }}" /><br>
+            {% endfor %}
+        
+            {% for i in range %}
+              <input type="text" class="input-text7" style="width: 800px; text-align: left;" name="dept_resp" value="" />
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- 부서원 탭 -->
+        {% if tab == "tab2" %}
+          <div id="jb101_3_1" style="padding-left: 50px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
+          min-height:300px; max-height: 300px; width:470px; flex-wrap: wrap; margin-top:20px; margin-left:20px;">
+            <!-- 부서원 이름의 text input / validation 필요함 -->
+            {% for item in mbr_list %}
+            <div class="container">
+              <input type="text" class="input-text" id="team_member_name" name="team_member_name" style="width:100px;" 
+              {%if new_key == "activate" %} readonly {% endif %} value={{ item.mbr_nm }} >
+              <!-- 각 부서원에 대한 직위 정보 -->
+              <select name="job_level" class="select-combox2">
+                {% for pos in pos_list %}
+                  <option value={{ pos }} {% if pos == item.pos_nm %} selected {% endif %}> {{ pos }} </option>
+                {% endfor %}
+              </select>
+              <!-- 각 부서원에 대한 직책 정보 -->
+              <select name="job_title" class="select-combox2">
+                {% for ttl in ttl_list %}
+                  <option value={{ ttl }} {% if ttl == item.ttl_nm %} selected {% endif %}> {{ ttl }} </option>
+                {% endfor %}
+              </select>
+
+              <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
+              <br>
+            </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 버튼 control div -->
+      {% if tab == "tab1" %}
+      <div id="jb101_4"
+      style="padding-top: 20px; padding-bottom: 20px;">
+      {% endif %}
+      {% if tab == "tab2" %}
+      <div id="jb101_4"
+      style="padding-top: 20px; padding-bottom: 20px;">
+      {% endif %}
+      {% if tab == "tab1" %}
+      <!-- 부서정보 탭일 때 -->
+      {% if activate == "no" %}
+        <button type="button" class="del_disabled" disabled>저장</button>
+        <button type="button" class="del_disabled" disabled>취소</button>
+      {% elif activate == "yes" %}
+        {% if prd_done == "N" %}
+        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm2()">저장</button>
+        {% else %}
+        <button type="button" class="del_disabled" disabled>저장</button>
+        {% endif %}
+        <button type="submit" class="cancel" name="action" value="action2">취소</button>
+      {% endif %}
+      {% elif tab == "tab2" %}
+      <!-- 부서원 탭일 때 -->
+      {% if activate == "no" %}
+        <button type="button" class="del_disabled" disabled>추가</button>
+        <button type="button" class="del_disabled" disabled>저장</button>
+        <button type="button" class="del_disabled" disabled>취소</button>
+      {% elif activate == "yes" %}
+        <button type="button" id="add" class="add" onclick="addForm('{{ tab }}')">추가</button>
+        {% if prd_done == "N" %}
+        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm()">저장</button>
+        {% else %}
+        <button type="button" class="del_disabled" disabled>저장</button>
+        {% endif %}
+        <button type="submit" class="cancel" name="action" value="action2">취소</button>
+      {% endif %}
+      {% endif %}
+      {% if tab == "tab1" %}
+      </div>
+      {% endif %}
+      {% if tab == "tab2" %}
+      </div>
+      {% endif %}
+    </form>
+
+    <!-- 부서원 그룹 편집 form (tab3) - tab3일때만 표시 -->
+    {% if tab == "tab3" %}
+      <div id="jb101_4_1" style="padding-left: 20px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll; overflow-x: auto;
+              height: 300px; width:800px; flex-wrap: wrap; margin-top:20px; margin-left:20px; ">
+        <div id="업무량분석" class="list-box">
+          <table id="myTable">
+            <thead>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- 부서원 그룹 버튼 컨트롤 div -->
+      <div style="margin-top: 20px;">
+        {% if status == 'dept-after' %}
+        <button class="add" onclick="addColumn()">추가</button>
+        <button type="submit" class="cancel" name="action" value="action2" form="table_update">취소</button>
+        {% if prd_done == "N" %}
+          <button type="submit" class="save" name="action" value="action1" form="table_update" onclick="return submitTableData()">저장</button>
+          {% else %}
+          <button class="del_disabled" disabled>저장</button>
+        {% endif %}
+        {% else %}
+        <!-- <button class="del_disabled" disabled>추가</button>
+        <button class="del_disabled" disabled>저장</button>
+        <button class="del_disabled" disabled>취소</button> -->
+        <button class="add" onclick="addColumn()">추가</button>
+        <button type="submit" class="cancel" name="action" value="action2" form="table_update">취소</button>
+        {% if prd_done == "N" %}
+          <button type="submit" class="save" name="action" value="action1" form="table_update" onclick="return submitTableData()">저장</button>
+          {% else %}
+          <button class="del_disabled" disabled>저장</button>
+        {% endif %}
+        {% endif %}
+      </div>
+      <form method="post" id="table_update" action="{% url 'jb101_4' %}">
+        {% csrf_token %}
+        <input type="hidden" id="jsonData" name="jsonData">
+        <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+        <input type="hidden" name="tab" value={{ tab }}>
+        <input type="hidden" name="dept_selected" value={{ dept_selected }}>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- 에러 메시지 출력하는 부분 -->
+  <div id="myElement" data-my-value= {{ mylist }}></div>
+  {% if messages %}
+  <div id="messages" style="display: none;">
+    {% for message in messages %}
+      <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</wrap>
+
+<script>
+
+  var messagesContainer = document.getElementById('messages'); // 에러 메시지 출력하는 부분
+      if (messagesContainer) {
+        var messages = messagesContainer.getElementsByTagName('span');
+        for (var i = 0; i < messages.length; i++) {
+          alert(messages[i].textContent);
+        }
+      }
+
+  function validateForm() { // 빈 칸 검사하는 함수
+  // 모든 input 요소를 가져옵니다.
+  const inputs = document.querySelectorAll("input[type='text'], input[type='number']");
+  // 모든 input 값을 검사합니다.
+  for (const input of inputs) {
+    if (input.value.trim() === "") {
+    alert("빈 칸을 채우십시오.");
+    return false; // 검증 실패 시 submit을 막습니다.
+    }
+  }
+  // 모든 검증을 통과하면 true를 반환합니다.
+  return true;
+  }
+
+  function validateForm2(){ // 부서 성과책임 빈칸 검사하는 함수
+    var inputs2 = document.querySelectorAll('input[name="dept_resp"]');
+    var valid = Array.from(inputs2).some(input => input.value.trim() !== '');
+    if (!valid) {
+        alert('적어도 하나의 부서 성과책임을 입력해주세요.');
+        return false;  // 폼 제출을 중지
+    }
+    return true;  // 폼 제출을 계속
+  }
+
+  function submitForm(spanName) { // submit하는 폼
+    // 폼을 가져옵니다.
+    var form = document.getElementById("jb101_1");
+
+    // 추가 작업이 필요하다면 여기에서 수행합니다.
+
+    // spanName을 폼에 추가하거나 다른 처리를 수행할 수 있습니다.
+    var input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "span_name";
+    input.value = spanName;
+    form.appendChild(input);
+
+    // 폼을 제출합니다.
+    form.submit();
+  }
+
+  function addForm(tab) { // 행 추가 폼
+
+      if (tab === "tab1") { // 부서 정보 탭일 때
+        // Create container div
+        const container = document.createElement('div');
+        container.className = 'container';
+
+        // Create input elements
+        const input1 = document.createElement('input');
+        input1.type = 'text';
+        input1.name = 'dept_resp';
+        input1.placeholder = '부서 성과책임';
+        input1.className = 'input-text2';
+        input1.style.width = '1000px';
+
+        // Create moveUp button
+        const moveUpButton = document.createElement('button');
+        moveUpButton.textContent = ' ↑ ';
+        moveUpButton.type="button";
+        moveUpButton.className = 'move'
+        moveUpButton.onclick = function() {
+          moveUp(this);
+        };
+
+        // Create moveDown button
+        const moveDownButton = document.createElement('button');
+        moveDownButton.textContent = ' ↓ ';
+        moveDownButton.type="button";
+        moveDownButton.className = 'move'
+        moveDownButton.onclick = function() {
+          moveDown(this);
+        };
+
+        // Create delete button
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = '-';
+        deleteButton.className = 'del_small'
+        deleteButton.onclick = function() {
+        // Remove the container when the delete button is clicked
+        container.remove();
+        };
+
+        // Append elements to the container
+        container.appendChild(input1);
+        container.appendChild(moveUpButton);
+        container.appendChild(moveDownButton);
+        container.appendChild(deleteButton);
+
+        // Append the container to the formContainer div
+        document.getElementById('jb101_3_1').appendChild(container);
+
+      }
+      
+      else if (tab=="tab2") { // 부서원 탭일 때
+          // Create container div
+          const container = document.createElement('div');
+          container.className = 'container';
+      
+          // Create input elements
+          const input1 = document.createElement('input');
+          input1.type = 'text';
+          input1.name = 'team_member_name';
+          input1.placeholder = '이름';
+          input1.className = 'input-text2';
+      
+          // 직위
+          var select = document.createElement("select");
+          select.name = "job_level";
+          select.className = 'select-combox2';
+          //var options = ["사원", "기능직", "대리", "과장", "차장", "수석부장", "부장", "실장"]; // 바꿔야함
+          var posListItems = document.querySelectorAll('#posList li');
+          var options = Array.from(posListItems).map(function(item) {
+              return item.getAttribute('data-value');
+          });
+
+          // 직책
+          var select2 = document.createElement("select");
+          select2.name = "job_title";
+          select2.className = 'select-combox2';
+          //var options = ["사원", "기능직", "대리", "과장", "차장", "수석부장", "부장", "실장"]; // 바꿔야함
+          var ttlListItems = document.querySelectorAll('#ttlList li');
+          var options2 = Array.from(ttlListItems).map(function(item) {
+              return item.getAttribute('data-value');
+          });
+
+          for (var i = 0; i < options.length; i++) { // 직위선택칸
+            var option = document.createElement("option");
+            option.value = options[i];
+            option.text = options[i];
+            select.appendChild(option);
+          }
+
+          for (var j = 0; j < options2.length; j++) { // 직위선택칸
+            var option2 = document.createElement("option");
+            option2.value = options2[j];
+            option2.text = options2[j];
+            select2.appendChild(option2);
+          }
+
+          // Create delete button
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = '-';
+          deleteButton.className = 'del_small';
+          deleteButton.onclick = function() {
+          // Remove the container when the delete button is clicked
+            var targetInputs = document.querySelectorAll('input[name="team_member_name"]');
+
+            // 선택된 input 요소의 개수를 가져와서 결과를 표시
+            var resultElement = document.getElementById('result');
+            var namecount = targetInputs.length-1;
+            resultElement.textContent = '※' + namecount + '명';
+
+          container.remove();
+          };
+      
+          // Append elements to the container
+          container.appendChild(input1);
+          container.appendChild(select);
+          container.appendChild(select2);
+          container.appendChild(deleteButton);
+      
+          // Append the container to the formContainer div
+          document.getElementById('jb101_3_1').appendChild(container);
+      }
+
+      var scrollableDiv = document.getElementById('jb101_3_1');
+      scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
+  }
+
+  function deleteForm(button) { // 행 삭제
+      // Find the parent container and remove it
+    var targetInputs = document.querySelectorAll('input[name="team_member_name"]');
+
+    // 선택된 input 요소의 개수를 가져와서 결과를 표시
+    var resultElement = document.getElementById('result');
+    var namecount = targetInputs.length-1;
+    resultElement.textContent = '※' + namecount + '명';
+
+    const container = button.parentNode;
+    container.remove();
+  }
+
+  function deleteForm2(button) { // 행 삭제
+      // Find the parent container and remove it
+      const container = button.parentNode;
+      container.remove();
+  }
+
+  // 초기, 그리고 행추가 버튼을 눌렀을 때 부서원 명수 표시, 그리고 부서원 그룹 표시
+  document.addEventListener("DOMContentLoaded", function () { // 페이지 로딩 시 실행
+
+        // tab값이 tab1일때는 부서 성과책임, tab2일때는 부서원
+        var tab = "{{ tab }}";
+
+        // tab값에 따라 동작 다르게 수행
+        // tab1, tab2일때는 그대로
+        // tab3일때는 부서원 그룹
+
+        if (tab == "tab1") { // 부서 정보일 때
+          // 특정 이름을 가진 input 요소를 선택
+          var targetInputs = document.querySelectorAll('input[name="dept_resp"]');
+
+          // 선택된 input 요소의 개수를 가져와서 결과를 표시
+          var resultElement = document.getElementById('result');
+          resultElement.textContent = '※' + targetInputs.length + '명';
+
+          // 특정 이름을 가진 input 요소를 선택
+          var targetInputs = document.querySelectorAll('input[name="team_member_name"]');
+
+          // 선택된 input 요소의 개수를 가져와서 결과를 표시
+          var resultElement = document.getElementById('result');
+          resultElement.textContent = '※' + targetInputs.length + '명';
+
+          // 버튼 요소를 가져오기
+          var countButton = document.getElementById('add');
+
+          // 버튼에 클릭 이벤트 리스너 추가
+          countButton.addEventListener('click', function () {
+              // 특정 이름을 가진 input 요소를 선택
+              var targetInputs = document.querySelectorAll('input[name="team_member_name"]');
+
+              // 선택된 input 요소의 개수를 가져와서 결과를 표시
+              var resultElement = document.getElementById('result');
+              resultElement.textContent = '※' + targetInputs.length + '명';
+          });
+        }
+
+        if (tab == "tab2") { // 부서원일 때
+          // 특정 이름을 가진 input 요소를 선택
+          var targetInputs = document.querySelectorAll('input[name="team_member_name"]');
+
+          // 선택된 input 요소의 개수를 가져와서 결과를 표시
+          var resultElement = document.getElementById('result');
+          resultElement.textContent = '※' + targetInputs.length + '명';
+
+          // 버튼 요소를 가져오기
+          var countButton = document.getElementById('add');
+
+          // 버튼에 클릭 이벤트 리스너 추가
+          countButton.addEventListener('click', function () {
+              // 특정 이름을 가진 input 요소를 선택
+              var targetInputs = document.querySelectorAll('input[name="team_member_name"]');
+
+              // 선택된 input 요소의 개수를 가져와서 결과를 표시
+              var resultElement = document.getElementById('result');
+              resultElement.textContent = '※' + targetInputs.length + '명';
+          });
+        }
+
+        if (tab == "tab3") { // 부서원 그룹일 때
+          const data = JSON.parse('{{ data|escapejs|safe }}'); // 데이터를 안전하게 가져옵니다.
+          const table = document.getElementById('myTable'); // 테이블 요소 가져오기
+          const thead = table.getElementsByTagName('thead')[0]; // 테이블 헤더 가져오기
+          const tbody = table.getElementsByTagName('tbody')[0]; // 테이블 본문 가져오기
+
+          // 초기 열 이름 설정 및 필요한 경우 삭제 버튼 추가
+          renderHeaders(data[0]);
+          // renderDataRows(data);
+
+          // 데이터 행 구성
+          data.forEach(function(row) { // 각 행을 반복하면서 데이터 채우기
+              let tr = document.createElement('tr'); // 새 행 요소 생성
+              Object.entries(row).forEach(function([key, value], index) { // 행의 각 열을 반복하면서 데이터 채우기
+                  let td = document.createElement('td'); // 새 셀 요소 생성
+                  td.style.width = '200px'; // 셀 너비 설정
+                  td.style.textAlign = 'center'
+                  let input = document.createElement('input'); // 새 입력 요소 생성
+                  input.type = 'text'; // 입력 요소 유형 설정
+                  input.value = value; // 입력 요소 값 설정
+                  input.className = 'input-text7'; // 입력 요소 클래스 설정
+                  if (index === 0) { // 첫 번째 열은 읽기 전용으로 설정
+                      input.readOnly = true; // 첫 번째 열은 읽기 전용으로 설정
+                  }
+                  td.appendChild(input); // 셀에 입력 요소 추가
+                  tr.appendChild(td); // 행에 셀 추가
+              });
+              tbody.appendChild(tr); // 테이블 본문에 행 추가
+          });
+
+          // 합계 행 추가
+          addTotalRow();
+
+          // input 값이 변경될 때마다 합계 행 업데이트
+          const inputs = document.querySelectorAll('#myTable tbody input');
+          inputs.forEach(input => {
+              input.addEventListener('input', function(event) {
+                  if (!isNumeric(event.target.value)) { // 입력 값이 숫자가 아닌 경우
+                      event.target.value = ''; // 입력 값을 비웁니다.
+                      updateTotalRow();
+                      return;
+                  }
+                  if (parseFloat(event.target.value) > 1) { // 입력 값이 1을 초과하는 경우
+                      event.target.value = ''; // 입력 값을 비웁니다.
+                      updateTotalRow();
+                      return;
+                  }
+                  if (event.target.value.includes('.')) { // 소수점이 포함된 경우
+                      const parts = event.target.value.split('.');
+                      if (parts.length > 1 && parts[1].length > 2) { // 소수점 이하 두 자리 이상인 경우
+                          event.target.value = parts[0] + '.' + parts[1].slice(0, 2); // 둘째 자리까지만 남깁니다.
+                      }
+                  }
+                  updateTotalRow();
+              });
+          });
+
+        }
+    });
+
+    function isNumeric(value) {
+    return /^\d*\.?\d*$/.test(value);
+    }
+
+    function renderHeaders(data) { // 열 이름을 테이블 헤더에 렌더링
+      const table = document.getElementById('myTable'); // 테이블 요소 가져오기
+      const thead = table.getElementsByTagName('thead')[0]; // 테이블 헤더 가져오기
+      thead.innerHTML = '';   // 헤더 지우기
+      let headerRow = document.createElement('tr'); // 새 행 요소 생성
+      let isFirst = true; // 첫 번째 열인지 여부를 추적
+      Object.keys(data).forEach(function(key, index) { // 각 열 이름을 반복하면서 헤더 채우기
+          let th = document.createElement('th'); // 새 헤더 셀 요소 생성
+          th.style.width = '200px'; // 셀 너비 설정
+          th.style.minWidth = '200px'; // 헤더 셀 너비 설정
+          if (isFirst) { // 첫 번째 열은 텍스트로 고정
+              th.textContent = key; // 헤더 셀에 텍스트 추가
+              isFirst = false; // 첫 번째 열이 아님을 표시
+          } else { // 첫 번째 열이 아닌 경우 입력 필드와 삭제 버튼 추가
+              let input = document.createElement('input');
+              input.type = 'text';
+              input.value = key;
+              input.className = 'input-text7'; // 입력 요소 클래스 설정
+              th.appendChild(input);
+
+              let deleteButton = document.createElement('button'); // 새로운 삭제 버튼 생성
+              deleteButton.textContent = '-'; // 삭제 버튼 텍스트 설정 
+              deleteButton.className = 'del_small'; // 삭제 버튼 클래스 설정
+              deleteButton.onclick = function() { removeColumn(index); }; // 삭제 버튼 클릭 시 이벤트 처리기 설정
+              th.appendChild(deleteButton); // 헤더 셀에 삭제 버튼 추가
+          } 
+          headerRow.appendChild(th); // 헤더 행에 헤더 셀 추가
+      });
+      thead.appendChild(headerRow); // 테이블 헤더에 헤더 행 추가
+
+      // 가로 스크롤 적용
+      table.style.overflowX = 'auto';
+    }
+
+    function addColumn() {
+    // 열 이름을 입력받는 input 필드 생성
+    var columnNameInput = document.createElement('input');
+    columnNameInput.type = 'text';
+    columnNameInput.className = 'input-text7'; // 입력 요소 클래스 설정
+    columnNameInput.placeholder = '부서원 그룹';
+
+    // 새로운 열 삭제 버튼 생성
+    var deleteButton = document.createElement('button');
+    deleteButton.textContent = '-';
+    deleteButton.className = 'del_small'; // 삭제 버튼 클래스 설정
+    deleteButton.onclick = function() { removeColumn(headerRow.children.length); };
+
+    // 새로운 헤더 셀 생성
+    var th = document.createElement("th");
+    th.appendChild(columnNameInput);
+    th.appendChild(deleteButton);
+    th.style.width = '200px'; // 셀 너비 설정
+    th.style.minWidth = '200px'; // 셀 너비 설정
+
+    // 헤더 행에 새로운 헤더 셀 추가
+    var headerRow = document.querySelector('#myTable thead tr');
+    headerRow.appendChild(th);
+
+    // 각 데이터 행에 새로운 셀 추가
+    var bodyRows = document.querySelectorAll('#myTable tbody tr');
+    bodyRows.forEach(function(row) {
+        var td = document.createElement("td");
+        td.style.textAlign = 'center'; // 셀 텍스트 정렬 설정
+        td.style.minWidth= '200px'; // 셀 너비 설정
+        var input = document.createElement("input");
+        input.type = "text";
+        input.className = "input-text7";
+        input.addEventListener('input', function(event) {
+            if (!isNumeric(event.target.value)) { // 입력 값이 숫자가 아닌 경우
+                event.target.value = ''; // 입력 값을 비웁니다.
+                updateTotalRow();
+                return;
+            }
+            if (parseFloat(event.target.value) > 1) { // 입력 값이 1을 초과하는 경우
+                event.target.value = ''; // 입력 값을 비웁니다.
+                updateTotalRow();
+                return;
+            }
+            if (event.target.value.includes('.')) { // 소수점이 포함된 경우
+                const parts = event.target.value.split('.');
+                if (parts.length > 1 && parts[1].length > 2) { // 소수점 이하 두 자리 이상인 경우
+                    event.target.value = parts[0] + '.' + parts[1].slice(0, 2); // 둘째 자리까지만 남깁니다.
+                }
+            }
+            updateTotalRow();
+        }); // 새로운 input 필드에 input 이벤트 리스너 추가
+        td.appendChild(input);
+        row.appendChild(td);
+    });
+
+    // 추가된 열의 마지막 행을 readonly로 설정
+    var lastRowCells = document.querySelectorAll('#myTable tbody tr:last-child td');
+    lastRowCells[lastRowCells.length - 1].querySelector('input').readOnly = true;
+
+    updateDeleteButtons(); // 삭제 버튼 인덱스 업데이트
+
+    // 맨 오른쪽으로 스크롤
+    var div = document.getElementById('jb101_4_1');
+    div.scrollLeft = div.scrollWidth;
+    }
+
+    function updateDeleteButtons() {
+        var headerCells = document.querySelectorAll('#myTable thead th');
+        headerCells.forEach((cell, index) => {
+            var button = cell.querySelector('button');
+            if (button) {
+                button.onclick = function() { removeColumn(index); };
+            }
+        });
+    }
+
+    function removeColumn(index) {
+        var table = document.getElementById("myTable");
+        table.querySelectorAll('thead tr th')[index].remove();
+        table.querySelectorAll('tbody tr').forEach(row => row.cells[index].remove());
+        updateDeleteButtons();
+    }
+
+    function addTotalRow() {
+      const table = document.getElementById('myTable');
+      const tbody = table.getElementsByTagName('tbody')[0];
+      const rowCount = tbody.getElementsByTagName('tr').length +1 ;
+      const columnCount = table.getElementsByTagName('thead')[0].getElementsByTagName('th').length;
+
+      const totalRow = document.createElement('tr');
+      totalRow.style.height = '25px';
+      totalRow.style.textAlign = 'center';
+
+      const totalCell = document.createElement('td');
+      totalCell.textContent = '합계';
+      totalRow.appendChild(totalCell);
+
+      for (let columnIndex = 1; columnIndex < columnCount; columnIndex++) {
+          let sum = 0;
+          for (let rowIndex = 1; rowIndex < rowCount; rowIndex++) { // 첫 번째 행은 열 이름이므로 1부터 시작
+              const cell = table.rows[rowIndex].cells[columnIndex].querySelector('input');
+              sum += parseFloat(cell.value) || 0;
+          }
+          const totalCell = document.createElement('td');
+          totalCell.innerHTML = `<input type="text" class="input-text7" value="${sum.toFixed(2)}" readonly>`;
+          totalRow.appendChild(totalCell);
+      }
+
+      tbody.appendChild(totalRow);
+    }
+
+    function updateTotalRow() {
+      const table = document.getElementById('myTable');
+      const tbody = table.getElementsByTagName('tbody')[0];
+      const rowCount = tbody.getElementsByTagName('tr').length;
+      const columnCount = table.getElementsByTagName('thead')[0].getElementsByTagName('th').length;
+
+      const totalRow = tbody.lastElementChild; // 마지막 행은 합계 행
+
+      for (let columnIndex = 1; columnIndex < columnCount; columnIndex++) { // 첫 번째 열은 열 이름이므로 1부터 시작
+        let sum = 0; // 열의 합계를 저장할 변수
+        for (let rowIndex = 1; rowIndex < rowCount; rowIndex++) { // 첫 번째 행은 열 이름이므로 1부터 시작, 마지막은 합계 행이므로 제외
+            const cell = table.rows[rowIndex].cells[columnIndex].querySelector('input'); // 현재 셀 가져오기
+            sum += parseFloat(cell.value) || 0; // 셀 값이 숫자인 경우 합계에 추가
+        }
+        const totalCell = totalRow.cells[columnIndex];
+        totalCell.querySelector('input').value = sum.toFixed(2);
+      }
+
+      // 가로 스크롤 적용
+      table.style.overflowX = 'auto';
+    }
+
+    // function submitTableData() { // 테이블 데이터를 JSON으로 변환
+    //   const table = document.getElementById('myTable');
+    //   const rows = table.querySelectorAll('tbody tr');
+    //   const data = [];
+
+    //   rows.forEach(row => { // 각 행을 반복하면서 데이터 수집
+    //       const rowData = {};
+    //       const cells = row.querySelectorAll('td input');
+    //       const headers = document.querySelectorAll('#myTable thead tr th input');
+          
+    //       cells.forEach((cell, index) => { // 각 셀의 값을 열 이름과 함께 저장
+    //           const columnName = index < headers.length ? headers[index].value : `Column ${index + 1}`;
+    //           rowData[columnName] = cell.value;
+    //       });
+
+    //       data.push(rowData); // 행 데이터를 배열에 추가
+    //   });
+
+    //   // 열 이름 input이 빈 칸인지 확인
+    //   const columnInputs = document.querySelectorAll('#myTable thead tr th input[type="text"]');
+    //   for (let i = 0; i < columnInputs.length; i++) {
+
+    //       const columnName = columnInputs[i].value.trim();
+
+    //       if (columnName === '') {
+    //           alert('부서원 그룹명을 입력하세요.');
+    //           return false; // 제출을 막습니다.
+    //       }
+
+    //       if (!/\D/.test(columnName)) { // 숫자만 있는 경우
+    //           alert('부서원 그룹명에는 문자가 반드시 포함되어야 합니다.');
+    //           return false; // 제출을 막습니다.
+    //       }
+
+    //     }
+    
+    //   // 합계 행의 값이 1을 초과하는지 확인
+    //   const totalRowInputs = document.querySelectorAll('#myTable tbody tr:last-child input');
+    //   for (let i = 0; i < totalRowInputs.length; i++) {
+    //       if (parseFloat(totalRowInputs[i].value) > 1) {
+    //           alert('합계 값은 1을 초과할 수 없습니다.');
+    //           return false; // 제출을 막습니다.
+    //       }
+    //   }
+
+    //   const jsonData = JSON.stringify(data); // JSON 문자열로 변환
+    //   document.getElementById('jsonData').value = jsonData;  // 숨겨진 입력 필드 jsonData의 값을 설정
+    //   return true; // 폼 제출
+    // }
+
+    function submitTableData() { // 테이블 데이터를 JSON으로 변환
+      const table = document.getElementById('myTable');
+      const rows = table.querySelectorAll('tbody tr');
+      const data = [];
+
+      rows.forEach(row => { // 각 행을 반복하면서 데이터 수집
+          const rowData = {};
+          const cells = row.querySelectorAll('td input');
+          const headers = document.querySelectorAll('#myTable thead tr th input');
+          
+          cells.forEach((cell, index) => { // 각 셀의 값을 열 이름과 함께 저장
+              const columnName = index < headers.length ? headers[index].value : `Column ${index + 1}`;
+              rowData[columnName] = cell.value;
+          });
+
+          data.push(rowData); // 행 데이터를 배열에 추가
+      });
+
+      // 열 이름 input이 빈 칸인지 확인
+      const columnInputs = document.querySelectorAll('#myTable thead tr th input[type="text"]');
+      const columnNames = new Set();
+      for (let i = 0; i < columnInputs.length; i++) {
+          const columnName = columnInputs[i].value.trim();
+
+          if (columnName === '') {
+              alert('부서원 그룹명을 입력하세요.');
+              return false; // 제출을 막습니다.
+          }
+
+          if (!/\D/.test(columnName)) { // 숫자만 있는 경우
+              alert('부서원 그룹명에는 문자가 반드시 포함되어야 합니다.');
+              return false; // 제출을 막습니다.
+          }
+
+          if (columnNames.has(columnName)) { // 중복된 열 이름 확인
+              alert('부서원 그룹명이 중복됩니다. 중복되지 않게 입력해주세요.');
+              return false; // 제출을 막습니다.
+          }
+          columnNames.add(columnName);
+      }
+
+      // 합계 행의 값이 1을 초과하는지 확인
+      const totalRowInputs = document.querySelectorAll('#myTable tbody tr:last-child input');
+      for (let i = 0; i < totalRowInputs.length; i++) {
+          if (parseFloat(totalRowInputs[i].value) > 1) {
+              alert('합계 값은 1을 초과할 수 없습니다.');
+              return false; // 제출을 막습니다.
+          }
+      }
+
+      const jsonData = JSON.stringify(data); // JSON 문자열로 변환
+      document.getElementById('jsonData').value = jsonData;  // 숨겨진 입력 필드 jsonData의 값을 설정
+      return true; // 폼 제출
+    }
+
+    // Function to move container Up
+    function moveUp(button) {
+      const container = button.parentNode;
+      const formContainer = document.getElementById('jb101_3_1');
+
+      // Check if container is the first child
+      if (container.previousElementSibling) {
+        formContainer.insertBefore(container, container.previousElementSibling);
+      } else {
+        alert("맨 윗줄입니다.");
+      }
+    }
+
+    // Function to move container Down
+    function moveDown(button) {
+      const container = button.parentNode;
+      const formContainer = document.getElementById('jb101_3_1');
+
+      // Check if container is the last child
+      if (container.nextElementSibling) {
+        formContainer.insertBefore(container, container.nextElementSibling.nextSibling);
+      } else {
+        alert("맨 아랫줄입니다.");
+      }
+    }
+  </script>
+</body>
+{% endblock %}

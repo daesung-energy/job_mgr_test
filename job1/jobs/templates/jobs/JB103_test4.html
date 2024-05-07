@@ -1,0 +1,95 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <wrap>
+        <div>
+        <!-- 팀 선택하는 폼, 이 값에 따라서 직무 목록이 바뀐다. -->
+        <form action = "{% url 'JB103_test4' %}" method="POST" id="jb103_test3">
+            {% csrf_token %}
+            <div class="team_select">
+                <p>2022A</p>
+                <select name="dept_selected" onchange="this.form.submit()" size="1" style="width:100px;">
+                    <option> 부서 선택 </option>
+                    {% for item in dept_list %}
+                        <option value={{ item.dept_cd }} {%if select_team == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        </div>
+
+        <form id="data-form">
+            <div id="data_container">
+                <!-- JSON 데이터 입력 필드가 여기에 동적으로 생성됩니다. -->
+            </div>
+            <button type="button" onclick="saveData()">저장</button>
+        </form>
+
+    </wrap>
+    <script>
+
+        // 페이지 로딩 시 JSON 데이터를 파싱하여 입력 필드로 변환
+        document.addEventListener('DOMContentLoaded', function() {
+            var jsonData = JSON.parse('{{ data|escapejs|safe }}');
+            jsonData.forEach((item, index) => {
+                addDataRow(item, index);
+            });
+        });
+
+        // 데이터 행 추가 함수
+        function addDataRow(item, index) {
+            var data_container = document.getElementById('data_container');
+            var container = document.createElement('div');
+
+            const jobCdInput = createInputField('text', 'job_cd' + index, item.job_cd, true);
+            container.appendChild(jobCdInput);
+
+            const dutyNmInput = createInputField('text', 'duty_nm' + index, item.duty_nm);
+            container.appendChild(dutyNmInput);
+
+            const taskNmInput = createInputField('text', 'task_nm' + index, item.task_nm);
+            container.appendChild(taskNmInput);
+            
+            const actNmInput = createInputField('text', 'act_nm' + index, item.act_nm);
+            container.appendChild(actNmInput);
+            
+            // Create moveUp button
+            const moveUpButton = document.createElement('button');
+            moveUpButton.textContent = '▲';
+            moveUpButton.type="button";
+            // moveUpButton.className = 'move'
+            moveUpButton.onclick = function() {
+            moveUp(this);
+            };
+
+            // Create moveDown button
+            const moveDownButton = document.createElement('button');
+            moveDownButton.textContent = '▼';
+            moveDownButton.type="button";
+            // moveDownButton.className = 'move'
+            moveDownButton.onclick = function() {
+            moveDown(this);
+            };
+            
+            container.appendChild(moveUpButton);
+            container.appendChild(moveDownButton);
+            data_container.appendChild(container);
+        }
+
+        function createInputField(type, name, value, readonly=false) {
+            const inputField = document.createElement('input');
+            inputField.setAttribute('type', type);
+            inputField.setAttribute('name', name);
+            inputField.setAttribute('value', value);
+            if (readonly) {
+                inputField.setAttribute('readonly', 'readonly');
+            }
+            return inputField;
+        }
+
+
+    </script>
+</body>
+{% endblock %}

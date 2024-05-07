@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Form with Database Values Example</title>
+  <style>
+    .container {
+      margin-bottom: 10px;
+    }
+  </style>
+
+  <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
+  <!-- CSS -->
+  <link rel="stylesheet" href="{% static 'css/seed_style.css' %}?after">
+
+</head>
+<body>
+  <form method="POST" action="{% url 'my_view' %}">
+    {% csrf_token %}
+    <div id="formContainer" data-index="0" style="border: 1px solid #ccc; overflow-y: scroll; overflow-x: scroll; min-height:300px; max-height: 300px; max-width:300px; 
+    flex-wrap: wrap;">
+    <div style="display: flex; justify-content: space-between; white-space: normal; margin-bottom: 5px;">
+      <span style="margin-left: 80px;">부서</span>
+      <span style="margin-left: 140px;">이름</span>
+      <span style="margin-left: 150px;">직위</span>
+      </div>
+      <!-- Form will be dynamically added here -->
+      {% if key == "save" %}
+        {% for data in database_values %}
+        <div class="container" style="display: flex; justify-content: space-between; white-space: normal;">
+          <button type="button" onclick="moveUp(this)"> Up </button> <button type="button" onclick="moveDown(this)"> Down </button> <button onclick="deleteForm(this)"> 삭제 </button>
+          <input type="text" class="input-text3" name="input1" placeholder="Input 1" value="{{ data.dept_cd }}">
+          <input type="text" class="input-text3" name="input2" placeholder="Input 2" value="{{ data.name }}">
+          <select name="input3">
+              <!-- 추후 for문으로 바꿈 -->
+              <option value="사원" {% if data.pos == "사원" %} selected {% endif %}> 사원 </option>
+              <option value="대리" {% if data.pos == "대리" %} selected {% endif %}> 대리 </option>
+              <option value="과장" {% if data.pos == "과장" %} selected {% endif %}> 과장 </option>
+          </select>
+        </div>
+        {% endfor %}
+      {% else %}
+        {% for index, row in database_values.iterrows %}
+          <div class="container">
+            <input type="text" name="input1" placeholder="Input 1" value="{{ row.dept_cd }}">
+            <input type="text" name="input2" placeholder="Input 2" value="{{ row.name }}">
+            <select name="input3">
+                <!-- 추후 for문으로 바꿈 -->
+                <option value="사원" {% if row.pos == "사원" %} selected {% endif %}> 사원 </option>
+                <option value="대리" {% if row.pos == "대리" %} selected {% endif %}> 대리 </option>
+                <option value="과장" {% if row.pos == "과장" %} selected {% endif %}> 과장 </option>
+            </select>
+            <button onclick="deleteForm(this)">삭제</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    <button type=button onclick="addForm()">행추가</button>
+    <!-- 임시저장버튼 -->
+    <button type="submit" name="action" value="action2">등록</button>
+    <!-- 저장버튼 -->
+    <button type="submit" name="action" value="action1">저장</button>
+
+  </form>
+
+  <script>
+
+    function addForm() {
+      // Create container div
+      const container = document.createElement('div');
+      container.className = 'container';
+
+      // Create input elements
+      const input1 = document.createElement('input');
+      input1.type = 'text';
+      input1.name = 'input1';
+      input1.placeholder = 'Input 1';
+      input1.className = 'input-text';
+
+      const input2 = document.createElement('input');
+      input2.type = 'text';
+      input2.name = 'input2';
+      input2.placeholder = 'Input 2';
+
+      var select = document.createElement("select");
+      select.name = "input3";
+
+      var options = ["사원", "대리", "과장"];
+
+      for (var i = 0; i < options.length; i++) {
+        var option = document.createElement("option");
+        option.value = options[i];
+        option.text = options[i];
+        select.appendChild(option);
+      }
+
+      // Create moveUp button
+      const moveUpButton = document.createElement('button');
+      moveUpButton.textContent = 'Up';
+      moveUpButton.type="button";
+      moveUpButton.onclick = function() {
+        moveUp(this);
+      };
+
+      // Create moveDown button
+      const moveDownButton = document.createElement('button');
+      moveDownButton.textContent = 'Down';
+      moveDownButton.type="button";
+      moveDownButton.onclick = function() {
+        moveDown(this);
+      };
+
+      // Create delete button
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = '삭제';
+      deleteButton.onclick = function() {
+        // Remove the container when the delete button is clicked
+        container.remove();
+      };
+
+      // Append elements to the container
+      container.appendChild(moveUpButton);
+      container.appendChild(moveDownButton);
+      container.appendChild(deleteButton);
+      container.appendChild(input1);
+      container.appendChild(input2);
+      container.appendChild(select);
+      // Append buttons to container
+      
+      container.style.display = 'flex';
+      container.style.justifyContent = 'space';
+      container.style.whiteSpace = 'normal';
+
+      // Append the container to the formContainer div
+      document.getElementById('formContainer').appendChild(container);
+
+      var scrollableDiv = document.getElementById('formContainer');
+      scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
+    }
+
+    function deleteForm(button) {
+      // Find the parent container and remove it
+      const container = button.parentNode;
+      container.remove();
+    }
+
+    // Function to move container Up
+    function moveUp(button) {
+      const container = button.parentNode;
+      const formContainer = document.getElementById('formContainer');
+
+      // Check if container is the first child
+      if (container.previousElementSibling) {
+        formContainer.insertBefore(container, container.previousElementSibling);
+      } else {
+        alert("Container is already at the top!");
+      }
+    }
+
+    // Function to move container Down
+    function moveDown(button) {
+      const container = button.parentNode;
+      const formContainer = document.getElementById('formContainer');
+
+      // Check if container is the last child
+      if (container.nextElementSibling) {
+        formContainer.insertBefore(container, container.nextElementSibling.nextSibling);
+      } else {
+        alert("Container is already at the bottom!");
+      }
+    }
+
+  </script>
+</body>
+</html>

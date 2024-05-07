@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>부서원 그룹</title>
+<style>
+    /* 테이블 스타일 */
+    table, th, td { 
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 10px;
+        text-align: center;
+    }
+</style>
+<script>
+
+function submitTableData() { // 테이블 데이터를 JSON으로 변환
+    const table = document.getElementById('myTable');
+    const rows = table.querySelectorAll('tbody tr');
+    const data = [];
+
+    rows.forEach(row => { // 각 행을 반복하면서 데이터 수집
+        const rowData = {};
+        const cells = row.querySelectorAll('td input');
+        const headers = document.querySelectorAll('#myTable thead tr th input');
+        
+        cells.forEach((cell, index) => { // 각 셀의 값을 열 이름과 함께 저장
+            const columnName = index < headers.length ? headers[index].value : `Column ${index + 1}`;
+            rowData[columnName] = cell.value;
+        });
+
+        data.push(rowData); // 행 데이터를 배열에 추가
+    });
+
+    // 열 이름 input이 빈 칸인지 확인
+    const columnInputs = document.querySelectorAll('#myTable thead tr th input[type="text"]');
+    for (let i = 0; i < columnInputs.length; i++) {
+
+        const columnName = columnInputs[i].value.trim();
+        if (columnName === '') {
+            alert('부서원 그룹명을 입력하세요.');
+            return false; // 제출을 막습니다.
+        }
+        if (!/\D/.test(columnName)) { // 숫자만 있는 경우
+            alert('부서원 그룹명에는 문자가 반드시 포함되어야 합니다.');
+            return false; // 제출을 막습니다.
+        }
+    }
+
+    // 합계 행의 값이 1을 초과하는지 확인
+    const totalRowInputs = document.querySelectorAll('#myTable tbody tr:last-child input');
+    for (let i = 0; i < totalRowInputs.length; i++) {
+        if (parseFloat(totalRowInputs[i].value) > 1) {
+            alert('합계 값은 1을 초과할 수 없습니다.');
+            return false; // 제출을 막습니다.
+        }
+    }
+
+    const jsonData = JSON.stringify(data); // JSON 문자열로 변환
+    document.getElementById('jsonData').value = jsonData;  // 숨겨진 입력 필드 jsonData의 값을 설정
+    return true; // 폼 제출
+}
+
+document.addEventListener('DOMContentLoaded', function() { // 페이지 로드 시 실행
+    const data = JSON.parse('{{ data|escapejs|safe }}'); // 데이터를 안전하게 가져옵니다.
+    const table = document.getElementById('myTable'); // 테이블 요소 가져오기
+    const thead = table.getElementsByTagName('thead')[0]; // 테이블 헤더 가져오기
+    const tbody = table.getElementsByTagName('tbody')[0]; // 테이블 본문 가져오기
+
+    // 초기 열 이름 설정 및 필요한 경우 삭제 버튼 추가
+    renderHeaders(data[0]);
+    // renderDataRows(data);
+    
+    // 데이터 행 구성
+    data.forEach(function(row) { // 각 행을 반복하면서 데이터 채우기
+        let tr = document.createElement('tr'); // 새 행 요소 생성
+        Object.entries(row).forEach(function([key, value], index) { // 행의 각 열을 반복하면서 데이터 채우기
+            let td = document.createElement('td'); // 새 셀 요소 생성
+            let input = document.createElement('input'); // 새 입력 요소 생성
+            input.type = 'text'; // 입력 요소 유형 설정
+            input.value = value; // 입력 요소 값 설정
+            if (index === 0) { // 첫 번째 열은 읽기 전용으로 설정
+                input.readOnly = true; // 첫 번째 열은 읽기 전용으로 설정
+            }
+            td.appendChild(input); // 셀에 입력 요소 추가
+            tr.appendChild(td); // 행에 셀 추가
+        });
+        tbody.appendChild(tr); // 테이블 본문에 행 추가
+    });
+
+    // 합계 행 추가
+    addTotalRow();
+
+    // input 값이 변경될 때마다 합계 행 업데이트
+    const inputs = document.querySelectorAll('#myTable tbody input');
+    inputs.forEach(input => {
+        input.addEventListener('input', function(event) {
+            if (!isNumeric(event.target.value)) { // 입력 값이 숫자가 아닌 경우
+                event.target.value = ''; // 입력 값을 비웁니다.
+                updateTotalRow();
+                return;
+            }
+            if (parseFloat(event.target.value) > 1) { // 입력 값이 1을 초과하는 경우
+                event.target.value = ''; // 입력 값을 비웁니다.
+                updateTotalRow();
+                return;
+            }
+            if (event.target.value.includes('.')) { // 소수점이 포함된 경우
+                const parts = event.target.value.split('.');
+                if (parts.length > 1 && parts[1].length > 2) { // 소수점 이하 두 자리 이상인 경우
+                    event.target.value = parts[0] + '.' + parts[1].slice(0, 2); // 둘째 자리까지만 남깁니다.
+                }
+            }
+            updateTotalRow();
+        });
+    });
+});
+
+function isNumeric(value) {
+    return /^\d*\.?\d*$/.test(value);
+}
+
+function renderHeaders(data) { // 열 이름을 테이블 헤더에 렌더링
+    const table = document.getElementById('myTable'); // 테이블 요소 가져오기
+    const thead = table.getElementsByTagName('thead')[0]; // 테이블 헤더 가져오기
+    thead.innerHTML = '';   // 헤더 지우기
+    let headerRow = document.createElement('tr'); // 새 행 요소 생성
+    let isFirst = true; // 첫 번째 열인지 여부를 추적
+    Object.keys(data).forEach(function(key, index) { // 각 열 이름을 반복하면서 헤더 채우기
+        let th = document.createElement('th'); // 새 헤더 셀 요소 생성
+        if (isFirst) { // 첫 번째 열은 텍스트로 고정
+            th.textContent = key; // 헤더 셀에 텍스트 추가
+            isFirst = false; // 첫 번째 열이 아님을 표시
+        } else { // 첫 번째 열이 아닌 경우 입력 필드와 삭제 버튼 추가
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.value = key;
+            th.appendChild(input);
+
+            let deleteButton = document.createElement('button'); // 새로운 삭제 버튼 생성
+            deleteButton.textContent = '-'; // 삭제 버튼 텍스트 설정 
+            deleteButton.onclick = function() { removeColumn(index); }; // 삭제 버튼 클릭 시 이벤트 처리기 설정
+            th.appendChild(deleteButton); // 헤더 셀에 삭제 버튼 추가
+        } 
+        headerRow.appendChild(th); // 헤더 행에 헤더 셀 추가
+    });
+    thead.appendChild(headerRow); // 테이블 헤더에 헤더 행 추가
+}
+
+function addColumn() {
+    // 열 이름을 입력받는 input 필드 생성
+    var columnNameInput = document.createElement('input');
+    columnNameInput.type = 'text';
+    columnNameInput.placeholder = '부서원 그룹';
+
+    // 새로운 열 삭제 버튼 생성
+    var deleteButton = document.createElement('button');
+    deleteButton.textContent = '-';
+    deleteButton.onclick = function() { removeColumn(headerRow.children.length); };
+
+    // 새로운 헤더 셀 생성
+    var th = document.createElement("th");
+    th.appendChild(columnNameInput);
+    th.appendChild(deleteButton);
+
+    // 헤더 행에 새로운 헤더 셀 추가
+    var headerRow = document.querySelector('#myTable thead tr');
+    headerRow.appendChild(th);
+
+    // 각 데이터 행에 새로운 셀 추가
+    var bodyRows = document.querySelectorAll('#myTable tbody tr');
+    bodyRows.forEach(function(row) {
+        var td = document.createElement("td");
+        var input = document.createElement("input");
+        input.type = "text";
+        input.addEventListener('input', function(event) {
+            if (!isNumeric(event.target.value)) { // 입력 값이 숫자가 아닌 경우
+                event.target.value = ''; // 입력 값을 비웁니다.
+                updateTotalRow();
+                return;
+            }
+            if (parseFloat(event.target.value) > 1) { // 입력 값이 1을 초과하는 경우
+                event.target.value = ''; // 입력 값을 비웁니다.
+                updateTotalRow();
+                return;
+            }
+            if (event.target.value.includes('.')) { // 소수점이 포함된 경우
+                const parts = event.target.value.split('.');
+                if (parts.length > 1 && parts[1].length > 2) { // 소수점 이하 두 자리 이상인 경우
+                    event.target.value = parts[0] + '.' + parts[1].slice(0, 2); // 둘째 자리까지만 남깁니다.
+                }
+            }
+            updateTotalRow();
+        }); // 새로운 input 필드에 input 이벤트 리스너 추가
+        td.appendChild(input);
+        row.appendChild(td);
+    });
+
+    // 추가된 열의 마지막 행을 readonly로 설정
+    var lastRowCells = document.querySelectorAll('#myTable tbody tr:last-child td');
+    lastRowCells[lastRowCells.length - 1].querySelector('input').readOnly = true;
+
+    updateDeleteButtons(); // 삭제 버튼 인덱스 업데이트
+}
+
+function updateDeleteButtons() {
+    var headerCells = document.querySelectorAll('#myTable thead th');
+    headerCells.forEach((cell, index) => {
+        var button = cell.querySelector('button');
+        if (button) {
+            button.onclick = function() { removeColumn(index); };
+        }
+    });
+}
+
+function removeColumn(index) {
+    var table = document.getElementById("myTable");
+    table.querySelectorAll('thead tr th')[index].remove();
+    table.querySelectorAll('tbody tr').forEach(row => row.cells[index].remove());
+    updateDeleteButtons();
+}
+
+function addTotalRow() {
+    const table = document.getElementById('myTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rowCount = tbody.getElementsByTagName('tr').length +1 ;
+    const columnCount = table.getElementsByTagName('thead')[0].getElementsByTagName('th').length;
+
+    const totalRow = document.createElement('tr');
+
+    const totalCell = document.createElement('td');
+    totalCell.textContent = '합계';
+    totalRow.appendChild(totalCell);
+
+    for (let columnIndex = 1; columnIndex < columnCount; columnIndex++) {
+        let sum = 0;
+        for (let rowIndex = 1; rowIndex < rowCount; rowIndex++) { // 첫 번째 행은 열 이름이므로 1부터 시작
+            const cell = table.rows[rowIndex].cells[columnIndex].querySelector('input');
+            sum += parseFloat(cell.value) || 0;
+        }
+        const totalCell = document.createElement('td');
+        totalCell.innerHTML = `<input type="text" value="${sum.toFixed(2)}" readonly>`;
+        totalRow.appendChild(totalCell);
+    }
+
+    tbody.appendChild(totalRow);
+}
+
+function updateTotalRow() {
+    const table = document.getElementById('myTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rowCount = tbody.getElementsByTagName('tr').length;
+    const columnCount = table.getElementsByTagName('thead')[0].getElementsByTagName('th').length;
+
+    const totalRow = tbody.lastElementChild; // 마지막 행은 합계 행
+
+    for (let columnIndex = 1; columnIndex < columnCount; columnIndex++) { // 첫 번째 열은 열 이름이므로 1부터 시작
+        let sum = 0; // 열의 합계를 저장할 변수
+        for (let rowIndex = 1; rowIndex < rowCount; rowIndex++) { // 첫 번째 행은 열 이름이므로 1부터 시작, 마지막은 합계 행이므로 제외
+            const cell = table.rows[rowIndex].cells[columnIndex].querySelector('input'); // 현재 셀 가져오기
+            sum += parseFloat(cell.value) || 0; // 셀 값이 숫자인 경우 합계에 추가
+        }
+        const totalCell = totalRow.cells[columnIndex];
+        totalCell.querySelector('input').value = sum.toFixed(2);
+    }
+}
+</script>
+</head>
+<body>
+    <form method="post" action="{% url 'submit_data' %}" onsubmit="return submitTableData()">
+        {% csrf_token %}
+        <input type="hidden" id="jsonData" name="jsonData">
+        <button type="submit">저장</button>
+    </form>
+<button onclick="addColumn()">추가</button>
+<div style="padding-left: 20px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
+height: 250px; width:1200px; flex-wrap: wrap; margin-top:20px; margin-left:20px;">
+<table id="myTable">
+    <thead>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+</div>
+</body>
+</html>

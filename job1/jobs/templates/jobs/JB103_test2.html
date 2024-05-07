@@ -1,0 +1,304 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+    <wrap>
+    <div id = "jb103" style="margin-left: 50px; margin-top: 50px;">
+        <div class = "sub-title" >직무 상세내역 입력</div>
+
+        <!-- 부서 선택 -->
+        <div>
+        <form action = "{% url 'JB103_test2' %}" method="POST" id="jb103">
+            {% csrf_token %}
+            <div class="team_select" style="margin-top: 20px">
+              <p class="label-text2"> 회기 &nbsp;2023A </p>
+                <!-- team_selected라는 이름으로 부서 코드를 view.py로 넘겨준다. -->
+                <p class="label-text2">부서
+                  <select name="team_selected" class="select-combox" onchange="this.form.submit()" size="1" style="margin-left: 62px;">
+                      <!-- dept_list는 BsDept 테이블에서 prd_cd=2022의 부서들이다. -->
+                      {% for item in dept_list %}
+                          <option value={{ item.dept_cd }} {%if team_selected == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
+                      {% endfor %}
+                  </select>
+                </p>
+        </div>
+        </div>
+        </form>
+
+        <div class="content" style="display: flex; margin-top: 5px; margin-left: 20px;">
+            
+            <div class="list-box">
+                <div class="list-box1">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>
+                          <p>직무</p><br><br><br>
+                          <p>Job</p>
+                        </th>
+                        <th>
+                          <p>책무</p><br><br><br>
+                          <p>Duty</p>
+                        </th>
+                        <th>
+                          <p>과업</p><br><br><br>
+                          <p>Task</p>
+                        </th>
+                        <th>
+                          <p>활동</p><br><br><br>
+                          <p>Activity</p>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                          <td>
+                            <!-- 직무 선택. 직무는 여기서 편집하지 않는다. 직무를 선택하면 책무가 뜬다. -->
+                            <form action="{% url 'jb103_test2_job' %}" method="POST" id="job">
+                                {% csrf_token %}
+                                <input type="text" hidden name="team_selected" value={{ team_selected }}>
+            
+                                <select name="job_selected" class="select-combox-list" onchange="this.form.submit()" size="8" style="width:200px;"> 
+                                  <!-- onchange -->
+                                    <!-- job_list는 BsJob의 prd_cd=2022, 부서는 위에서 선택한 부서의 직무 목록이다. -->
+                                    {% for item in job_list %}
+                                        <option value={{ item.job_cd }} {%if job_selected == item.job_cd %} selected {% endif %}> {{ item.job_cd }} {{ item.job_nm }} </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                          </td>
+                          <td>
+                            <!-- 책무 -->
+                            <form action = "{% url 'jb103_test2_duty' %}" id="duty" method="POST" >
+                                {% csrf_token %}
+                                <!-- 선택한 팀 정보를 받아온다. -->
+                                <input type="text" hidden name="team_selected" value={{ team_selected }}>
+            
+                                <!-- 선택한 직무 정보를 받아온다. -->
+                                <input type="text" hidden name="job_selected" value={{ job_selected }}>
+                                
+                                <!-- 책무 리스트를 생성하고 select를 만들어준다. 책무의 이름을 value로 해서, duty_selected라는 값을 view.py에 넘겨주고 과업을 띄우는데 사용할 것이다.-->
+                                <select name="duty_selected" class="select-combox-list" id="selectOptions" size="8" style="width:200px;">
+                                    <!-- 책무를 화면에 띄울 때는 dataframe df1을 생성했으며 이를 duty_list라는 이름으로 넘겨주었다. -->
+                                    {% for index, row in duty_list.iterrows %}
+                                        <option value="{{ row.duty_nm }}" {%if duty_selected == row.duty_nm %} selected {% endif %}> {{ row.duty_nm }} </option>
+                                    {% endfor %}
+                                </select>
+                                <input type="submit" name="select_change" id="submitButton" style="display: none;">
+                            </form>
+                          </td>
+                          <td>
+                            <!-- 과업, 과업을 선택하면 활동 목록을 띄우고 과업 편집 화면을 띄운다.-->
+                            <form action = "{% url 'jb103_test2_task' %}" method="POST" id="task">
+                                {% csrf_token %}
+                                <input type="text" hidden name="team_selected" value={{ team_selected }}>
+                                <input type="text" hidden name="job_selected" value={{ job_selected }}>
+                                <input type="text" hidden name="duty_selected" value="{{ duty_selected }}">
+            
+                                <!-- 과업 리스트를 생성하고 select를 만들어준다. 과업명을 value로 해서, task_selected라는 값을 view.py에 넘겨주고 활동을 띄우는데 사용할 것이다.-->
+                                <select name="task_selected" class="select-combox-list" id="selectOptions2" size="8" style="width:350px;">
+            
+                                  {% for index, row in task_list.iterrows %}
+                                      <option value="{{ row.task_nm }}" {%if task_selected == row.task_nm %} selected {% endif %}> {{ row.task_nm }} </option>
+                                      <!-- <option value={{ row.duty_nm }} {% if select_team == item.job_nm %} selected {% endif %}> {{ row.duty_nm }} </option> -->
+                                  {% endfor %}
+                                </select>
+                                <input type="submit" name="select_change2" id="submitButton2" style="display: none;">
+                            </form>
+                          </td>
+                          <td>
+                            <!-- 활동, 활동을 선택하면 활동 편집 화면을 띄운다. -->
+                            <form action = "{% url 'jb103_test2_activity' %}" method="POST" id="activity">
+                                {% csrf_token %}
+                                <input type="text" hidden name="team_selected" value={{ team_selected }}>
+                                <input type="text" hidden name="job_selected" value={{ job_selected }}>
+                                <input type="text" hidden name="duty_selected" value="{{ duty_selected }}">
+                                <input type="text" hidden name="task_selected" value="{{ task_selected }}">
+            
+                                <!-- 활동 리스트를 생성하고 select를 만들어준다. 활동명을 value로 해서, act_selected라는 값을 view.py에 넘겨주고 사용할 것이다.-->
+                                <select name="activity_selected" class="select-combox-list" id="selectOptions3" size="8" style="width:500px;">
+                                    {% for item in activity_list %}
+                                        <option value="{{ item.act_nm }}" {%if activity_selected == item.act_nm %} selected {% endif %}> {{ item.act_nm }} </option>
+                                        <!-- <option value={{ row.duty_nm }} {% if select_team == item.job_nm %} selected {% endif %}> {{ row.duty_nm }} </option> -->
+                                    {% endfor %}
+                                </select>
+                                <input type="submit" name="select_change3" id="submitButton3" style="display: none;">
+                            </form>
+                          </td>
+                        </tr>
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 아래 박스 -->
+        <div class="modify_box" style="width:1255px; height:210px; border:1px solid grey; border-radius:5px; margin-left: 40px;
+        padding-left: 10px; padding-top: 20px; margin-top:30px; background-color: beige;">
+          <div style="display: flex;">
+            <div class="modify_box_1" style="margin-left: 40px;">
+            {% if text == "직무 선택 후" %}
+
+            {% endif %}
+            <!-- 책무를 select하면 key값(text)은 "책무 선택 후"라는 값을 view.py로부터 받아오며, 다음 연산을 한다. -->
+            {% if text == "책무 선택 후" %}
+                <input type="text" class="input-text" form="duty" hidden name="status" value={{ text }}>
+                
+                <p style="font-family: Seed-Medium;"><b>책무 편집</b></p>
+                    <input type="text" form="duty" name="duty_selected2" value="{{ duty_selected }}" hidden>
+                    <input type="text" class="input-text" form="duty" name="duty_nm_change" value="{{ duty_selected }}" style="width: 300px">
+                <br><br>
+                <!-- <input type="submit" form="duty" class="register" name="apply" value="등록"> -->
+                <!-- <input type="submit" form="duty" name="save" value="저장" onclick="return confirm('저장하시겠습니까');"> -->
+            {% endif %}
+            <!-- 과업을 select하면 key값(text)은 "과업 선택 후"라는 값을 view.py로부터 받아오며, 다음 연산을 한다. -->
+            {% if text == "과업 선택 후" %}
+                <p style="font-family: Seed-Medium;"><b>과업 편집</b></p>
+                <span style="font-family: Seed-Regular;">과업명: </span>     <input type="text" class="input-text" form="task" name="task_nm_change" value="{{ task_selected }}" style="width: 400px;">
+                <input type="text" form="task" class="input-text" name="task_selected2" value="{{ task_selected }}" hidden>
+                <br>
+                <span style="font-family: Seed-Regular;">과업 담당자: </span> <input type="text" form="task" class="input-text" name="task_prsn_chrg_change" value="{{ task_prsn_chrg }}"style="width: 300px;">
+                <br>
+                <span style="font-family: Seed-Regular;">업무 수준: </span>
+                <br>
+                <span style="font-family: Seed-Regular;">중요도 </span> <input type="number" form="task" id="work_lv_imprt"
+                 name="work_lv_imprt_new" value="{{ work_lv_imprt }}" oninput="calculate()" min="1" max="5" onkeydown="return false" style="text-align: center;"> 
+                <span style="font-family: Seed-Regular;">난이도 </span> <input type="number" form="task" id="work_lv_dfclt"
+                 name="work_lv_dfclt_new" value="{{ work_lv_dfclt }}" oninput="calculate()" min="1" max="5" onkeydown="return false" style="text-align: center;">
+                <span style="font-family: Seed-Regular;">숙련도 </span> <input type="number" form="task" id="work_lv_prfcn"
+                 name="work_lv_prfcn_new" value="{{ work_lv_prfcn }}" oninput="calculate()" min="1" max="5" onkeydown="return false" style="text-align: center;">
+                <span style="font-family: Seed-Regular;">업무 수준 </span> <input type="number" form="task" id="work_lv_sum"
+                 name="work_lv_sum_new" value="{{ work_lv_sum }}" readonly style="width: 50px; text-align: center; background-color:beige;">
+                <span style="font-family: Seed-Regular;">업무 등급 </span> <input type="text" form="task" id="work_grade"
+                 name="work_grade_new" value="{{ work_grade }}" readonly style="width: 50px; text-align: center; background-color:beige;">
+                <br><br>
+                <!-- <input type="submit" form="task" class="register" name="apply" value="등록">     -->
+            {% endif %}
+            <!-- 활동을 select하면 key값(text)은 "활동 선택 후"라는 값을 view.py로부터 받아오며, 다음 연산을 한다. -->
+            {% if text == "활동 선택 후" %}
+                <p style="font-family: Seed-Medium;"><b>활동 편집</b></p>
+                <span style="font-family: Seed-Regular;">활동명:</span>      <input type="text" form="activity" class="input-text" name="activity_nm_change" value="{{ activity_selected }}" style="width: 450px;">
+                <!-- <input type="text" form="activity" name="activity_selected2" value="{{ activity_selected }}" style="width: 300px;" hidden> -->
+                <br>
+                <span style="font-family: Seed-Regular;">활동 담당자:</span> <input type="text" form="activity" class="input-text" name="activity_prsn_chrg_change" value="{{ act_prsn_chrg }}" style="width: 300px;">
+                <br>
+                <span style="font-family: Seed-Regular;">수행 빈도 및 시간:</span>
+                <br>
+                <span style="font-family: Seed-Regular;">수행 빈도</span> <select name="act_prfrm_freq" form="activity">
+                    <option value="YY" {%if act_prfrm_freq == "YY" %} selected {% endif %}>연</option>
+                    <option value="QQ" {%if act_prfrm_freq == "QQ" %} selected {% endif %}>분기</option>
+                    <option value="MM" {%if act_prfrm_freq == "MM" %} selected {% endif %}>월</option>
+                    <option value="WW" {%if act_prfrm_freq == "WW" %} selected {% endif %}>주</option>
+                    <option value="DD" {%if act_prfrm_freq == "DD" %} selected {% endif %}>일</option>
+                    <option value="HH" {%if act_prfrm_freq == "HH" %} selected {% endif %}>시간</option>
+                  </select>                    
+                <!-- 횟수 <input type="number" form="activity" id="count" name="count" value="{{ work_lv_dfclt }}" oninput="calculate()" style="width: 50px;"> -->
+                <span style="font-family: Seed-Regular;">수행 건수(연간)</span>
+                <input type="number" form="activity" id="act_prfrm_cnt_ann" name="act_prfrm_cnt_ann_new" value="{{ act_prfrm_cnt_ann }}"
+                 style="width: 50px; text-align: right;" oninput="calculate2()" >
+                <span style="font-family: Seed-Regular;">수행 시간(건당)</span>
+                <input type="number" form="activity" id="act_prfrm_tm_cs" name="act_prfrm_tm_cs_new" value="{{ act_prfrm_tm_cs }}" style="width: 50px; text-align: right;"
+                oninput="calculate2()" step="0.1">
+                <span style="font-family: Seed-Regular;">수행 시간(연간)</span>
+                <input type="number" form="activity" id="act_prfrm_tm_ann" name="act_prfrm_tm_ann_new" value="{{ act_prfrm_tm_ann }}"
+                 style="width: 60px; text-align: right; background-color:beige;" readonly step="0.1">
+                <br><br>
+                <!-- <input type="submit" class="register" form="activity" name="apply" value="등록"> -->
+            {% endif %}
+            </div>
+            
+            <div class="modify_box_2" style="margin-left: 40px;" >
+                <!-- 과업 선택했을 때 박스 오른쪽 -->
+                {% if text == "과업 선택 후" %}
+                <p></p><br>
+                <span style="font-family: Seed-Regular;">업무 특성:</span>
+                <input type="radio" form="task" name="work_attrbt_new" id="정형" value="정형" {% if work_attrbt == "정형" %} checked {% endif %}><label for="정형">정형</label>
+                <input type="radio" form="task" name="work_attrbt_new" id="비정형" value="비정형" {% if work_attrbt == "비정형" %} checked {% endif %}><label for="비정형" 
+                >비정형</label>
+                <br>
+                <span style="font-family: Seed-Regular;">수행시간(연간):</span>
+                <input type="number" form="task" id="prfrm_tm_ann" name="prfrm_tm_ann_new" style="width: 60px; text-align: right;" value={{ prfrm_tm_ann }}>
+                <br>
+                <span style="font-family: Seed-Regular;">최종 보고 대상:</span> <input type="text" form="task" class="input-text" id="final_rpt_to" name="final_rpt_to_new" value="{{ final_rpt_to }}" >
+                <br>
+                <span style="font-family: Seed-Regular;">관련부서:</span>
+                <input type="text" form="task" class="input-text" id="dept_rltd" name="dept_rltd_new" value="{{ dept_rltd }}" style="width: 200px">
+                {% endif %}
+                <!-- 활동 선택했을 때 박스 오른쪽 -->
+                {% if text == "활동 선택 후" %}
+                <p></p><br>
+                <span style="font-family: Seed-Regular;">수행 결과물:</span> 
+                <input type="text" form="activity" class="input-text" name="rpt_nm_new" value="{{ rpt_nm }}" >
+                {% endif %}
+            </div>
+          </div>
+            <div style="text-align: center;">
+              {% if text == "책무 선택 후" %}
+                <input type="submit" form="duty" class="register" name="apply" value="등록">
+              {% endif %}
+              {% if text == "과업 선택 후" %}
+                <input type="submit" form="task" class="register" name="apply" value="등록">
+              {% endif %}
+              {% if text == "활동 선택 후" %}
+                <input type="submit" class="register" form="activity" name="apply" value="등록">
+              {% endif %}
+            </div>
+        </div>
+    </div>
+</wrap>    
+</body>
+
+<script>
+    document.getElementById("selectOptions").addEventListener("change", function() {
+      document.getElementById("submitButton").click(); // Programmatically click the hidden submit button
+    });
+
+    document.getElementById("selectOptions2").addEventListener("change", function() {
+      document.getElementById("submitButton2").click(); // Programmatically click the hidden submit button
+    });
+
+    document.getElementById("selectOptions3").addEventListener("change", function() {
+      document.getElementById("submitButton3").click(); // Programmatically click the hidden submit button
+    });
+
+    function calculate() {
+        var work_lv_imprt = parseInt(document.getElementById("work_lv_imprt").value);
+        var work_lv_dfclt = parseInt(document.getElementById("work_lv_dfclt").value);
+        var work_lv_prfcn = parseInt(document.getElementById("work_lv_prfcn").value);
+        var sum = work_lv_imprt + work_lv_dfclt + work_lv_prfcn;
+        var grade;
+
+        if (sum >= 13) {
+            grade = "G1";
+        } else if (sum >= 10) {
+            grade = "G2";
+        } else if (sum >= 7) {
+            grade = "G3";
+        } else if (sum >= 5) {
+            grade = "G4";
+        } else {
+            grade = "G5";
+        }
+        
+        document.getElementById("work_lv_sum").value = sum;
+        document.getElementById("work_grade").value = grade;
+    }
+
+    function calculate2() {
+        const act_prfrm_cnt_ann = parseInt(document.getElementById("act_prfrm_cnt_ann").value);
+        const act_prfrm_tm_cs = parseFloat(document.getElementById("act_prfrm_tm_cs").value);
+
+        const result = (act_prfrm_cnt_ann * act_prfrm_tm_cs).toFixed(1);
+
+        document.getElementById("act_prfrm_tm_ann").value = result;
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+        };
+    }, true);
+
+</script>
+
+{% endblock %}

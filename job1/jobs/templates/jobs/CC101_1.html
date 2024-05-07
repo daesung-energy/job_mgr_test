@@ -1,0 +1,23 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <div id="input practice3">
+        <h1> [직무코드 관리] </h1>
+        <form action = "{% url 'change' %}" method="POST">
+            {% csrf_token %}
+            <select name="codeofjob" multiple onchange="this.form.submit()">
+                {% for item2 in contents_cc101_1 %}
+                    <option value={{ item2.job_cd }}> {{ item2.job_cd}} - {{ item2.job_nm }} </option>
+                {% endfor %}
+            </select>
+            <br><br>
+        </form>
+        
+        <!--  여기는 확인용  -->
+        {{ zzz }}
+    </div>
+</body>
+
+{% endblock %}

@@ -1,0 +1,459 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+
+    <wrap>
+   
+    <div id="information" style="margin-left: 50px; margin-top:50px;">
+        <!-- 회기 선택하도록 하는 폼 -->
+        <form action = "{% url 'BS105_1' %}" method="POST" id="BS105_1">
+        {% csrf_token %}
+            <div class="list-box-prd">
+
+                <table>
+                <thead>
+                    <tr>
+                    <th style="width: 100px;">
+                        <p>회 기</p>
+                    </th>
+                    <th>
+                        <select name="prd_cd_selected" class="select-combox3" id="selectOptions">
+                        {% for item in prd %}
+                        <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+                        {% endfor %}
+                        </select>
+                    </th>
+                    </tr>
+                </thead>
+                </table>
+            </div>
+            <input type="submit" name="select_change" id="submitButton" style="display: none;">
+
+        </form>
+        
+        <!-- 표준 정보를 변경하도록 하는 폼 -->
+        <form action = "{% url 'BS105_2' %}" method="POST" id="BS105_2">
+            {% csrf_token %}
+            <p class="label-text2"> 표준 근무시간 </p>
+            
+            <div class="list-box">
+                
+                <table style="margin-left: 50px">
+                    <thead>
+                        <tr>
+                            <th>
+                                <span>A. 총 일수</span>
+                            </th>
+                            <th>
+                                <p>B. 표준근무가능일수</p>
+                            </th>
+                            <th>
+                                <p>C. 표준근무가능시간</p><br><br><br>
+                                <p>(여유율 10% 반영)</p>
+                            </th>
+                            <th>
+                                <p>D. 적정 OT</p>
+                            </th>
+                            <th>
+                                <p>적정근무시간</p><br><br><br>
+                                <p>(C+D)</p>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="height: 50px; text-align: center;">
+                                <input class="input-text2" type="number" id="total_dys_new" name="total_dys_new"
+                                 value={{ total_dys }} style="width: 60px; " {% if activate == "none" %} readonly {% endif %}><span>일</span>
+                            </td>
+                            <td style="text-align: center;">
+                                <input class="input-text2" type="number" id="std_wrk_able_dys_new" name="std_wrk_able_dys_new"
+                                 value={{ std_wrk_able_dys }} style="width: 60px; " oninput="calculate(), calculate2()"
+                                  {% if activate == "none" %} readonly {% endif %}><span>일</span>
+                            </td>
+                            <td style="text-align: center; background-color: yellow;">
+                                {% if activate == "none" %} <span>______시간</span> {% endif %}
+                                {% if activate == "activate" %}
+                                <input class="input-text2" type="number" id="std_wrk_able_tm_new" name="std_wrk_able_tm_new"
+                                 value={{ std_wrk_able_tm }} style="width: 90px; background-color: yellow;" readonly><span>시간</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <input class="input-text2" type="number" id="ade_ot_tm_new" name="ade_ot_tm_new"
+                                 value={{ ade_ot_tm }} style="width: 60px; " oninput="calculate2()" {% if activate == "none" %} readonly {% endif %}>
+                                 <span>시간</span>
+                            </td>
+                            <td style="text-align: center; background-color: yellow;">
+                                {% if activate == "none" %} <span>______시간</span> {% endif %}
+                                {% if activate == "activate" %}
+                                <input class="input-text2" type="number" id="std_wrk_tm_new" name="std_wrk_tm_new"
+                                 value={{ std_wrk_tm }} style="width: 90px; background-color: yellow;" readonly><span>시간</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="label-text2"> 업무 등급 </p>
+            <div class="list-box" >
+                
+                <table style="margin-left: 50px">
+                    <thead>
+                        <tr>
+                            <th>
+                                <p>업무 등급</p>
+                            </th>
+                            <th>
+                                <p>업무 수준</p>
+                            </th>
+                            <th>
+                                <p>업무량 가중치</p>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody style="text-align: center;">
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Regular;">G1</span>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g1_min" value={{ g1.work_lv_min }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                                &nbsp;<span>~</span>&nbsp;
+                                <input class="input-text2" type="number" name="g1_max" value={{ g1.work_lv_max }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g1_wt" value={{ g1.workload_wt}} style="width: 70px; " step="0.1"
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Regular;">G2</span>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g2_min" value={{ g2.work_lv_min }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                                &nbsp;<span>~</span>&nbsp;
+                                <input class="input-text2" type="number" name="g2_max" value={{ g2.work_lv_max }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g2_wt" value={{ g2.workload_wt}} style="width: 70px; " step="0.1"
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Regular;">G3</span>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g3_min" value={{ g3.work_lv_min }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                                &nbsp;<span>~</span>&nbsp;
+                                <input class="input-text2" type="number" name="g3_max" value={{ g3.work_lv_max }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g3_wt" value={{ g3.workload_wt}} style="width: 70px; " step="0.1"
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Regular;">G4</span>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g4_min" value={{ g4.work_lv_min }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                                &nbsp;<span>~</span>&nbsp;
+                                <input class="input-text2" type="number" name="g4_max" value={{ g4.work_lv_max }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g4_wt" value={{ g4.workload_wt}} style="width: 70px; " step="0.1"
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Regular;">G5</span>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g5_min" value={{ g5.work_lv_min }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                                &nbsp;<span>~</span>&nbsp;
+                                <input class="input-text2" type="number" name="g5_max" value={{ g5.work_lv_max }} style="width: 50px; "
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                            <td>
+                                <input class="input-text2" type="number" name="g5_wt" value={{ g5.workload_wt}} style="width: 70px;" step="0.1"
+                                {% if activate == "none" %} readonly {% endif %}>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table style="margin-left: 50px; display: none;">
+                    <thead>
+                        <tr>
+                        <th>
+                            <p>직위</p>
+                        </th>
+                        <th>
+                            <p>업무등급</p>
+                        </th>
+                        </tr>
+                    </thead>
+                    <tbody style="text-align: center;">
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Medium;">수석부장</span>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                <select name="senior_manager" class="select-combox" style="width:100px">
+                                    <option value="G1" {% if s_m_grade.work_grade_id == "G1" %} selected {% endif %}>G1</option>
+                                    <option value="G2" {% if s_m_grade.work_grade_id == "G2" %} selected {% endif %}>G2</option>
+                                    <option value="G3" {% if s_m_grade.work_grade_id == "G3" %} selected {% endif %}>G3</option>
+                                    <option value="G4" {% if s_m_grade.work_grade_id == "G4" %} selected {% endif %}>G4</option>
+                                    <option value="G5" {% if s_m_grade.work_grade_id == "G5" %} selected {% endif %}>G5</option>
+                                </select>
+                                </div>
+                            </td>
+                            
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Medium;">부장</span>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                <select name="director" class="select-combox" style="width:100px">
+                                    <option value="G1" {% if d_grade.work_grade_id == "G1" %} selected {% endif %}>G1</option>
+                                    <option value="G2" {% if d_grade.work_grade_id == "G2" %} selected {% endif %}>G2</option>
+                                    <option value="G3" {% if d_grade.work_grade_id == "G3" %} selected {% endif %}>G3</option>
+                                    <option value="G4" {% if d_grade.work_grade_id == "G4" %} selected {% endif %}>G4</option>
+                                    <option value="G5" {% if d_grade.work_grade_id == "G5" %} selected {% endif %}>G5</option>
+                                </select>
+                                </div>    
+                            </td>
+
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Medium;">차장</span>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                <select name="associate_director" class="select-combox" style="width:100px">
+                                    <option value="G1" {% if a_d_grade.work_grade_id == "G1" %} selected {% endif %}>G1</option>
+                                    <option value="G2" {% if a_d_grade.work_grade_id == "G2" %} selected {% endif %}>G2</option>
+                                    <option value="G3" {% if a_d_grade.work_grade_id == "G3" %} selected {% endif %}>G3</option>
+                                    <option value="G4" {% if a_d_grade.work_grade_id == "G4" %} selected {% endif %}>G4</option>
+                                    <option value="G5" {% if a_d_grade.work_grade_id == "G5" %} selected {% endif %}>G5</option>
+                                </select>
+                                </div>
+                            </td>
+                            
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Medium;">과장</span>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                <select name="manager" class="select-combox" style="width:100px">
+                                    <option value="G1" {% if m_grade.work_grade_id == "G1" %} selected {% endif %}>G1</option>
+                                    <option value="G2" {% if m_grade.work_grade_id == "G2" %} selected {% endif %}>G2</option>
+                                    <option value="G3" {% if m_grade.work_grade_id == "G3" %} selected {% endif %}>G3</option>
+                                    <option value="G4" {% if m_grade.work_grade_id == "G4" %} selected {% endif %}>G4</option>
+                                    <option value="G5" {% if m_grade.work_grade_id == "G5" %} selected {% endif %}>G5</option>
+                                </select>
+                                </div>
+                            </td>
+                            
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Medium;">대리</span>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                <select name="assistant_manager" class="select-combox" style="width:100px">
+                                    <option value="G1" {% if a_m_grade.work_grade_id == "G1" %} selected {% endif %}>G1</option>
+                                    <option value="G2" {% if a_m_grade.work_grade_id == "G2" %} selected {% endif %}>G2</option>
+                                    <option value="G3" {% if a_m_grade.work_grade_id == "G3" %} selected {% endif %}>G3</option>
+                                    <option value="G4" {% if a_m_grade.work_grade_id == "G4" %} selected {% endif %}>G4</option>
+                                    <option value="G5" {% if a_m_grade.work_grade_id == "G5" %} selected {% endif %}>G5</option>
+                                </select>
+                                </div>
+                            </td>
+                            
+                        </tr>
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Medium;">사원</span>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                <select name="clerk" class="select-combox" style="width:100px">
+                                    <option value="G1" {% if c_grade.work_grade_id == "G1" %} selected {% endif %}>G1</option>
+                                    <option value="G2" {% if c_grade.work_grade_id == "G2" %} selected {% endif %}>G2</option>
+                                    <option value="G3" {% if c_grade.work_grade_id == "G3" %} selected {% endif %}>G3</option>
+                                    <option value="G4" {% if c_grade.work_grade_id == "G4" %} selected {% endif %}>G4</option>
+                                    <option value="G5" {% if c_grade.work_grade_id == "G5" %} selected {% endif %}>G5</option>
+                                </select>
+                                </div>
+                            </td>
+                            
+                        </tr>
+
+                        <tr>
+                            <td style="height: 50px;">
+                                <span style="font-family: Seed-Medium;">기능직</span>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                <select name="technical" class="select-combox" style="width:100px">
+                                    <option value="G1" {% if t_grade.work_grade_id == "G1" %} selected {% endif %}>G1</option>
+                                    <option value="G2" {% if t_grade.work_grade_id == "G2" %} selected {% endif %}>G2</option>
+                                    <option value="G3" {% if t_grade.work_grade_id == "G3" %} selected {% endif %}>G3</option>
+                                    <option value="G4" {% if t_grade.work_grade_id == "G4" %} selected {% endif %}>G4</option>
+                                    <option value="G5" {% if t_grade.work_grade_id == "G5" %} selected {% endif %}>G5</option>
+                                </select>
+                                </div>
+                            </td>
+                            
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="label-text2"> 업무량 과부족 기준 </p>
+            
+            <div class="list-box">
+                
+                <table style="margin-left: 50px">
+                <thead>
+                    <tr>
+                    <th>
+                        <p>업무량</p>
+                    </th>
+                    <th>
+                        <p>과부족 분류</p>
+                    </th>
+                    </tr>
+                </thead>
+                <tbody style="text-align: center;">
+                    <tr>
+                        <td style="height: 50px;">
+                            <input class="input-text2" type="number" name="min" id="min" value={{ min_max.ov_sht_min }}
+                             style="width: 60px;" step="0.1" {% if activate == "none" %} readonly {% endif %}><span style="font-family: Seed-Regular;">미만</span>
+                        </td>
+                        <td>
+                            <span style="font-family: Seed-Regular;">부족</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="height: 50px;">
+                            <input id="min_copy" class="input-text2" disabled type="number" style="width: 60px; "
+                             value={{ min_max.ov_sht_min }} {% if activate == "none" %} readonly {% endif %}><span style="font-family: Seed-Regular;">이상</span>
+                            &nbsp;
+                            <input id="max_copy" class="input-text2" disabled type="number" style="width: 60px;"
+                             value={{ min_max.ov_sht_max }} {% if activate == "none" %} readonly {% endif %}><span style="font-family: Seed-Regular;">이하</span>
+                        </td>
+                        <td>
+                            <span style="font-family: Seed-Regular;">적정</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="height: 50px;">
+                            <input class="input-text2" type="number" name="max" id="max" value={{ min_max.ov_sht_max }}
+                             style="width: 60px;" step="0.1" {% if activate == "none" %} readonly {% endif %}><span style="font-family: Seed-Regular;">초과</span>
+                        </td>
+                        <td>
+                            <span style="font-family: Seed-Regular;">여유</span>
+                        </td>
+                    </tr>
+                </tbody>
+                </table>
+            </div>
+            <div style="text-align: center; margin-top: 20px; margin-bottom: 100px;">
+                <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+                <input {% if my_value == "에러" %} type = "hidden" {% endif %} type="submit" class="register" name="apply" value="등록" >
+            </div>
+        </form>
+    </div>
+
+    {% if messages %}
+  <div id="messages" style="display: none;">
+    {% for message in messages %}
+      <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+    </wrap>
+
+    <script>
+
+    var messagesContainer = document.getElementById('messages');
+        if (messagesContainer) {
+        var messages = messagesContainer.getElementsByTagName('span');
+        for (var i = 0; i < messages.length; i++) {
+            alert(messages[i].textContent);
+        }
+        }
+
+        var myValue = "{{ my_value }}";
+        
+        document.getElementById("selectOptions").addEventListener("change", function() {
+        document.getElementById("submitButton").click();
+        
+        });
+        
+        // 첫 번째 입력란
+        var input1 = document.getElementById('min');
+        // 두 번째 입력란
+        var input2 = document.getElementById('min_copy');
+
+        // 첫 번째 입력란의 값이 변경될 때마다 복사하는 이벤트 리스너 추가
+        input1.addEventListener('input', function() {
+        input2.value = input1.value;
+        });
+
+        // 첫 번째 입력란
+        var input3 = document.getElementById('max');
+        // 두 번째 입력란
+        var input4 = document.getElementById('max_copy');
+
+        // 첫 번째 입력란의 값이 변경될 때마다 복사하는 이벤트 리스너 추가
+        input3.addEventListener('input', function() {
+        input4.value = input3.value;
+        });
+
+        function calculate() {
+            const std_wrk_able_dys_new = parseFloat(document.getElementById("std_wrk_able_dys_new").value);
+
+            const result = ((std_wrk_able_dys_new * 8.0)/(1.0+0.1)).toFixed(1);
+
+            document.getElementById("std_wrk_able_tm_new").value = result;
+        }
+
+        function calculate2() {
+            const std_wrk_able_tm_new = parseFloat(document.getElementById("std_wrk_able_tm_new").value);
+            const ade_ot_tm_new = parseFloat(document.getElementById("ade_ot_tm_new").value);
+
+            const result = (std_wrk_able_tm_new + ade_ot_tm_new).toFixed(1);
+
+            document.getElementById("std_wrk_tm_new").value = result;
+        }
+
+    </script>
+
+</body>
+{% endblock %}

@@ -1,0 +1,511 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <wrap>
+        <div id = "bs300" style="padding-left: 50px; padding-top: 50px;">
+
+            <!-- 회기와 탭 선택을 하면 1차 submit한다. submit하면 해당 회기 및 탭에 대한 정보를 띄운다. -->
+            <form id="BS300_0" action = "{% url 'BS300' %}" method="POST">
+                {% csrf_token %}
+
+                <!-- 회기 선택 박스 -->
+                <div class="list-box-prd">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 100px;">
+                                <p>회 기</p>
+                                </th>
+                                <th>
+                                <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                                {% for item in prd %}
+                                <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                                {% endfor %}
+                                </select>
+                                </th>
+                            </tr>
+                        </thead>
+                    </table>           
+                </div>
+            </form>
+
+            <form id="BS300" action = "{% url 'BS300_1' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="prd_cd_selected" value= {{ prd_cd_selected }}>
+                <!-- 탭 선택에 따라 값을 다르게 하여 submit한다. 그 값은 view파일에서 어떤 탭인지 구분할 수 있는 key값(span)으로 쓰인다. -->
+                <!-- 탭은 1에서 4까지 있고 각각 부서관리, 조직그룹, 직위관리, 직책관리이다. -->
+                <div style="padding-left: 20px;">
+                    <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">부서 관리</span>
+                    <span style="padding-right: 40px"></span>
+                    <span name="span2" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">조직 그룹</span>
+                    <span style="padding-right: 40px"></span>
+                    <span name="span3" onclick="submitForm('span3')" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직위 관리</span>
+                    <span style="padding-right: 40px"></span>
+                    <span name="span2" onclick="submitForm('span4')" {% if tab == "tab4" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직책 관리</span>
+                </div>
+            </form>
+
+            <!-- 탭에 따른 라벨링 -->
+            {% if tab == "tab1" %}
+            <div style="padding-top: 20px;">
+            </div>
+            {% endif %}
+            {% if tab == "tab3" %}
+            <div style="padding-top: 40px;">
+                <span style="font-family: Seed-Medium; padding-left: 65px;"> 직위 </span>
+                <span style="font-family: Seed-Medium; padding-left: 85px;"> 업무 등급 </span>
+            </div>
+            {% endif %}
+            {% if tab == "tab4" %}
+            <div style="padding-top: 40px;">
+                <span style="font-family: Seed-Medium; padding-left: 65px;"> 직책 </span>
+            </div>
+            {% endif %}
+
+            <!-- 부서 관리 탭 눌렀을 때 -->
+            {% if tab == "tab1" %}
+                <!-- 부서 관리 div -->
+                <div style="display: flex;">
+                    <!-- 부서 목록 띄우는 div -->
+                    <div>
+                        <!-- 부서 목록 띄우고 입력받는 form -->
+                        <form action = "{% url 'BS300_3' %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+                            <input type="hidden" name="tab_selected" value={{ tab }}>
+                            <!-- 직무 목록 표시 박스-->
+                            <div class="list-box-prd">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th style="width:150px;">
+                                    <p> 부서 목록 </p>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td>
+                                    <select name="dept_selected" class="select-combox3" size="5" style="height: 145px; width: 150px;" onchange="this.form.submit()">
+                                        {% for index, row in dept_list.iterrows %}
+                                        <option value="{{ row.dept_cd }}" {% if row.dept_cd == dept_selected %} selected {% endif %}> {{ row.dept_nm }} </option>
+                                        {% endfor %}
+                                    </select>
+                                    </td>
+                                </tr>
+                                </thead>
+                            </table>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 부서 관리 탭에서 추가 버튼 눌렀을 때 -->
+                    {% if new_dept == "yes" %}
+                    <!-- 새로운 부서에 대한 정보를 입력하는 div -->
+                    <div style="padding-top:20px;">
+                        <form action = "{% url 'BS300_5' %}" id="dept_new" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+                            <input type="hidden" name="tab_selected" value={{ tab }}>
+
+                            <div>
+                                <span style="font-family: Seed-Regular; padding-right: 30px;"> 부서명 </span>
+                                <input type="text" class="input-text5" name="new_dept_nm">
+                            </div>
+                            <div>
+                                <span style="font-family: Seed-Regular;"> 직책별 TO </span>
+                                <div style="padding-left: 20px;">
+                                {% for item in ttl_list %}
+                                <p>
+                                <span style="font-family: Seed-Regular;"> {{ item.ttl_nm }} </span>
+                                <input type="text" hidden name="dept_ttl_nm" value={{ item.ttl_nm }}>
+                                <input type="text" class="input-text2" name="dept_ttl_cnt">
+                                </p>
+                                {% endfor %}
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+                    {% else %}
+                    <!-- 부서 선택하면 관련 정보 띄우는 div -->
+                    <div style="padding-top:20px;">
+                        <!-- 부서 정보 입력받거나 삭제하거나 추가 누르는 form -->
+                        <form action = "{% url 'BS300_4' %}" id="dept_edit" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+                            <input type="hidden" name="tab_selected" value={{ tab }}>
+                            <input type="hidden" name="dept_selected" value={{ dept_selected }}>
+                            <div>
+                                <span style="font-family: Seed-Regular; padding-right: 30px;"> 부서명 </span>
+                                {% for item in dept_selected_row %}
+                                <input type="text" class="input-text5" name="dept_selected_nm" value={{ item.dept_nm }}>
+                                {% endfor %}
+                            </div>
+                            <div>
+                                <span style="font-family: Seed-Regular;"> 직책별 TO </span>
+                                <div style="padding-left: 20px;">
+                                {% for index, row in to_info.iterrows %}
+                                <p>
+                                <span style="font-family: Seed-Regular;"> {{ row.ttl_nm }} </span>
+                                <input type="text" hidden name="dept_ttl_nm" value={{ row.ttl_nm }}>
+                                <input type="text" class="input-text2" name="dept_ttl_cnt" value={{ row.ttl_cnt }}>
+                                </p>
+                                {% endfor %}
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 부서 관리 탭에 대한 button control div -->
+                <div>
+                    {% if prd_done == "Y" %}
+                    <button type="submit" class="del_disabled" disabled>저장</button>
+                    <button type="submit" class="del_disabled" disabled>추가</button>
+                    <button type="submit" class="del_disabled" disabled>삭제</button>
+                    <button type="submit" class="del_disabled" disabled>취소</button>
+                    {% else %}
+                        <!-- 부서 추가 버튼을 눌렀을 때 - 추가될 부서에 대한 정보 저장, 취소 -->
+                        {% if new_dept == "yes" %}
+                            <button type="submit" form="dept_new" class="save" name="action" value="action1" onclick="return validateForm2()">저장</button>
+                            <button type="submit" form="dept_new" class="add" name="action" value="action2" disabled>추가</button>
+                            <button type="submit" form="dept_new" class="del_disabled" disabled>삭제</button>
+                            <button type="submit" form="dept_new" class="cancel" name="action" value="action4">취소</button>
+                        <!-- 부서 관리 기본 저장(수정), 추가 버튼. 추가를 누르면 부서 추가할 수 있는 입력란이 뜬다. -->
+                        {% else %}
+                            {% if save_activate == "save_activate" %}
+                            <button type="submit" form="dept_edit" class="save" name="action" value="action1" onclick="return validateForm2()">저장</button>
+                            {% else %}
+                            <button type="submit" class="del_disabled" disabled>저장</button>
+                            {% endif %}
+                            <button type="submit" form="dept_edit" class="add" name="action" value="action2">추가</button>
+                            {% if del_activate == "del_activate" %}
+                            <button type="submit" form="dept_edit" class="del" name="action" value="action3"
+                            onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?')">삭제</button>
+                            <button type="submit" form="dept_edit" class="cancel" name="action" value="action4">취소</button>
+                            {% else %}
+                            <button type="submit" class="del_disabled" disabled>삭제</button>
+                            <button type="submit" class="del_disabled" disabled>취소</button>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- 직위관리와 직책관리 탭의 조직 정보 내용 수정 폼. 이 폼을 탭이랑 나누는 폼 위의 if문도 필요 없음 -->
+            <form action = "{% url 'BS300_2' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+                <input type="hidden" name="tab_selected" value={{ tab }}>
+                
+                <!-- 직위관리와 직책관리 탭의 조직 정보 내용 수정 div -->
+                <div id="bs300_pos_ttl">
+                    <!-- 직위관리 탭 -->
+                    {% if tab == "tab3" %}
+                    <!-- 업무등급 리스트 -->
+                    <ul id="gradeList" style="display:none;">
+                        {% for item in work_grade_list %}
+                        <li data-value="{{ item.work_grade }}">{{ item.work_grade }}</li>
+                        {% endfor %}
+                    </ul>
+                        <div id="bs300_edit" style="padding-left: 20px; padding-top:10px; overflow-y: scroll; white-space: nowrap; height: 400px; width: 350px;
+                         border: 1px solid #ccc; margin-top:5px; margin-left:20px;" data-index="0">
+                            {% for index, row in pos_grade_list.iterrows %}
+                            <div class="container">
+                                <input type="text" class="input-text2" name="pos_nm" value="{{ row.pos_nm }}">
+                                <select class="select-combox" name="work_grade" style="margin-left: 35px;">
+                                <!-- dept_list는 BsDept 테이블에서 마지막 prd_cd의 부서들이다. -->
+                                    {% for item2 in work_grade_list %}
+                                        <option value= {{ item2.work_grade }} {% if item2.work_grade == row.work_grade %} selected {% endif %}> {{ item2.work_grade }} </option>
+                                    {% endfor %}
+                                </select>
+                                <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
+                                <!-- <button type="button" class="move" onclick="moveUp(this)"> ▲ </button>
+                                <button type="button" class="move" onclick="moveDown(this)"> ▼ </button>  -->
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <!-- 직책관리 탭 -->
+                    {% if tab == "tab4" %}
+                        <div id="bs300_edit" style="padding-left: 20px; padding-top:10px; overflow-y: scroll; white-space: nowrap; height: 200px; width: 300px;
+                        border: 1px solid #ccc; margin-top:5px; margin-left:20px;" data-index="0">
+                            {% for index, row in ttl_list.iterrows %}
+                            <div class="container">
+                                <input type="text" class="input-text2" name="ttl_nm" value="{{ row.ttl_nm }}">
+                                <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
+                                <button type="button" class="move" onclick="moveUp(this)"> ▲ </button>
+                                <button type="button" class="move" onclick="moveDown(this)"> ▼ </button> 
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- 직위관리와 직책관리 탭의 조직 정보 내용 버튼 control div -->
+                <div id="bs300_2"
+                 {% if activate == "no" %} style="padding-top: 50px; padding-bottom: 20px;" {% endif %}
+                 {% if tab == "tab3" %} style="padding-top: 20px; padding-left: 40px; padding-bottom: 20px;" {% endif %}
+                 {% if tab == "tab4" %} style="padding-top: 20px; padding-left: 12px; padding-bottom: 20px;" {% endif %}>
+                 {% if tab == "tab3" %}
+                    {% if prd_done == "Y" %}
+                    <button type=button class="del_disabled" disabled>추가</button>
+                    <button type=button class="del_disabled" disabled>저장</button>
+                    <button type="submit" class="cancel" name="action" value="action2">취소</button>
+                    {% else %}
+                        {% if activate == "no" %}
+                        <button type=button class="del_disabled" disabled>추가</button>
+                        <button type=button class="del_disabled" disabled>저장</button>
+                        <button type=button class="del_disabled" disabled>취소</button>
+                        {% endif %}
+                        {% if activate == "yes" %}
+                        <button type=button class="add" onclick="addForm('{{ tab }}')">추가</button>
+                        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm()">저장</button>
+                        <button type="submit" class="cancel" name="action" value="action2">취소</button>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+                {% if tab == "tab4" %}
+                    {% if prd_done == "Y" %}
+                        <button type=button class="del_disabled" disabled>추가</button>
+                        <button type=button class="del_disabled" disabled>저장</button>
+                        <button type="submit" class="cancel" name="action" value="action2">취소</button>
+                    {% else %}
+                        {% if activate == "no" %}
+                        <button type=button class="del_disabled" disabled>추가</button>
+                        <button type=button class="del_disabled" disabled>저장</button>
+                        <button type=button class="del_disabled" disabled>취소</button>
+                        {% endif %}
+                        {% if activate == "yes" %}
+                        <button type=button class="add" onclick="addForm('{{ tab }}')">추가</button>
+                        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm()">저장</button>
+                        <button type="submit" class="cancel" name="action" value="action2">취소</button>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- 에러 메시지 -->
+        {% if messages %}
+        <div id="messages" style="display: none;">
+            {% for message in messages %}
+            <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </wrap>
+
+    <script>
+
+        var messagesContainer = document.getElementById('messages');
+        if (messagesContainer) {
+            var messages = messagesContainer.getElementsByTagName('span');
+            for (var i = 0; i < messages.length; i++) {
+            alert(messages[i].textContent);
+            }
+        }
+
+        function validateForm() { // 빈 칸 검사하는 함수
+        // 모든 input 요소를 가져옵니다.
+        const inputs = document.querySelectorAll("input[type='text'], input[type='number']");
+
+        // 모든 input 값을 검사합니다.
+        for (const input of inputs) {
+            if (input.value.trim() === "") {
+            alert("빈 칸을 채우십시오.");
+            return false; // 검증 실패 시 submit을 막습니다.
+            }
+        }
+
+        // 모든 검증을 통과하면 true를 반환합니다.
+        return true;
+        }
+
+        function validateForm2() { // 빈 칸 검사하는 함수
+        // 모든 input 요소를 가져옵니다.
+        const inputs = document.querySelectorAll("input[type='text'], input[type='number']");
+
+        // 모든 input 값을 검사합니다.
+        for (const input of inputs) {
+            if (input.value.trim() === "") {
+            alert("빈 칸을 채우십시오.");
+            return false; // 검증 실패 시 submit을 막습니다.
+            }
+
+            // dept_ttl_cnt 필드에 대한 추가 검증
+            if (input.name === "dept_ttl_cnt") {
+                const value = parseFloat(input.value); // 입력 값을 숫자로 변환합니다.
+                if (!Number.isInteger(value)) {
+                    alert("TO는 정수만 입력해야 합니다.");
+                    return false; // 검증 실패 시 submit을 막습니다.
+                }
+            }
+        }
+
+        // 모든 검증을 통과하면 true를 반환합니다.
+        return true;
+        }
+
+        function submitForm(spanName) { // submit하는 폼
+            // 폼을 가져옵니다.
+            var form = document.getElementById("BS300");
+
+            // 추가 작업이 필요하다면 여기에서 수행합니다.
+
+            // spanName을 폼에 추가하거나 다른 처리를 수행할 수 있습니다.
+            var input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "span_name";
+            input.value = spanName;
+            form.appendChild(input);
+
+            // 폼을 제출합니다.
+            form.submit();
+        }
+
+        function addForm(tab) { // 행 추가 폼
+
+            if (tab=="tab3") { // 직위 관리 탭일 때
+                // Create container div
+                const container = document.createElement('div');
+                container.className = 'container';
+            
+                // Create input elements
+                const input1 = document.createElement('input');
+                input1.type = 'text';
+                input1.name = 'pos_nm';
+                input1.placeholder = '직위';
+                input1.className = 'input-text2';
+            
+                var select = document.createElement("select");
+                select.name = "work_grade";
+                select.className = 'select-combox';
+                // var options = ["G1", "G2", "G3", "G4", "G5"]; // 수정해야함
+                var gradeListItems = document.querySelectorAll('#gradeList li');
+                var options = Array.from(gradeListItems).map(function(item) {
+                    return item.getAttribute('data-value');
+                });
+                for (var i = 0; i < options.length; i++) { // 직위선택칸
+                    var option = document.createElement("option");
+                    option.value = options[i];
+                    option.text = options[i];
+                    select.appendChild(option);
+                }
+
+                // Create delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '-';
+                deleteButton.className = 'del_small';
+                deleteButton.onclick = function() {
+                // Remove the container when the delete button is clicked
+                container.remove();
+                };
+            
+                // Append elements to the container
+                container.appendChild(input1);
+                container.appendChild(select);
+                container.appendChild(deleteButton);
+            
+                // Append the container to the formContainer div
+                document.getElementById('bs300_edit').appendChild(container);
+
+                
+            }
+
+            if (tab=="tab4") { // 직책 관리 탭일 때
+            
+                const container = document.createElement('div');
+                container.className = 'container';
+                
+                // Create input elements
+                const input1 = document.createElement('input');
+                input1.type = 'text';
+                input1.name = 'ttl_nm';
+                input1.placeholder = '직책';
+                input1.className = 'input-text2';
+
+                // Create delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '-';
+                deleteButton.className = 'del_small';
+                deleteButton.onclick = function() {
+                // Remove the container when the delete button is clicked
+                container.remove();
+                };
+
+                // Create moveUp button
+                const moveUpButton = document.createElement('button');
+                moveUpButton.textContent = '▲';
+                moveUpButton.type="button";
+                moveUpButton.className = 'move'
+                moveUpButton.onclick = function() {
+                moveUp(this);
+                };
+
+                // Create moveDown button
+                const moveDownButton = document.createElement('button');
+                moveDownButton.textContent = '▼';
+                moveDownButton.type="button";
+                moveDownButton.className = 'move'
+                moveDownButton.onclick = function() {
+                moveDown(this);
+                };
+
+                // Append elements to the container
+                container.appendChild(input1);
+                container.appendChild(deleteButton);
+                container.appendChild(moveUpButton);
+                container.appendChild(moveDownButton);
+
+                // Append the container to the formContainer div
+                document.getElementById('bs300_edit').appendChild(container);
+
+            }
+
+            var scrollableDiv = document.getElementById('bs300_edit');
+            scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
+        }
+
+        function deleteForm(button) { // 행 삭제
+            // Find the parent container and remove it
+            const container = button.parentNode;
+            container.remove();
+        }
+
+        // Function to move container Up
+        function moveUp(button) {
+        const container = button.parentNode;
+        const formContainer = document.getElementById('bs300_edit');
+
+        // Check if container is the first child
+        if (container.previousElementSibling) {
+            formContainer.insertBefore(container, container.previousElementSibling);
+        } else {
+            alert("가장 윗줄입니다.");
+        }
+        }
+
+        // Function to move container Down
+        function moveDown(button) {
+        const container = button.parentNode;
+        const formContainer = document.getElementById('bs300_edit');
+
+        // Check if container is the last child
+        if (container.nextElementSibling) {
+            formContainer.insertBefore(container, container.nextElementSibling.nextSibling);
+        } else {
+            alert("가장 아랫줄입니다.");
+        }
+        }
+
+    </script>
+
+</body>
+
+
+
+{% endblock %}

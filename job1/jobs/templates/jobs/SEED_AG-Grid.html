@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <!-- 문자 인코딩 및 렌더링 엔진 설정 -->
+    <meta charset="UTF-8" /> <!-- 문서의 문자 인코딩을 UTF-8로 설정 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> <!-- 최신 Internet Explorer 엔진 사용 지정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- 반응형 웹 디자인을 위한 뷰포트 설정 -->
+
+    <title>Ag Grid App</title> <!-- 웹 페이지의 제목 -->
+
+    <!-- AG Grid JS 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+
+    <!-- AG Grid의 필수 CSS 파일 추가 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
+
+    <!-- 사용할 테마에 해당하는 CSS 파일 추가 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
+
+    <!-- CSV 파일을 파싱하기 위한 PapaParse 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- jQuery 라이브러리 추가 -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- AG Grid의 전체 기능을 포함하는 스크립트 추가 -->
+    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
+
+    <!-- SEED AG-Grid.css 스타일을 연결 -->
+    <link rel="stylesheet" href="{% static 'css/SEED_AG-Grid.css' %}" />
+    
+</head>
+
+<body>
+    <!-- CSV 파일을 가져오기 위한 파일 입력(input) 요소 -->
+    <input type="file" id="fileInput" accept=".csv" />
+
+    <!-- 그리드의 API를 호출하는 버튼 -->
+    <button onclick="deselect()">행 선택 해제</button>
+
+    <!-- 선택된 행 삭제 버튼 -->
+    <button onclick="deleteSelectedRows()">선택된 행 삭제</button>
+
+    <!-- 선택된 행 아래에 행 추가 버튼 -->
+    <button onclick="addRowBelowSelected()">선택된 행 아래에 행 추가</button>
+
+    <!-- 행 복사 버튼 -->
+    <button onclick="copySelectedRows()">행 복사</button>
+
+    <!-- 행 붙여넣기 버튼 -->
+    <button onclick="pasteRows()">행 붙여넣기</button>
+
+    <!-- CSV로 저장하는 버튼 -->
+    <button onclick="saveToCSV()">CSV로 저장</button>
+
+    <!-- 인쇄 버튼 -->
+    <button onclick="printGrid()">인쇄</button>
+
+    <!-- 데이터 저장 버튼 -->
+    <button onclick="saveData()">데이터 저장</button>
+
+    <!-- 필터링을 위한 입력 상자 -->
+    <input type="text" id="filter-text-box" placeholder="검색어를 입력하세요" oninput="onFilterTextBoxChanged()">
+
+    <!-- AG Grid를 표시할 컨테이너 -->
+    <div id="myGrid" class="ag-theme-alpine" style="height: 600px; width: auto; margin-top: 20px;"></div>
+
+</body>
+<script src="{% static 'js/SEED_AG-Grid.js' %}">
+</script>
+
+</html>

@@ -1,0 +1,223 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+  <wrap>
+
+    <div id = "bs200" style="padding-left: 50px; padding-top: 50px;">
+      <form action = "{% url 'BS200_1' %}" method="POST" id="BS200_1">
+        {% csrf_token %}
+        <div class="list-box-prd">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 100px;">
+                  <p>회 기</p>
+                </th>
+                <th>
+                  <select name="prd_cd" class="select-combox3" id="selectOptions">
+                    {% for item in prd %}
+                    <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) ※ 확정여부 - {{ item.prd_done_yn }} </option>
+                    {% endfor %}
+                  </select>
+                </th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <div style="padding-left: 20px;">
+          <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직무 조사 기간</span>
+          <span style="padding-right: 40px"></span>
+          <span name="span2" onclick="submitForm('span2')" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직무 조사 제출현황</span>
+          <span style="padding-right: 40px"></span>
+          <!-- <span name="span3" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직무 조사 결과조회</span> -->
+        </div>
+
+      </form>
+
+      <!-- 탭이 직무 조사 기간 탭일 때 아래 화면 -->
+      {% if tab == 'tab1' %}
+      <div id = "bs_prd_bs200">
+        <form action = "{% url 'BS200_2' %}" method="POST" id="BS200_2"> <!--post 메소드를 활용해서 create_bs_prd로 갈 것이다.-->
+          {% csrf_token %}
+          <!-- 회기 정보를 보내준다. -->
+          <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+          <!-- 내가 선택한 회기가 확정되지 않은 회기인 경우 회기 시작일을 받아온다. 이를 직무 조사 시작일 input과 비교하여 회기 시작일이 더 뒤일 경우 submit시키지 않을 것이다. -->
+          <input type="hidden" id="prd_str_dt" name="prd_str_dt" value={{ prd_str_dt }}>
+
+          <div class="input-date" style="display: flex;">
+            <div class="input-date1">
+              <label for="job_srv_str_dt">직무 조사 시작일</label>                
+              <input type="date" id="job_srv_str_dt" name="job_srv_str_dt" value={{ job_srv_str_dt }} /> <!-- 이 폼 안에 있는 것들을 submit해서 post메소드를 활용해 request로 갈 것이다-->
+            </div>
+          </div>
+          <div class="input-date" style="display: flex;">
+            <div class="input-date1">
+              <label for="job_srv_end_dt">직무 조사 종료일</label>                
+              <input type="date" id="job_srv_end_dt" name="job_srv_end_dt" value={{ job_srv_end_dt }} /> <!-- 이 폼 안에 있는 것들을 submit해서 post메소드를 활용해 request로 갈 것이다-->
+            </div>
+          </div>
+          <br>
+        </form>
+          <div style="display: flex;">
+            {% if modify == "y" %}
+            <button class="register" form="BS200_2" name="action" id="action1" value="action1" onclick="return compareDates();" type="submit">저장</button>
+            <button class="cancel" form="BS200_2" name="action" id="action2" value="action2" type="submit">취소</button>
+            {% else %}
+            <button class="del_disabled" type="button" disabled>저장</button>
+            <button class="del_disabled" type="button" disabled>취소</button>
+            {% endif %}
+          </div>
+
+          <div class="sub-line">
+            <div class="info-message">
+              {% if modified == "y" %}
+              <div class="info-message2">
+                <h3><img src="{% static 'img/info green.png' %}" alt="" style="width: 30px;"/> Info message</h3>
+                <p>{{ confirm_text_1 }}</p>
+              </div>
+              {% else %}
+              <div class="info-message1">
+                <h3><img src="{% static 'img/info blue.png' %}" alt="" style="width: 30px;"/> Info message</h3>
+                <p>{{ confirm_text_1 }}</p>
+                <p>{{ confirm_text_2 }}</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <!-- 탭이 직무 조사 제출 현황 탭일 때 아래 화면 -->
+        {% if tab == 'tab2' %}
+        <div id = "bs_prd_bs200">
+          <div id = "BS200_2_1" style="border:1px solid; border-radius: 5px; width:942px; height:600px; padding: 20px; margin-top:20px; margin-left:20px; display: flex;">
+            <div id="left" style="width:450px;">
+              <div>
+              <span class="label-text6" style="padding-left: 50px;">부서코드</span> 
+              <span class="label-text6" style="padding-left: 70px;">부서명</span> 
+              <span class="label-text6" style="padding-left: 60px;">제출 여부</span>
+              </div>
+              <div data-index="0" style="display: flex; overflow-y: scroll; white-space: nowrap; height: 500px; width: 430px; border: 1px solid #ccc; margin-top:5px;">
+                <div class="container" style="padding-left: 20px;">
+                {% for index, row in dept_list.iterrows %}
+                  <input type="text" name="dept_cd" class="input-text6" value={{ row.dept_cd }} readonly>
+                  <input type="text" name="dept_nm" class="input-text6" value={{ row.dept_nm }} readonly>
+                  <input type="text" name="job_details_submit_yn" class="input-text6" value={{ row.job_details_submit_yn }} readonly>
+                  <br>
+                {% endfor %}
+                </div>
+              </div> 
+            </div>
+            <div id="right" style="width: 450px;">
+              <span class="label-text6" style="padding-left: 175px;">제출 현황 요약</span>
+              <div id="summary" style="border: 1px solid #ccc; margin-top:5px;" >
+                
+                <div style="padding-top:20px; padding-left:100px;">
+                  <p>
+                    <span class="label-text6"> 전체 부서 </span>
+                    <span style="padding-left:20px;">
+                    <input type="text" class="input-text2" name="dept_all_cnt" value={{ dept_all_cnt }} readonly>
+                    </span>
+                  </p>
+                  <p style="padding-top:10px;">
+                    <span class="label-text6"> 제출 부서 </span>
+                    <span style="padding-left:20px;">
+                    <input type="text" class="input-text2" name="dept_y_cnt" value={{ dept_y_cnt }} readonly>
+                    </span>
+                    <span style="padding-left:20px;">
+                      <button type="submit" class="register2" name="action" value="action1" form="BS200_1"> 조회 </button>
+                    </span>
+                  </p>
+                  <p style="padding-top:10px; padding-bottom:20px;">
+                    <span class="label-text6"> 미제출 부서 </span>
+                    <span style="padding-left:5px;">
+                    <input type="text" class="input-text2" name="dept_n_cnt" value={{ dept_n_cnt }} readonly>
+                    </span>
+                    <span style="padding-left:20px;">
+                      <button type="submit" class="register2" name="action" value="action2" form="BS200_1"> 조회 </button>
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div id="summary2" style="padding-top:10px;">
+                <div data-index="0" style="display: flex; overflow-y: scroll; white-space: nowrap; height: 350px; border: 1px solid #ccc; margin-top:5px;">
+                  <div class="container" style="padding-left: 100px;">
+                    {% for index, row in dept_list_selected.iterrows %}
+                      <input type="text" name="dept_cd" class="input-text6" value={{ row.dept_cd }} readonly>
+                      <input type="text" name="dept_nm" class="input-text6" value={{ row.dept_nm }} readonly>
+                     <br>
+                    {% endfor %}
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+    </div>
+  </wrap>
+  <script>
+    function submitForm(spanName) { // submit하는 폼
+      // 폼을 가져옵니다.
+      var form = document.getElementById("BS200_1");
+
+      // 추가 작업이 필요하다면 여기에서 수행합니다.
+
+      // spanName을 폼에 추가하거나 다른 처리를 수행할 수 있습니다.
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "span_name";
+      input.value = spanName;
+      form.appendChild(input);
+
+      // 폼을 제출합니다.
+      form.submit();
+    }
+
+    function compareDates() { // 직무 조사 시작일과 종료일을 모두 입력했는지, 회기시작일vs직무조사시작일, 직무조사시작일vs직무조사종료일 검증
+        
+      // var specificDate = new Date('2023-04-01');
+      
+      // 회기 시작일
+      var prd_str_dt = document.getElementById('prd_str_dt').value;
+
+      // 사용자가 선택한 직무 조사 시작일
+      var job_srv_str_dt = document.getElementById('job_srv_str_dt').value;
+      
+      // 사용자가 입력한 직무 조사 종료일
+      var job_srv_end_dt = document.getElementById('job_srv_end_dt').value;
+
+      // Date 객체로 변환
+      var date1 = new Date(prd_str_dt);
+      var start_date = new Date(job_srv_str_dt);
+      var end_date = new Date(job_srv_end_dt);
+
+      // 입력값 확인
+      if (!job_srv_str_dt || !job_srv_end_dt) {
+          alert("직무 조사 시작일과 종료일 모두 입력해주세요.");
+          return false; // 입력값이 없으면 제출 방지
+      }
+
+      // 회기 시작일과 직무 조사 시작일 비교
+      if (start_date < date1) {
+          alert("직무 조사 시작일이 회기 시작일 " + prd_str_dt + " 이전입니다. 다른 날짜를 선택해주세요.");
+          return false; // 제출 방지
+      }
+
+      // 직무 조사 종료일이 시작일 이후인지 검증
+      if (start_date > end_date) {
+          alert("직무 조사 종료일이 시작일보다 이전입니다. 다른 날짜를 선택해주세요.");
+          return false; // 제출 방지
+      }
+
+      // 유효성 검사 통과 시 컨펌하고 폼 제출
+      confirm("직무 조사기간을 저장하시겠습니까?");
+      return true;
+    }
+  </script>
+</body>
+
+{% endblock %}

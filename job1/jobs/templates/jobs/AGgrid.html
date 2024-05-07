@@ -1,0 +1,421 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <!-- 문자 인코딩 및 렌더링 엔진 설정 -->
+    <meta charset="UTF-8" /> <!-- 문서의 문자 인코딩을 UTF-8로 설정 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> <!-- 최신 Internet Explorer 엔진 사용 지정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- 반응형 웹 디자인을 위한 뷰포트 설정 -->
+    <title>AG Grid Example</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+
+    <!-- AG Grid의 필수 CSS 파일 추가 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
+
+    <!-- 사용할 테마에 해당하는 CSS 파일 추가 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
+
+    <!-- CSV 파일을 파싱하기 위한 PapaParse 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- jQuery 라이브러리 추가 -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- AG Grid의 전체 기능을 포함하는 스크립트 추가 -->
+    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
+
+    <!-- SEED AG-Grid.css 스타일을 연결 -->
+    <link rel="stylesheet" href="{% static 'css/SEED_AG-Grid.css' %}" />
+
+</head>
+<body>
+
+    <!-- 그리드의 API를 호출하는 버튼 -->
+    <button onclick="handleRowSelectionChange()">행 선택 해제</button>
+
+    <!-- 선택된 행 삭제 버튼 -->
+    <button onclick="deleteSelectedRows()">선택된 행 삭제</button>
+
+    <!-- 선택된 행 아래에 행 추가 버튼 -->
+    <button onclick="addRowBelowSelected()">선택된 행 아래에 행 추가</button>
+
+    <!-- 행 복사 버튼 -->
+    <button onclick="copySelectedRows()">행 복사</button>
+
+    <!-- 행 붙여넣기 버튼 -->
+    <button onclick="pasteRows()">행 붙여넣기</button>
+
+    <!-- CSV로 저장하는 버튼 -->
+    <button onclick="saveToCSV()">CSV로 저장</button>
+
+    <!-- 인쇄 버튼 -->
+    <button onclick="printGrid()">인쇄</button>
+
+    <!-- 데이터 저장 버튼 -->
+    <button onclick="saveData()">데이터 저장</button>
+
+    <!-- 필터링을 위한 입력 상자 -->
+    <input type="text" id="filter-text-box" placeholder="검색어를 입력하세요" oninput="onFilterTextBoxChanged()">
+
+    <div id="myGrid" class="ag-theme-alpine" style="height: 600px; width: auto;"></div>
+
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    
+        var gridDiv = document.querySelector('#myGrid');
+        var rowData = JSON.parse('{{ data|escapejs }}');
+
+        var gridOptions = 
+        {
+            columnDefs: [
+            {   // 그리드 헤더에 체크박스를 표시하는 옵션
+                headerCheckboxSelection: true,
+                // 각 행의 체크박스를 표시하는 옵션
+                checkboxSelection: true,
+                // 컬럼의 기본 너비
+                width: 50,
+                // 컬럼의 최소 너비
+                minWidth: 50,
+                // 컬럼의 최대 너비
+                maxWidth: 500,
+                // 그리드 스크롤이 수평으로 이동할 때 해당 컬럼을 고정하는 옵션
+                pinned: 'left',
+                // 그리드 상단에 부착되는 플로팅 필터를 허용하지 않도록 설정
+                floatingFilter: false,
+            },
+            { 
+                headerName: '회기',
+                field: 'prd_cd',
+                type: 'text', // 컬럼의 데이터 타입 (여기서는 텍스트)
+                filter: 'agTextColumnFilter', // 텍스트 필터 사용
+                headerClass: 'text', // 헤더에 추가되는 클래스 (타입에 따라 헤더에 클래스 추가)
+                width: 100, // 컬럼의 기본 너비
+                minWidth: 100, // 컬럼의 최소 너비
+                maxWidth: 150, // 컬럼의 최대 너비
+                pinned: 'left', // 그리드에서 왼쪽에 고정                
+            },
+            {
+                headerName: '부서',
+                field: 'dept_cd',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 100,
+                minWidth: 100,
+                maxWidth: 150,
+                pinned: 'left',              
+            },
+            {
+                headerName: '직무코드',
+                field: 'job_cd',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 100,
+                minWidth: 100,
+                maxWidth: 250,
+            },
+            {
+                headerName: '책무',
+                field: 'task_nm',
+                type: 'text',
+                filter: 'agTextColumnFilter', 
+                headerClass: 'text',
+                width: 500,
+                minWidth: 120,
+                maxWidth: 500,
+            },
+            {
+                headerName: '담당자',
+                field: 'task_prsn_chrg',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+            },
+            {
+                headerName: '업무수준',
+                field: 'work_lv_sum',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+                valueParser: function (params) {
+                    // 입력된 값에서 숫자만 추출하여 반환
+                    return params.newValue.replace(/\D/g, '');
+                },                
+            },
+            // Add more columns as needed
+            ],
+
+            rowData: rowData,
+
+            defaultColDef: {
+                animateRows: true, // 행 애니메이션 활성화
+                sortable: true, // 정렬 가능
+                resizable: true, // 크기 조절 가능
+                editable: true, // 편집 가능
+                floatingFilter: true, // 플로팅 필터 사용
+                filter: true, // 필터 사용
+                cellClass: 'number-cell', // 각 셀에 적용할 클래스
+            },
+
+            floatingFiltersHeight: 30, // 플로팅 필터의 높이
+            rowDragEntireRow: true, // 전체 행을 드래그할지 여부
+            rowDragMultiRow: true, // 다중 행 드래그 허용 여부
+            rowDragManaged: true, // 행 드래그를 그리드 외부에서 관리할지 여부
+            rowSelection: 'multiple', // 다중 행 선택 모드
+            suppressColumnMoveAnimation: true, // 열 이동 애니메이션 비활성화
+            animateRows: true, // 행 추가 또는 삭제 애니메이션 적용
+            getRowNodeId: data => data.번호, // 행 식별자 반환 함수
+            onCellValueChanged: params => updateRowNumbers(), // 셀 값 변경 이벤트 핸들러
+            onGridReady: onGridReady,
+            onSelectionChanged: handleRowSelectionChange
+        }
+        new agGrid.Grid(gridDiv, gridOptions);
+        var gridApi = null;
+
+        function onGridReady(params) {
+            gridApi = params.api;
+        }
+
+        
+
+        var data = rowData
+        gridOptions.api.setRowData(data);
+
+
+
+
+    });
+
+    function handleRowSelectionChange() {
+            if (gridApi) {
+            gridApi.deselectAll(); // 모든 행 선택 취소
+            
+        }
+    }
+
+    function onGridReady(params) {
+    gridApi = params.api;
+    }
+
+    function clearPinned() {
+        // gridApi를 사용하여 그리드에 적용할 열 상태를 설정
+        gridApi.applyColumnState({
+            defaultState: {
+                pinned: null // 모든 열의 pinned 속성을 null로 설정하여 고정 해제
+            }
+        });
+    }
+
+    /**
+    * 숫자 포맷터 함수
+    * @param {number} number - 포맷할 숫자
+    * @returns {string} - 콤마가 추가된 숫자 문자열
+    */
+    function formatNumber(number) {
+    // 주어진 숫자를 소수점 이하를 버리고 문자열로 변환한 뒤,
+    // 정규 표현식을 사용하여 세 자리마다 콤마를 추가
+    return Math.floor(number)
+    .toString()
+    .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+    }
+
+    /**
+    * 텍스트 박스의 변경에 따라 그리드의 퀵 필터를 업데이트하는 함수
+    */
+    function onFilterTextBoxChanged() {
+    // 'filter-text-box'라는 ID를 가진 HTML 엘리먼트에서 값을 가져와서
+    // 그리드 옵션의 API를 통해 퀵 필터를 설정
+        gridOptions.api.setQuickFilter(
+        document.getElementById('filter-text-box').value
+    );
+    }
+
+    /**
+    * 그리드의 렌더링된 노드들을 가져와서 번호를 업데이트하는 함수
+    * @param {number} startIndex - 업데이트를 시작할 인덱스. 기본값은 0.
+    */
+    function updateRowNumbers(startIndex = 0) {
+    // 그리드 옵션에서 API를 통해 렌더링된 노드들을 가져옴
+    let nodes = gridOptions.api.getRenderedNodes();
+
+    // 가져온 노드들을 순회하면서 번호를 업데이트
+    nodes.forEach((node, index) => {
+    // 시작 인덱스 이상인 경우에만 번호 업데이트 수행
+    if (index >= startIndex) {
+        // 각 노드의 '번호' 필드에 인덱스 + 1 값을 설정
+        node.setDataValue('번호', index + 1);
+    }
+    });
+    }
+
+    /**
+    * 그리드에서 모든 행 선택을 해제하는 함수
+    */
+    function deselect() {
+        // 그리드 옵션에서 API를 통해 모든 행 선택 해제
+        gridOptions.api.deselectAll();
+    }
+
+    /**
+    * 선택된 행을 삭제하는 함수
+    */
+    function deleteSelectedRows() {
+    // 그리드에서 선택된 노드들을 가져옴
+    let selectedNodes = gridOptions.api.getSelectedNodes();
+
+    // 선택된 행이 하나 이상인 경우에만 처리
+    if (selectedNodes.length > 0) {
+    // 선택된 노드들에서 데이터를 추출하여 배열로 저장
+    let selectedRows = selectedNodes.map(node => node.data);
+
+    // 그리드 API를 사용하여 트랜잭션을 적용하여 행 삭제
+    gridOptions.api.applyTransaction({
+        remove: selectedRows
+    });
+
+    // 행 번호 업데이트
+    updateRowNumbers();
+
+    // 파일로 저장
+    saveToFile();
+    }
+    }
+
+    /**
+    * 선택된 행 아래에 새로운 행을 추가하는 함수
+    */
+    function addRowBelowSelected() {
+    // 그리드에서 선택된 노드들을 가져옴
+    let selectedNodes = gridOptions.api.getSelectedNodes();
+
+    // 선택된 행이 하나 이상인 경우에만 처리
+    if (selectedNodes.length > 0) {
+    // 선택된 행 중 첫 번째 행의 인덱스를 가져옴
+    let rowIndex = selectedNodes[0].rowIndex;
+
+    // 새로운 데이터 객체 생성
+    let newData = {
+        회기: '',
+        부서: '',
+        직무코드: '',
+        책무: '',
+        담당자: '',
+        업무수준: ''
+    };
+
+    // 그리드 API를 사용하여 트랜잭션을 적용하여 행 추가
+    gridOptions.api.applyTransaction({
+        add: [newData],
+        addIndex: rowIndex + 1
+    });
+
+    // 행 번호 업데이트
+    updateRowNumbers(rowIndex + 1);
+
+    // 셀 강제 새로고침
+    gridOptions.api.refreshCells({
+        force: true
+    });
+
+    // 파일로 저장
+    saveToFile();
+    }
+    }
+
+    /**
+    * 선택된 행을 복사하는 함수
+    */
+    function copySelectedRows() {
+    // 그리드에서 선택된 노드들을 가져옴
+    let selectedNodes = gridOptions.api.getSelectedNodes();
+
+    // 선택된 행이 하나 이상인 경우에만 처리
+    if (selectedNodes.length > 0) {
+    // 선택된 행들의 데이터를 복사하여 전역 변수인 'copiedRows'에 저장
+    copiedRows = selectedNodes.map(node => ({
+        ...node.data
+    }));
+    }
+    }
+
+    /**
+    * 복사된 행을 선택된 행 아래에 붙여넣는 함수
+    */
+    function pasteRows() {
+    // 복사된 행이 존재하는 경우에만 처리
+    if (copiedRows.length > 0) {
+    // 그리드에서 선택된 노드들을 가져옴
+    let selectedNodes = gridOptions.api.getSelectedNodes();
+
+    // 붙여넣을 행의 인덱스 계산
+    let rowIndex =
+        selectedNodes.length > 0 ? selectedNodes[selectedNodes.length - 1].rowIndex + 1 : 0;
+
+    // 'copiedRows'에 저장된 데이터를 그리드에 추가하되, 번호 필드는 변경하지 않음
+    gridOptions.api.applyTransaction({
+        add: copiedRows.map(row => ({
+            ...row
+        })),
+        addIndex: rowIndex
+    });
+
+    // 행 번호 업데이트
+    updateRowNumbers(rowIndex);
+
+    // 그리드 셀 강제 갱신
+    gridOptions.api.refreshCells({
+        force: true
+    });
+
+    // 파일로 저장
+    saveToFile();
+    }
+    }
+
+    // 그리드를 인쇄하는 함수 ok
+    function printGrid() {
+    window.print();
+    }
+
+    /**
+    * 그리드의 div 요소를 가져와서 해당 div에 대한 그리드를 생성하는 코드
+    */
+    // HTML 문서에서 id가 'myGrid'인 요소를 가져옴
+    let eGridDiv = document.getElementById("myGrid");
+
+    // ag-Grid 라이브러리를 사용하여 그리드를 생성하고 'gridOptions' 설정을 적용
+    let grid = new agGrid.Grid(eGridDiv, gridOptions);
+
+    // 값이 없는 첫번째 행을 만들어 넣는다(입력 대기)
+    let newData = {
+    회기: '',
+    부서: '',
+    직무코드: '',
+    책무: '',
+    담당자: '',
+    업무수준: ''
+    };
+
+    gridOptions.api.applyTransaction({
+    add: [newData],
+    addIndex: 0
+    });
+
+    gridOptions.api.refreshCells({
+    force: true
+    });
+
+</script>
+
+</html>

@@ -1,0 +1,38 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <wrap>
+    <div id="bsprd_delete" style="margin-left: 50px; margin-top:50px;">
+      <a href="{% url 'BS101' %}"><span style="font-family: Seed-Medium;"><u> 회기 등록 </u></span></a> &nbsp;
+      <a href="{% url 'BS103' %}"><span style="font-family: Seed-Medium;"><u> 회기 확정 </u></span></a> &nbsp;
+      <a href="{% url 'BS104' %}"><span style="font-family: Seed-Medium;"><u> 회기 삭제 </u></span></a><br><br><br>
+        <div class = "sub-title" > 회기 삭제 </div>
+        <form action = "{% url 'delete_bs_prd' %}" method="POST" id="delete_bs_prd">
+            {% csrf_token %}
+            <select name="past_history" class="select-combox-list" multiple>
+                {% for item in contents %}
+                    <option value={{ item.prd_cd }}> {{ item.prd_cd }} - {{ item.prd_done }} </option>
+                {% endfor %}
+            </select>
+            <br><br>
+        </form>
+        <div style="display: flex;">
+        <button class="del" form="delete_bs_prd" onclick="return confirm('해당 회기를 정말로 삭제하시겠습니까?');" type="submit"> 삭제 </button> 
+        <button class="back" onclick="location.href='/jobs/BS104'"> 취소 </button> <!--버튼 누르면 jobs/BS101로 가는데, 여기 바꿔야 함.-->
+        </div>
+
+        <div class="sub-line">
+          <div class="info-message" style="display: flex; flex-direction: column; padding: 20px;">
+            <div class="info-message1" style="border: 1px solid #1c7293; background-color: white; width: 500px; height: 300px; border-radius: 5px; padding-left: 50px;">
+              <h3 style="color: #49adf4; margin-top: 30px;"><img src="{% static 'img/info blue.png' %}" alt="" style="width: 30px;"/> Info message</h3>
+              <br>
+              <p>{{ zzz }}</p>
+            </div>
+          </div>
+        </div>
+    </div>
+    </wrap>
+</body>
+{% endblock %}

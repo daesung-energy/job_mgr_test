@@ -1,0 +1,56 @@
+<html>
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <title>대성에너지::직무관리프로그램</title>
+    </head>
+    <body>
+        <div id="test4">
+            <div class="test4_1">
+            <h1>[테스트]</h1>
+            <form id="myForm" method="post" action="{% url 'test4' %}">
+                {% csrf_token %}
+                {% if action_key == "초기화면" %}
+                    {% for item in list %}
+                        <input type="radio" name="radio_name" value="{{ item.name }}"/>
+                        <input type="text" id="name" name="name" style="width:100px;" value={{ item.name }} >
+                        <input type="text" id="address" name="address" style="width:100px;" value={{ item.address }} >
+                        <input type="text" id="dept" name="dept" style="width:100px;" value={{ item.dept }} >
+                        <br>
+                    {% endfor %}
+                {% else %}
+                    {% for index, row in list2.iterrows %}
+                        <input type="radio" name="radio_name" value="{{ row.name }}"/>
+                        <input type="text" id="name" name="name" style="width:100px;" value={{ row.name }} >
+                        <input type="text" id="address" name="address" style="width:100px;" value={{ row.address }} >
+                        <input type="text" id="dept" name="dept" style="width:100px;" value={{ row.dept }} >
+                        <br>
+                    {% endfor %}
+                {% endif %}
+                <br>
+                </div>
+                <div class="test4_2">
+                    <!-- action_key 값 '추가'는 추가 칸을 나타내기 위한 key값이다. view에서 넘어오는 것. 추가를 위한 칸이 나타나도록 한다. -->
+                    {% if action_key == "추가" %}
+                    <input type="text" id="name_new" name="name_new" style="width:100px;">
+                    <input type="text" id="address_new" name="address_new" style="width:100px;">
+                    <input type="text" id="dept_new" name="dept_new" style="width:100px;">
+                    {% else %}
+                    <input type="text" hidden id="name_new" name="name_new" style="width:100px;" value="none">
+                    <input type="text" hidden id="address_new" name="address_new" style="width:100px;" value="none">
+                    <input type="text" hidden id="dept_new" name="dept_new" style="width:100px;" value="none">
+                    {% endif %}
+                </div>
+            </form>
+            <br>
+            <!-- 추가 누르면 추가 칸이 생성된다. -->
+            <button type="submit" form="myForm" name="action" value="action2" onclick="return confirm('입력 후 등록을 누르시기 바랍니다');">추가</button>
+            <!-- 삭제 누르면 선택한 해당 input 라인이 삭제된다. -->
+            <button type="submit" form="myForm" name="action" value="action4" onclick="return confirm('삭제 후 등록을 누르시기 바랍니다.');">삭제</button>
+            <!-- 등록 누르면 추가, 삭제 요소가 df에 저장된다. 임시 저장이라고 생각하면 된다. -->
+            <button type="submit" form="myForm" name="action" value="action3">등록</button>
+            <!-- 최종 저장이다. DB로 데이터를 보낸다. -->
+            <button type="submit" form="myForm" name="action" value="action1">저장</button>
+        </div>
+    </body>
+</html>

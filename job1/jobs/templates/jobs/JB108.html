@@ -1,0 +1,111 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+    <wrap>
+    <div id="jb108" style="margin-left: 50px; margin-top:50px;"> 
+        <!-- 회기 선택 div -->
+        <div id = "jb108_1">
+            <!-- 회기 선택 form -->
+            <form method="POST" id="prd_select" action="{% url 'JB108_1' %}">
+            {% csrf_token %}
+            <input type="text" name="key_prd_select" value="select" hidden>
+            <!-- 회기 표시 박스-->
+            <div class="list-box-prd">
+                <table>
+                <thead>
+                    <tr>
+                    <th style="width: 100px;">
+                        <p>회 기</p>
+                    </th>
+                    <th>
+                        {% if key == "select" %}
+                        <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                            {% for item in prd_list %}
+                            <option value="{{ item.prd_cd }}" {%if prd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                            {% for item in prd_list %}
+                            <option value="{{ item.prd_cd }}" {%if prd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </th>
+                    </tr>
+                </thead>
+                </table>
+            </div>
+            </form>
+        </div>
+        <!-- 부서 선택 div -->
+        <div id = "jb108_2">
+            <!-- 부서 선택 form -->
+            <form method="POST" id="dept_select" action="{% url 'JB108_2' %}">
+            {% csrf_token %}
+            <!-- 회기 선택값 -->
+            <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
+            <input type="hidden" name="prd_done_yn" value="{{ prd_done_yn }}">
+            <!-- 부서 정보 선택 -->
+            <p class="label-text2"> 부서
+                <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
+                <select name="dept_selected" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
+                    {% for item in team_list %}
+                    <option value="{{ item.dept_cd }}" {%if dept_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
+                    {% endfor %}
+                </select>
+            </p>
+            </form>
+        </div>
+        <!-- 직무현황 제출 div -->
+        <div id = "jb108_3">
+            <!-- 직무현황 제출 form -->
+            <form method="POST" id="job_submit" action="{% url 'JB108_3' %}">
+                {% csrf_token %}
+                <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
+                <input type="hidden" name="dept_selected" value="{{ dept_selected }}">
+                <div class="sub-line">
+                    <div class="info-message">
+                      {% if modified == "y" %}
+                      <div class="info-message2">
+                        <h3><img src="{% static 'img/info green.png' %}" alt="" style="width: 30px;"/> Info message</h3>
+                        <p>{{ confirm_text }}</p>
+                      </div>
+                      {% else %}
+                      <div class="info-message1">
+                        <h3><img src="{% static 'img/info blue.png' %}" alt="" style="width: 30px;"/> Info message</h3>
+                        <p>{{ confirm_text }}</p>
+                      </div>
+                      {% endif %}
+                    </div>
+                </div>
+
+                <!-- 버튼 컨트롤 -->
+                <!-- 제출완료된 회기가 아닐 시 -->
+                {% if prd_done_yn == "N" %}
+                    {% if submit_yn == "Y" %}
+                    <button class="del_disabled" disabled>제출</button>
+                    <button type="submit" class="cancel" name="action" value="action2">제출취소</button> 
+                    {% else %}
+                    <button type="submit" class="register" name="action" value="action1">제출</button>
+                    <button class="del_disabled" disabled>제출취소</button>
+                    {% endif %}
+                <!-- 제출완료 회기일 시 -->
+                {% else %}
+                <button class="del_disabled" disabled>제출</button>
+                <button class="del_disabled" disabled>제출취소</button>
+                <!-- <button type="submit" class="cancel" name="action" value="action2">제출취소</button> -->
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    </wrap>
+    <script>
+
+
+
+    </script>
+</body>
+
+{% endblock %}

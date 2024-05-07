@@ -1,0 +1,65 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <div id="cc_102_main">
+        <h1> [시스템 관리] - [공통 코드 관리] </h1>
+        <form action = "{% url 'CC102_1_1' %}" method="POST" id="cc_102_main_change">
+            {% csrf_token %}
+            <select name="common_code" multiple onchange="this.form.submit()"> 
+                {% for item in contents_cc102_1 %}
+                    <option value={{ item.domain_cd }}> {{ item.domain_nm }} 코드 관리 </option>
+                {% endfor %}
+            </select> 
+            <br>
+        </form>
+    </div>
+
+    <div id="cc_102_new">
+        <form action = "{% url 'new_bs_code_detail' %}" method="POST" id="form_new_bs_code_detail">
+            {% csrf_token %}
+            <input type="hidden" name="new_token" value={{ create_target }}>
+            
+        </form>
+    </div>
+
+    <div id="cc_102_new_create">
+        <form action = "{% url 'create_bs_code_detail' %}" method="POST" id="form_create_bs_code_detail">
+            {% csrf_token %}
+            {% if create_token == "y" %}
+                <input type="text" disabled name="create_domain_cd" value={{ code_target }} style="width:50px;"> <input type="text" enabled name="create_code">
+                <input type="hidden" name="target_domain_cd" value={{ create_target }}>
+            {% endif %}
+            <br><br>
+            
+        </form>
+    </div>
+
+    <div id="cc_102_change">
+        <form action="{% url 'delete_bs_code_detail' %}" method="POST" id="form_delup_bs_code_detail">
+            {% csrf_token %}
+            {% for item2 in radio_list %}
+                <input type="hidden" name="item_domain_cd" value={{ create_target }} />
+                <input type="radio" name="radanswer" value="{{ item2.cc_code_nm }}" onchange="this.form.submit();" />
+                <label for={{ item2.cc_code_nm }}> {{ item2.domain_cd_id }}{{ item2.cc_code }} {{ item2.cc_code_nm}} </label><br>
+            {% endfor %}
+            <br><br>
+            
+            <!-- <button onclick="return confirm('해당 코드를 정말로 삭제하시겠습니까?');" type="submit"> 삭제 </button>  -->
+            {% if new_value2 == "ready" %}
+                <input type="text" style="width:50px;" disabled name="update_target_domain_cd_code" value={{ update_domain_cd_code }} > <input type="text" name="update_code_nm">
+            {% endif %}
+
+            
+        </form>
+    </div>
+    <br><br>
+
+
+    <button type="submit" form="form_new_bs_code_detail"> 신규추가 </button>
+    <button type="submit" form="form_create_bs_code_detail" > 저장 </button> <button type="submit" name="update" form="form_delup_bs_code_detail" > 저장 </button>
+    <!-- <button onclick="return confirm('해당 코드를 정말로 삭제하시겠습니까?');" type="submit" name="delete_key" value="delete" form="form_delup_bs_code_detail"> 삭제 </button> -->
+</body>
+
+{% endblock %}

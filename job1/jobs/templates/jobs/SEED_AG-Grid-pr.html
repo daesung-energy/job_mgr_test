@@ -1,0 +1,513 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <!-- 문자 인코딩 및 렌더링 엔진 설정 -->
+    <meta charset="UTF-8" /> <!-- 문서의 문자 인코딩을 UTF-8로 설정 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" /> <!-- 최신 Internet Explorer 엔진 사용 지정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- 반응형 웹 디자인을 위한 뷰포트 설정 -->
+    <title>AG Grid Example</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+
+    <!-- AG Grid의 필수 CSS 파일 추가 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
+
+    <!-- 사용할 테마에 해당하는 CSS 파일 추가 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
+
+    <!-- CSV 파일을 파싱하기 위한 PapaParse 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- jQuery 라이브러리 추가 -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- AG Grid의 전체 기능을 포함하는 스크립트 추가 -->
+    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
+
+    <!-- SEED AG-Grid.css 스타일을 연결 -->
+    <link rel="stylesheet" href="{% static 'css/SEED_AG-Grid.css' %}" />
+
+</head>
+<body>
+    <!-- 회기 선택할 수 있는 곳 -->
+    <div id = "ag_grid_pr_prd" style="padding-top: 20px;">
+        <form id="ag_grid_pr_1" action = "{% url 'ag_grid_pr_1' %}" method="POST">
+            {% csrf_token %}
+
+            <!-- 회기 선택 박스 -->
+            <div class="list-box-prd">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">
+                            <p>회 기</p>
+                            </th>
+                            <th>
+                            <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                            {% for item in prd %}
+                            <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                            {% endfor %}
+                            </select>
+                            </th>
+                        </tr>
+                    </thead> 
+                </table>
+            </div>
+        </form>
+    </div>
+
+    <!-- 그리드의 API를 호출하는 버튼 -->
+    <button id="del" onclick="handleRowSelectionChange()" class="save">행 선택 해제</button>
+
+    <!-- 선택된 행 삭제 버튼 -->
+    <button onclick="deleteSelectedRows()" class="save">선택된 행 삭제</button>
+
+    <!-- 선택된 행 아래에 행 추가 버튼 -->
+    <button onclick="addRowBelowSelected()" class="save">선택된 행 아래에 행 추가</button>
+
+    <!-- 행 복사 버튼 -->
+    <button onclick="copySelectedRows()" class="save">행 복사</button>
+
+    <!-- 행 붙여넣기 버튼 -->
+    <!-- <button onclick="pasteRows()">행 붙여넣기</button> -->
+
+    <!-- 인쇄 버튼 -->
+    <button onclick="printGrid()" class="save">인쇄</button>
+
+    <!-- CSV로 저장하는 버튼 -->
+    <button onclick="saveToCSV()" class="save">엑셀로 저장</button>
+
+    <button type="button" form="gridDataForm" onclick="sendGridDataToForm()" class="save">데이터 저장</button>
+
+    <!-- 데이터 저장 버튼 -->
+    <!-- <button onclick="saveData()">데이터 저장</button> -->
+
+    <!-- 필터링을 위한 입력 상자 -->
+    <input type="text" id="filter-text-box" placeholder="검색어를 입력하세요" oninput="onFilterTextBoxChanged()" style="margin-left:20px;">
+
+    <!-- 데이터 저장 폼 -->
+    <form id="gridDataForm" method="POST" action="{% url 'ag_grid_pr_2' %}">
+        {% csrf_token %}
+        <input type="hidden" name="prd_cd" value={{ prd_cd_selected }}>
+        <input type="hidden" id="gridDataInput" name="grid_data" />
+    </form>
+
+    <!-- Grid 영역 -->
+    <div id="myGrid" class="ag-theme-alpine" style="height: 600px; width: auto; margin-top:20px; margin-left:20px;"></div>
+
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    
+        var rowData = JSON.parse('{{ data|escapejs|safe }}');
+
+        var gridOptions = 
+        {
+            columnDefs: [
+            {   // 그리드 헤더에 체크박스를 표시하는 옵션
+                headerCheckboxSelection: true,
+                // 각 행의 체크박스를 표시하는 옵션
+                checkboxSelection: true,
+                // 컬럼의 기본 너비
+                width: 50,
+                // 컬럼의 최소 너비
+                minWidth: 50,
+                // 컬럼의 최대 너비
+                maxWidth: 500,
+                // 그리드 스크롤이 수평으로 이동할 때 해당 컬럼을 고정하는 옵션
+                pinned: 'left',
+                // 그리드 상단에 부착되는 플로팅 필터를 허용하지 않도록 설정
+                floatingFilter: false,
+            },
+            { 
+                headerName: '번호',
+                field: 'index',
+                type: 'numeric', // 컬럼의 데이터 타입 (여기서는 텍스트)
+                filter: false, // 필터 사용 X
+                width: 1,
+                minWidth: 1,
+                maxWidth: 1,
+                headerClass: 'numeric', // 타입에 따라 헤더에 클래스 추가
+                pinned: 'left', // 그리드에서 왼쪽에 고정
+                cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
+                headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
+            },
+            { 
+                headerName: '번호_위치',
+                field: 'index_pos',
+                type: 'numeric', // 컬럼의 데이터 타입 (여기서는 텍스트)
+                filter: false, // 필터 사용 X
+                width: 1,
+                minWidth: 1,
+                maxWidth: 1,
+                headerClass: 'numeric', // 타입에 따라 헤더에 클래스 추가
+                pinned: 'left', // 그리드에서 왼쪽에 고정
+                cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
+                headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
+            },
+            { 
+                headerName: '회기',
+                field: 'prd_cd',
+                type: 'text', // 컬럼의 데이터 타입 (여기서는 텍스트)
+                filter: 'agTextColumnFilter', // 텍스트 필터 사용
+                headerClass: 'text', // 헤더에 추가되는 클래스 (타입에 따라 헤더에 클래스 추가)
+                width: 100, // 컬럼의 기본 너비
+                minWidth: 100, // 컬럼의 최소 너비
+                maxWidth: 150, // 컬럼의 최대 너비
+                pinned: 'left', // 그리드에서 왼쪽에 고정                
+            },
+            {
+                headerName: '부서',
+                field: 'dept_cd',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 100,
+                minWidth: 100,
+                maxWidth: 150,
+                pinned: 'left',
+            },
+            {
+                headerName: '직무코드',
+                field: 'job_cd',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 100,
+                minWidth: 100,
+                maxWidth: 250,
+            },
+            {
+                headerName: '책무',
+                field: 'task_nm',
+                type: 'text',
+                filter: 'agTextColumnFilter', 
+                headerClass: 'text',
+                width: 500,
+                minWidth: 120,
+                maxWidth: 500,
+            },
+            {
+                headerName: '담당자',
+                field: 'task_prsn_chrg',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+            },
+            {
+                headerName: '업무수준',
+                field: 'work_lv_sum',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+                valueParser: function (params) {
+                    // 입력된 값에서 숫자만 추출하여 반환
+                    return params.newValue.replace(/\D/g, '');
+                },                
+            },
+            // Add more columns as needed
+            ],
+
+            rowData: rowData,
+
+            defaultColDef: {
+                animateRows: true, // 행 애니메이션 활성화
+                sortable: true, // 정렬 가능
+                resizable: true, // 크기 조절 가능
+                editable: true, // 편집 가능
+                floatingFilter: true, // 플로팅 필터 사용
+                filter: true, // 필터 사용
+                cellClass: 'number-cell', // 각 셀에 적용할 클래스
+            },
+
+            floatingFiltersHeight: 30, // 플로팅 필터의 높이
+            rowDragEntireRow: true, // 전체 행을 드래그할지 여부
+            rowDragMultiRow: true, // 다중 행 드래그 허용 여부
+            rowDragManaged: true, // 행 드래그를 그리드 외부에서 관리할지 여부
+            rowSelection: 'multiple', // 다중 행 선택 모드
+            suppressColumnMoveAnimation: true, // 열 이동 애니메이션 비활성화
+            animateRows: true, // 행 추가 또는 삭제 애니메이션 적용
+            getRowNodeId: data => data.번호, // 행 식별자 반환 함수
+            onCellValueChanged: params => updateRowNumbers(params), // 셀 값 변경 이벤트 핸들러
+            onGridReady: onGridReady,
+            // onSelectionChanged: handleRowSelectionChange,
+            // onCellValueChanged: params => handleCellValueChanged(params), // 셀 값 변경
+        }
+
+        var gridDiv = document.querySelector('#myGrid');
+        new agGrid.Grid(gridDiv, gridOptions);
+        var gridApi = null;
+        var data = rowData
+        gridOptions.api.setRowData(data);
+        var column = gridOptions.columnApi.getColumn('index');
+        column.getColDef().cellClass = 'hidden-column';
+        column.getColDef().headerClass = "hidden-column";
+        gridOptions.api.refreshCells();
+        gridOptions.api.refreshHeader();
+        var modifiedRows = [];
+        // gridOptions.columnApi.setColumnVisible('index', false) // index컬럼 안보이게
+    });
+
+    function onGridReady(params) {
+        gridApi = params.api;
+    }
+
+    // 모든 행 선택 취소
+    function handleRowSelectionChange() {
+        if (gridApi) {
+            gridApi.deselectAll(); // 모든 행 선택 취소
+        }
+    }
+
+    // 선택한 행 삭제
+    function deleteSelectedRows() {
+        var selectedNodes = gridApi.getSelectedNodes();
+        if (selectedNodes.length > 0) {
+            // 선택된 행이 있을 경우 삭제 로직을 수행
+            var selectedData = selectedNodes.map(node => node.data);
+            
+            // 여기에서 선택된 행 삭제에 대한 로직을 추가
+            // 예: 데이터에서 선택된 행을 제거하고 그리드에 반영
+
+            // 행 삭제 후 선택 취소
+            gridApi.applyTransaction({ remove: selectedData });
+            // handleRowSelectionChange();
+        }
+    }
+
+    // 선택한 행 밑에 행 추가
+    function addRowBelowSelected() {
+        var selectedNodes = gridApi.getSelectedNodes();
+        if (selectedNodes.length > 0) {
+            // 선택된 행이 있을 경우 추가 로직을 수행
+            var selectedData = selectedNodes.map(node => node.data);
+
+            // 여기에서 선택된 행 아래에 행 추가에 대한 로직을 추가
+            // 예: 데이터에 새로운 행을 추가하고 그리드에 반영
+            var newData = createNewRowData();
+            var selectedRowIndex = gridApi.getRowNode(selectedNodes[0].id).rowIndex;
+
+            // 행 추가 후 선택 취소
+            gridApi.applyTransaction({ add: [newData],
+            addIndex: selectedRowIndex + 1 });
+            handleRowSelectionChange();
+        }
+    }
+
+    // 새 행 추가
+    function createNewRowData() {
+        return {
+            index : 999,
+            index_pos : 999,
+            prd_cd: '회기',
+            dept_cd: '부서코드',
+            job_cd: '직무코드',
+            task_nm: '직무',
+            task_prsn_chrg: '담당자',
+            work_lv_sum: 0
+            // 필요에 따라 추가 필드를 수정하세요
+        };
+    }
+
+    // function copySelectedRows() {
+    //     var selectedNodes = gridApi.getSelectedNodes();
+    //     if (selectedNodes.length > 0) {
+    //         // 선택된 행이 있을 경우 복사 로직을 수행
+    //         var copiedDataArray = selectedNodes.map(node => copyRowData(node.data));
+
+    //         // 여기에서 선택된 행을 복사하고 그리드에 추가하는 로직을 추가
+    //         copiedDataArray.forEach(copiedData => {
+    //             gridApi.applyTransaction({
+    //                 add: [copiedData],
+    //                 // 새로운 행을 특정 위치에 추가하려면 addIndex를 사용
+    //                 addIndex: gridApi.getRowNode(selectedNodes[selectedNodes.length - 1].id).rowIndex + 1,
+    //             });
+    //         });
+
+    //         // 행 추가 후 선택 취소
+    //         handleRowSelectionChange();
+    //     }
+    // }
+    
+    // 선택된 행 복사
+    function copySelectedRows() {
+        var selectedNodes = gridApi.getSelectedNodes();
+        if (selectedNodes.length > 0) {
+            // 선택된 행이 있을 경우 복사 로직을 수행
+            var copiedDataArray = selectedNodes.map(node => copyRowData(node.data));
+
+            // 여기에서 선택된 행을 복사하고 그리드에 추가하는 로직을 추가
+            copiedDataArray.forEach((copiedData, index) => {
+                var selectedRowIndex = gridApi.getRowNode(selectedNodes[0].id).rowIndex;
+                var newIndex = selectedRowIndex + index + 1;
+                // var newIndex = 999;
+
+                // index 값을 설정하여 복사된 행을 추가
+                copiedData.index = newIndex;
+
+                gridApi.applyTransaction({
+                    add: [copiedData],
+                    addIndex: newIndex,
+                });
+            });
+
+            // 행 추가 후 선택 취소
+            handleRowSelectionChange();
+        }
+    }
+
+    // // 선택된 행 복사
+    // function copySelectedRows() {
+    //     var selectedNodes = gridApi.getSelectedNodes();
+    //     if (selectedNodes.length > 0) {
+    //         // 선택된 행이 있을 경우 복사 로직을 수행
+    //         var copiedDataArray = [];
+
+    //         selectedNodes.forEach(node => {
+    //             var copiedData = copyRowData(node.data);
+    //             copiedDataArray.push(copiedData);
+    //         });
+
+    //         // 여기에서 선택된 행을 복사하고 그리드에 추가하는 로직을 추가
+    //         copiedDataArray.forEach((copiedData, index) => {
+    //             var selectedRowIndex = gridApi.getRowNode(selectedNodes[0].id).rowIndex;
+    //             // var newIndex = selectedRowIndex + index + 1;
+    //             var newIndex = selectedRowIndex + 1;
+    //             // var newIndex = 999;
+
+    //             // index 값을 설정하여 복사된 행을 추가
+    //             copiedData.index = newIndex;
+
+    //             gridApi.applyTransaction({
+    //                 add: [copiedData],
+    //                 addIndex: newIndex,
+    //             });
+    //         });
+
+    //         // 행 추가 후 선택 취소
+    //         handleRowSelectionChange();
+    //     }
+    // }
+
+    // 선택된 행 복사
+    // function copySelectedRows() {
+    //     var selectedNodes = gridApi.getSelectedNodes();
+    //     if (selectedNodes.length > 0) {
+    //         // 선택된 행이 있을 경우 복사 로직을 수행
+    //         var copiedDataArray = selectedNodes.map(node => copyRowData(node.data));
+
+    //         // 여기에서 선택된 행을 복사하고 그리드에 추가하는 로직을 추가
+    //         copiedDataArray.forEach(copiedData => {
+    //             var selectedRowIndex = gridApi.getRowNode(selectedNodes[0].id).rowIndex;
+    //             gridApi.applyTransaction({
+    //                 add: [copiedData],
+    //                 addIndex: 999,
+    //             });
+    //         });
+
+    //         // 행 추가 후 선택 취소
+    //         handleRowSelectionChange();
+    //     }
+    // }
+    // function copySelectedRows() {
+    //     var selectedNodes = gridApi.getSelectedNodes();
+    //     if (selectedNodes.length > 0) {
+    //         // 선택된 행이 있을 경우 복사 로직을 수행
+    //         var copiedDataArray = selectedNodes.map(node => copyRowData(node.data));
+
+    //         // 여기에서 선택된 행을 복사하고 그리드에 추가하는 로직을 추가
+    //         copiedDataArray.forEach(copiedData => {
+    //             var selectedRowIndex = gridApi.getRowNode(selectedNodes[0].id).rowIndex;
+    //             gridApi.applyTransaction({
+    //                 add: [copiedData],
+    //                 addIndex: 999,
+    //             });
+    //         });
+
+    //         // 선택 취소는 필요한 시점에 수행
+    //         handleRowSelectionChange();
+    //     }
+    // }
+
+    //행 데이터를 복사하는 예시 함수
+    function copyRowData(originalData) {
+        // 새로운 객체를 생성하여 기존 데이터를 복사 (깊은 복사)
+        return {
+            index_pos : 999,
+            prd_cd: originalData.prd_cd,
+            dept_cd: originalData.dept_cd,
+            job_cd: originalData.job_cd,
+            task_nm: originalData.task_nm,
+            task_prsn_chrg: originalData.task_prsn_chrg,
+            work_lv_sum: originalData.work_lv_sum
+            // 필요에 따라 추가 필드를 수정하세요
+        };
+    }
+
+    // 그리드를 인쇄하는 함수
+    function printGrid() {
+        window.print();
+    }
+
+    // 필터 검색
+    function onFilterTextBoxChanged() {
+    // 'filter-text-box'라는 ID를 가진 HTML 엘리먼트에서 값을 가져와서
+    // 그리드 옵션의 API를 통해 퀵 필터를 설정
+        gridApi.setQuickFilter(
+        document.getElementById('filter-text-box').value
+        );
+    }
+
+    // 그리드를 csv파일로 저장하는 함수
+    function saveToCSV() {
+        gridApi.exportDataAsCsv(); // 그리드 데이터를 CSV로 변환하고 다운로드
+    }
+
+    function updateRowNumbers(params) {
+        // 변경된 행의 데이터를 가져옴
+        var rowData = params.api.getRowNode(params.node.id).data;
+
+        // // 필요에 따라 번호 업데이트 로직 추가
+        // // 여기에서는 index 열을 현재 행의 위치에 맞게 업데이트하는 예시_ 필요 없어서 지움.
+        // rowData.index = params.api.getRowNode(params.node.id).rowIndex + 1;
+
+        // 업데이트된 데이터를 다시 그리드에 반영
+        params.api.applyTransaction({ update: [rowData] });
+    }
+
+    function sendGridDataToForm() {
+        var rowData = gridApi.getDataAsCsv({
+            // CSV 형식으로 데이터 얻어오기
+            columnSeparator: '|', //Csv 컬럼 구분하는 기준.
+            suppressQuotes: true
+        });
+
+        Papa.parse(rowData, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                var dataObjects = results.data;
+
+                // 모든 데이터를 JSON 문자열로 변환하여 폼에 입력
+                var gridDataInput = document.getElementById('gridDataInput');
+                gridDataInput.value = JSON.stringify(dataObjects);
+
+                // 폼 제출
+                var gridDataForm = document.getElementById('gridDataForm');
+                gridDataForm.submit();
+            }
+        });
+    }
+
+</script>
+
+</html>

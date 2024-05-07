@@ -1,0 +1,50 @@
+<html>
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <title> 테스트 </title>
+    </head>
+    <body>
+        <div id="test2">
+            <form id="myForm" method="post" action="{% url 'test3' %}">
+                {% csrf_token %}
+                
+                <select id="selectOptions" name="select_options">
+                    <option value="option1" {% if value == "option1" %} selected {% endif %}>Option 1</option>
+                    <option value="option2" {% if value == "option2" %} selected {% endif %}>Option 2</option>
+                    <option value="option3" {% if value == "option3" %} selected {% endif %}>Option 3</option>
+                </select>
+
+                <input type="submit" name="action1" id="submitButton" style="display: none;">
+
+                <input type="text" id="textInput">
+                <button onclick="addOption()">Add Option</button>
+            </form>
+
+            <input type="submit" form="myForm" name="action2" value="버튼1"></button>
+            <input type="submit" form="myForm" name="action3" value="버튼2"></button>
+
+            {{ value }} {{ text }}
+        </div>
+    </body>
+    <script>
+        document.getElementById("selectOptions").addEventListener("change", function() {
+          document.getElementById("submitButton").click(); // Programmatically click the hidden submit button
+        });
+
+        function addOption() {
+            var selectElement = document.getElementById("selectOptions");
+            var inputElement = document.getElementById("textInput");
+            
+            var optionText = inputElement.value;
+            
+            // Create a new option element
+            var newOption = document.createElement("option");
+            newOption.text = optionText;
+            
+            // Add the new option to the select element
+            selectElement.add(newOption);
+            }
+    </script>
+
+</html>

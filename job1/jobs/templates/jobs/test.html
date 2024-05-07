@@ -1,0 +1,153 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+
+    <h1>[ 데이터 일괄 입력 및 저장 테스트 ]</h1>
+
+    <button type="button" id="addRowButton">추가</button>
+
+    <form id="myForm" method="post" action="{% url 'test' %}">
+        {% csrf_token %}
+        <div id="dynamicInputContainer">
+            <!-- Dynamic rows with input fields will be added here -->
+        </div>
+        <button type="submit">저장</button>
+        <!-- {{ z }} -->
+
+    </form>
+
+
+    <!-- javascript 내용. head에 넣으면 안되더라... -->
+    <script>   
+    // // 자바스크립트 알람
+    // alert('Hello world');
+
+        // create dynamic input fields when push the button
+        document.getElementById('addRowButton').addEventListener('click', function () {
+            const dynamicInputContainer = document.getElementById('dynamicInputContainer');
+            const newRow = document.createElement('div'); // Create a new row (you can use <div> or other HTML elements for rows)
+        
+            // Create the input element and set its attributes
+            const inputElement = document.createElement('input');
+            inputElement.type = 'text';
+            inputElement.name = 'dynamic_input'; // Set the name for the input field
+            inputElement.placeholder = 'prd_cd'; // Optional: Add a placeholder
+        
+            const inputElement2 = document.createElement('input');
+            inputElement2.type = 'text';
+            inputElement2.name = 'dynamic_input2'; // Set the name for the input field
+            inputElement2.placeholder = 'YEAR'; // Optional: Add a placeholder
+
+            const inputElement3 = document.createElement('input');
+            inputElement3.type = 'text';
+            inputElement3.name = 'dynamic_input3'; // Set the name for the input field
+            inputElement3.placeholder = 'turn'; // Optional: Add a placeholder
+
+            const inputElement4 = document.createElement('input');
+            inputElement4.type = 'date';
+            inputElement4.value = "{{ today_date }}" ; //이게되네
+            inputElement4.name = 'dynamic_input4'; // Set the name for the input field
+            inputElement4.placeholder = 'job_srv_str_dt'; // Optional: Add a placeholder
+
+            const inputElement5 = document.createElement('input');
+            inputElement5.type = 'date';
+            inputElement5.value = "{{ today_date }}" ; //이게되네
+            inputElement5.name = 'dynamic_input5'; // Set the name for the input field
+            inputElement5.placeholder = 'job_srv_end_dt'; // Optional: Add a placeholder
+
+            const inputElement6 = document.createElement('input');
+            inputElement6.type = 'date';
+            inputElement6.value = "{{ today_date }}" ; //이게되네
+            inputElement6.name = 'dynamic_input6'; // Set the name for the input field
+            inputElement6.placeholder = 'job_srv_fix_dt'; // Optional: Add a placeholder
+
+            const inputElement7 = document.createElement('input');
+            inputElement7.type = 'text';
+            inputElement7.name = 'dynamic_input7'; // Set the name for the input field
+            inputElement7.placeholder = 'prd_done_yn'; // Optional: Add a placeholder
+
+            // Append the input element to the new row
+            newRow.appendChild(inputElement);
+            newRow.appendChild(inputElement2);
+            newRow.appendChild(inputElement3);
+            newRow.appendChild(inputElement4);
+            newRow.appendChild(inputElement5);
+            newRow.appendChild(inputElement6);
+            newRow.appendChild(inputElement7);
+        
+            // Append the new row to the container
+            dynamicInputContainer.appendChild(newRow);
+        
+        });
+
+        // blank valiation
+        document.getElementById('myForm').addEventListener('submit', function (event) {
+            const inputElements = document.querySelectorAll('input[name="dynamic_input"]');
+            const inputElements2 = document.querySelectorAll('input[name="dynamic_input2"]');
+            const inputElements3 = document.querySelectorAll('input[name="dynamic_input3"]');
+            const inputElements4 = document.querySelectorAll('input[name="dynamic_input4"]');
+            const inputElements5 = document.querySelectorAll('input[name="dynamic_input5"]');
+            const inputElements6 = document.querySelectorAll('input[name="dynamic_input6"]');
+            const inputElements7 = document.querySelectorAll('input[name="dynamic_input7"]');
+        
+            for (const inputElement of inputElements) {
+                if (inputElement.value.trim() === '') {
+                    event.preventDefault();
+                    alert('빈칸을 다 채우시기 바랍니다.');
+                    return;
+                }
+            }
+            
+            for (const inputElement2 of inputElements2) {
+                if (inputElement2.value.trim() === '') {
+                    event.preventDefault();
+                    alert('빈칸을 다 채우시기 바랍니다.');
+                    return;
+                }
+            }
+
+            for (const inputElement3 of inputElements3) {
+                if (inputElement3.value.trim() === '') {
+                    event.preventDefault();
+                    alert('빈칸을 다 채우시기 바랍니다.');
+                    return;
+                }
+            }
+
+            for (const inputElement4 of inputElements4) {
+                if (inputElement4.value.trim() === '') {
+                    event.preventDefault();
+                    alert('빈칸을 다 채우시기 바랍니다.');
+                    return;
+                }
+            }
+
+            for (const inputElement5 of inputElements5) {
+                if (inputElement5.value.trim() === '') {
+                    event.preventDefault();
+                    alert('빈칸을 다 채우시기 바랍니다.');
+                    return;
+                }
+            }
+
+            for (const inputElement6 of inputElements6) {
+                if (inputElement6.value.trim() === '') {
+                    event.preventDefault();
+                    alert('빈칸을 다 채우시기 바랍니다.');
+                    return;
+                }
+            }
+
+            for (const inputElement7 of inputElements7) {
+                if (inputElement7.value.trim() === '') {
+                    event.preventDefault();
+                    alert('빈칸을 다 채우시기 바랍니다.');
+                    return;
+                }
+            }
+        });
+    </script>
+
+</body>
+{% endblock %}

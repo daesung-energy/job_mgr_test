@@ -1,0 +1,164 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <wrap>        
+    <div id = "cc102_real" style="display: flex; margin-left: 50px; margin-top:50px;">
+    <!-- 공통 코드의 종류를 선택하고 그에 따라 해당하는 코드와 코드 이름을 출력한다. -->
+      <div style="display: flex;">
+        <div id="cc_102_main">
+
+          <div class="list-box" style="width:350px;">
+            <div class="list-box1">
+              <table>
+                <thead>
+                  <tr>
+                    <th>
+                      <p>공통 코드</p>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                      <td>
+                      <form action = "{% url 'CC102_a' %}" method="POST" id="cc_102_main">
+                      {% csrf_token %}
+                      <select name="common_code" multiple onchange="this.form.submit()" class="select-combox-list"> 
+                      {% for item in CC_list %}
+                        <option value={{ item.domain_cd }} {% if common_code == item.domain_cd %} selected {% endif %}> {{ item.domain_nm }} 코드 관리 </option>
+                      {% endfor %}
+                      </select> 
+                      <br>
+                      </form>
+                      </td>
+                    </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          </div>
+
+        <div id="cc_102_ch">
+            <div>
+            <br>
+            <!-- 코드를 수정, 삭제할 수 있도록 하는 form -->
+            <form id="cc_102_change" method="POST" action="{% url 'CC102_b' %}" style="padding-top:10px;">
+                {% csrf_token %}
+                
+                {% for item in radio_list %}
+                    <input type="hidden" name="common_code" value={{ common_code }}>
+                    <input type="radio" name="radanswer" value="{{ item.cc_code_nm }}">
+                    <input type="text" class="input-text2" id="cc_domain_cd" name="cc_domain_cd" style="width:100px; font-size: 20px;" 
+                    readonly value={{ item.domain_cd_id }}{{ item.cc_code }}>
+                    
+                    <input type="hidden" name="selected_domain_cd" value={{ item.cc_code }} />
+                    <input type="hidden" name="selected_cc_code" value={{ item.cc_code_nm }} />
+                    <!-- <label for={{ item.cc_code_nm }}> {{ item.domain_cd_id }}{{ item.cc_code }}</label> -->
+                    
+                    <input type="text" class="input-text2" id="cc_code_nm" name="cc_code_nm_change" style="width:200px; font-size: 20px;" value="{{ item.cc_code_nm }}"
+                    {%if text == "추가" %} readonly {% endif %}>
+                    <br>
+                {% endfor %}
+            </form>
+
+            <!-- 공통 코드 추가 form -->
+            <form id="cc_102_c" method="POST" action="{% url 'CC102_c' %}">
+              {% csrf_token %}
+              <!-- 추가 버튼을 누르면 새로 생성할 공통 코드 추가 칸이 나타남 -->
+              {% if text == "추가" %}
+                <!-- common_code(domain_cd)를 넘겨줘야 함. -->
+                <input type="hidden" name="common_code" value={{ common_code }}>
+                <input type="hidden" name="new_code" value="new_code" >
+                <input type="text" name="new_cc_code" class="input-text" value={{ new_cd_number }} disabled>
+                <input type="text" id="new_cc_code_nm" name="new_cc_code_nm" class="input-text" style="width:100px;" >
+              {% endif %}
+            </form>            
+
+            </div><br>
+            <div id="for_button" style="display: flex; justify-content: center;">
+              {% if text == "추가" %}
+              <button type="submit" class="add_2" form="cc_102_change" name="action" id="action3" value="action3">추가</button>
+              <button type="submit" form="cc_102_c" class="save" name="action" id="action1" value="action1" onclick="return SubmitButton()">저장</button>
+              {% endif %}
+              {% if text == "조회" %}
+              <button type="submit" class="add_2" form="cc_102_change" name="action" id="action3" value="action3">추가</button>
+              <button type="submit" form="cc_102_change" class="save" name="action" id="action1" value="action1">저장</button>
+              {% endif %}
+              {% if text == "저장" %}
+              <button type="submit" class="add_2" form="cc_102_change" name="action" id="action3" value="action3">추가</button>
+              <button type="submit" form="cc_102_change" class="save" name="action" id="action1" value="action1">저장</button>
+              {% endif %}
+              {% if text == "삭제" %}
+              <button type="submit" class="add_2" form="cc_102_change" name="action" id="action3" value="action3">추가</button>
+              <button type="submit" form="cc_102_change" class="save" name="action" id="action1" value="action1">저장</button>
+              {% endif %}
+            </div>
+            <div style="display: flex; justify-content: center; margin-top: 10px;">
+              {% if text == "추가" %}
+                <button type="submit" form="cc_102_change" class="cancel" name="action" value="action4">취소</button>
+                <button class="del_disabled" disabled>삭제</button>
+              {% endif %}
+              {% if text == "조회" %}
+                <button type="submit" form="cc_102_change" class="cancel" name="action" value="action4">취소</button>
+                <button type="submit" form="cc_102_change" class="del" name="action" id="action2" value="action2" onclick="return confirm('공통코드가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+                <button class="del_disabled" id="action4" disabled>삭제</button>
+              {% endif %}
+              {% if text == "저장" %}
+                <button type="submit" form="cc_102_change" class="cancel" name="action" value="action4">취소</button>
+                <button type="submit" form="cc_102_change" class="del" name="action" id="action2" value="action2" onclick="return confirm('공통코드가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+                <button class="del_disabled" id="action4" disabled>삭제</button>
+              {% endif %}
+              {% if text == "삭제" %}
+                <button type="submit" form="cc_102_change" class="cancel" name="action" value="action4">취소</button>
+                <button type="submit" form="cc_102_change" class="del" name="action" id="action2" value="action2" onclick="return confirm('공통코드가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+                <button class="del_disabled" id="action4" disabled>삭제</button>
+              {% endif %}
+            </div>
+        </div>
+    </div>
+    <br>
+    </div>
+    </wrap>
+<script>
+
+  const radioButtons = document.querySelectorAll('input[name=radanswer]');
+  const submitButton = document.getElementById('action2');
+  const hideButton = document.getElementById('action4');
+
+  function SubmitButton() {
+        // 추가했을 때 input 값이 빈 칸인지 확인하고 동작을 수행합니다.
+        var new_cc_code_nm_val = document.getElementById('new_cc_code_nm').value;
+        
+        if (new_cc_code_nm_val === "") {
+              alert("빈칸을 채우십시오.");
+              // return false; // Prevent form submission
+              return false;
+        } else {
+          document.getElementById("cc_102_c").submit();
+        }
+        }
+
+  // 라디오 버튼 변경 이벤트 리스너 등록
+  for (let i = 0; i < radioButtons.length; i++) {
+    radioButtons[i].addEventListener('change', toggleButtons);
+  }
+
+  function toggleButtons() {
+    if (this.checked) {
+      submitButton.style.display = 'block'; // 선택된 경우 showButton 표시
+      hideButton.style.display = 'none'; // 선택된 경우 hideButton 숨김
+    } else {
+      submitButton.style.display = 'none'; // 선택이 해제된 경우 showButton 숨김
+      hideButton.style.display = 'block'; // 선택이 해제된 경우 hideButto표시n
+    }
+  }
+
+  // 초기 상태 설정: 아무 라디오 버튼도 선택되지 않은 상태에서는 showButtont표시n, hideButt숨겨tn.
+  toggleButtons();
+
+</script>
+
+</body>
+
+{% endblock %}

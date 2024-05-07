@@ -1,0 +1,816 @@
+{% extends 'jobs/base_grid.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+
+    <div style="margin-left: 50px; margin-top:50px; width:79%;">
+        
+        <!-- 회기 선택할 수 있는 곳 -->
+        <div id = "ag_grid_pr_prd">
+            <form id="ag_grid_pr_1" action = "{% url 'JB103_grid_1' %}" method="POST">
+                {% csrf_token %}
+
+                <!-- 회기 선택 박스 -->
+                <div class="list-box-prd">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 100px;">
+                                <p>회 기</p>
+                                </th>
+                                <th>
+                                <select name="prd_cd" class="select-combox3" id="selectOptions">
+                                {% for item in prd %}
+                                <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                                {% endfor %}
+                                </select>
+                                </th>
+                            </tr>
+                        </thead> 
+                    </table>
+                </div>
+
+                <!-- 부서 정보 선택 -->
+                <p class="label-text2"> 부서
+                    <!-- 테이블 bs_org에 있는 팀명 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
+                    <select name="team_name" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
+                        {% for item in team_list %}
+                        <option value="{{ item.dept_cd }}" {%if dept_cd_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
+                        {% endfor %}
+                    </select>
+                </p>
+
+            </form>
+
+        </div>
+
+        <!-- 버튼 div -->
+        <div style="margin-top: 20px;">
+
+            <!-- 그리드의 API를 호출하는 버튼 -->
+            <button id="del" onclick="handleRowSelectionChange()" class="save">행 선택 해제</button>
+
+            <!-- 인쇄 버튼 -->
+            <!-- <button onclick="printGrid()" class="save">인쇄</button> -->
+
+            <!-- CSV로 저장하는 버튼 -->
+            <button onclick="saveToCSV()" class="save">csv로 저장</button>
+
+            <!-- 엑셀로 저장하는 버튼 -->
+            <button onclick="saveToExcelUsingCSV()" class="save">엑셀로 저장</button>
+
+            <!-- 필터링을 위한 입력 상자 -->
+            <input type="text" id="filter-text-box" placeholder="검색어를 입력하세요" oninput="onFilterTextBoxChanged()" style="margin-left:20px;">
+
+        </div>
+
+        <!-- Grid 영역 -->
+        <div id="myGrid" class="ag-theme-alpine" style="height: 600px; width: auto; margin-top:20px; margin-left:20px;" ></div>
+    </div>
+</body>
+
+<script>
+
+    // 페이지 로드 시 메시지를 확인하고 에러 시 팝업 표시
+    $(document).ready(function () {
+        // Django에서 전달한 값 확인
+        var myValue = "{{ my_value }}";
+
+        // 특정 조건을 만족하는 경우에만 팝업 띄우기
+        if (myValue === "에러") {
+            // 여기에 팝업을 띄우는 JavaScript 코드 작성
+            alert("해당 회기 및 부서에 데이터가 없습니다.");
+        }
+        if (myValue === "에러2") {
+            // 여기에 팝업을 띄우는 JavaScript 코드 작성
+            alert("직무코드 / 과업 / 활동명을 확인하십시오.");
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+    
+        var rowData = JSON.parse('{{ data|escapejs|safe }}');
+
+        var gridOptions = 
+        {
+            columnDefs: [
+            {   // 그리드 헤더에 체크박스를 표시하는 옵션
+                headerCheckboxSelection: true,
+                // 각 행의 체크박스를 표시하는 옵션
+                checkboxSelection: true,
+                // 컬럼의 기본 너비
+                width: 50,
+                // 컬럼의 최소 너비
+                minWidth: 50,
+                // 컬럼의 최대 너비
+                maxWidth: 500,
+                // 그리드 스크롤이 수평으로 이동할 때 해당 컬럼을 고정하는 옵션
+                pinned: 'left',
+                // 그리드 상단에 부착되는 플로팅 필터를 허용하지 않도록 설정
+                floatingFilter: false,
+            },
+            { 
+                headerName: '번호',
+                field: 'index',
+                type: 'numeric', // 컬럼의 데이터 타입 (여기서는 텍스트)
+                filter: false, // 필터 사용 X
+                width: 0,
+                minWidth: 0,
+                maxWidth: 0,
+                headerClass: 'numeric', // 타입에 따라 헤더에 클래스 추가
+                pinned: 'left', // 그리드에서 왼쪽에 고정
+                cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
+                headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
+            },
+            { 
+                headerName: '번호_위치',
+                field: 'index_pos',
+                type: 'numeric', // 컬럼의 데이터 타입 (여기서는 텍스트)
+                filter: false, // 필터 사용 X
+                width: 0,
+                minWidth: 0,
+                maxWidth: 0,
+                headerClass: 'numeric', // 타입에 따라 헤더에 클래스 추가
+                pinned: 'left', // 그리드에서 왼쪽에 고정
+                cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
+                headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
+            },
+            { 
+                headerName: '회기',
+                field: 'prd_cd',
+                type: 'text', // 컬럼의 데이터 타입 (여기서는 텍스트)
+                filter: 'agTextColumnFilter', // 텍스트 필터 사용
+                headerClass: 'text', // 헤더에 추가되는 클래스 (타입에 따라 헤더에 클래스 추가)
+                width: 0, // 컬럼의 기본 너비
+                minWidth: 0, // 컬럼의 최소 너비
+                maxWidth: 0, // 컬럼의 최대 너비
+                pinned: 'left', // 그리드에서 왼쪽에 고정
+                cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
+                headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
+
+            },
+            {
+                headerName: '부서',
+                field: 'dept_cd',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 0,
+                minWidth: 0,
+                maxWidth: 0,
+                pinned: 'left',
+                cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
+                headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
+            },
+            {
+                headerName: '직무코드',
+                field: 'job_cd',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 120,
+                minWidth: 120,
+                maxWidth: 250,
+                pinned: 'left',
+                // editable: false,
+            },
+            {
+                headerName: '책무',
+                field: 'duty_nm',
+                type: 'text',
+                filter: 'agTextColumnFilter', 
+                headerClass: 'text',
+                width: 250,
+                minWidth: 120,
+                maxWidth: 500,
+            },
+            {
+                headerName: '과업',
+                field: 'task_nm',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 400,
+                minWidth: 120,
+                maxWidth: 500,
+                // cellRenderer: customCellRenderer, // 여기 필요없으면 지우기.
+            //     tooltip: (params) => params.value,
+            //     cellStyle: params => {
+            //     if (params.oldValue !== params.newValue) {
+            //         //mark police cells as red
+            //         return {color: 'red', backgroundColor: 'green'};
+            //     }
+            //     return null;
+            // }
+            },
+            {
+                headerName: '담당자',
+                field: 'task_prsn_chrg',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 200,
+                minWidth: 120,
+                maxWidth: 250,
+            },
+            {
+                headerName: '업무수준_중요도',
+                field: 'work_lv_imprt',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+                // valueParser: function (params) {
+                //     // 입력된 값에서 숫자만 추출하여 반환
+                //     return params.newValue.replace(/\D/g, '');
+                // },
+            },
+            {
+                headerName: '업무수준_난이도',
+                field: 'work_lv_dfclt',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+                // valueParser: function (params) {
+                //     // 입력된 값에서 숫자만 추출하여 반환
+                //     return params.newValue.replace(/\D/g, '');
+                // },
+            },
+            {
+                headerName: '업무수준_숙련도',
+                field: 'work_lv_prfcn',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+                // valueParser: function (params) {
+                //     // 입력된 값에서 숫자만 추출하여 반환
+                //     return params.newValue.replace(/\D/g, '');
+                // },
+            },
+            {
+                headerName: '업무수준',
+                field: 'work_lv_sum',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+                // valueParser: function (params) {
+                //     // 입력된 값에서 숫자만 추출하여 반환
+                //     return params.newValue.replace(/\D/g, '');
+                // },
+                editable: false,                
+            },
+            {
+                headerName: '업무등급',
+                field: 'work_grade',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 120,
+                minWidth: 120,
+                maxWidth: 250,
+                editable: false,
+            },
+            {
+                headerName: '최종 보고대상',
+                field: 'final_rpt_to',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+            },
+            {
+                headerName: '업무특성',
+                field: 'work_attrbt',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+            },
+            {
+                headerName: '수행시간(연평균)',
+                field: 'prfrm_tm_ann',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 180,
+                minWidth: 180,
+                maxWidth: 250,
+                // valueParser: function (params) { // 입력된 값에서 숫자와 소수점만 추출하여 반환
+                //     return parseFloat(params.newValue.replace(/[^0-9.]/g, '')) || null;
+                // },
+                // valueFormatter: function (params) { // 숫자를 원하는 형식으로 포맷
+                //     if (params.value !== null && params.value !== undefined) {
+                //         return params.value.toFixed(1); // 소수점 1자리까지 표시
+                //     } else {
+                //         return null; // 빈 값 처리
+                //     }
+                // },
+            },
+            {
+                headerName: '관련부서',
+                field: 'dept_rltd',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+            },
+            {
+                headerName: '활동명',
+                field: 'act_nm',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 250,
+                minWidth: 120,
+                maxWidth: 500,
+            },
+            {
+                headerName: '활동 담당자',
+                field: 'act_prsn_chrg',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 150,
+                minWidth: 120,
+                maxWidth: 250,
+            },
+            {
+                headerName: '활동빈도',
+                field: 'act_prfrm_freq',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 130,
+                minWidth: 130,
+                maxWidth: 250,
+            },
+            {
+                headerName: '활동횟수(연간)',
+                field: 'act_prfrm_cnt_ann',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 150,
+                maxWidth: 250,
+                // valueParser: function (params) {
+                //     // 입력된 값에서 숫자만 추출하여 반환
+                //     return params.newValue.replace(/\D/g, '');
+                // },
+            },
+            {
+                headerName: '활동시간(건당)',
+                field: 'act_prfrm_tm_cs',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 150,
+                maxWidth: 250,
+                // valueParser: function (params) { // 입력된 값에서 숫자와 소수점만 추출하여 반환
+                //     return parseFloat(params.newValue.replace(/[^0-9.]/g, '')) || null;
+                // },
+                // valueFormatter: function (params) { // 숫자를 원하는 형식으로 포맷
+                //     if (params.value !== null && params.value !== undefined) {
+                //         return params.value.toFixed(1); // 소수점 1자리까지 표시
+                //     } else {
+                //         return null; // 빈 값 처리
+                //     }
+
+                //     // if (params.oldValue !== params.newValue) {
+                //     // return `<span style="background-color: green;">${params.value}</span>`;
+                //     // } else {
+                //     // return params.value;
+                //     // }
+                // },
+            },
+            {
+                headerName: '활동시간(연간)',
+                field: 'act_prfrm_tm_ann',
+                type: 'numeric',
+                filter: 'agTextColumnFilter', //타입은 numeric 이지만 필터는 Text로 필터링 
+                // valueFormatter: commaFormatter, // 숫자를 쉼표 단위로 포맷하는 valueFormatter 사용
+                headerClass: 'number',
+                width: 150,
+                minWidth: 150,
+                maxWidth: 250,
+                // valueParser: function (params) { // 입력된 값에서 숫자만 추출하여 반환
+                //     return params.newValue.replace(/\D/g, '');
+                // },
+                // valueFormatter: function (params) { // 숫자를 원하는 형식으로 포맷(소수점 1자리까지 표시)
+                //     return params.value.toFixed(1); 
+                // },
+                // // onRowDataChanged: function (event) { // 행 데이터가 변경될 때마다 호출되는 콜백 함수
+                // //     recalculateActPrfrmTmAnn();
+                // // },
+                editable: false,
+            },
+            {
+                headerName: '수행 결과물',
+                field: 'rpt_nm',
+                type: 'text',
+                filter: 'agTextColumnFilter',
+                headerClass: 'text',
+                width: 200,
+                minWidth: 120,
+                maxWidth: 250,
+            },            
+            // Add more columns as needed
+            ],
+
+            rowData: rowData,
+
+            defaultColDef: {
+                animateRows: true, // 행 애니메이션 활성화
+                sortable: true, // 정렬 가능
+                resizable: true, // 크기 조절 가능
+                editable: true, // 편집 가능
+                floatingFilter: true, // 플로팅 필터 사용
+                filter: true, // 필터 사용
+                cellClass: 'number-cell', // 각 셀에 적용할 클래스
+            },
+
+            floatingFiltersHeight: 30, // 플로팅 필터의 높이
+            rowDragEntireRow: true, // 전체 행을 드래그할지 여부
+            rowDragMultiRow: true, // 다중 행 드래그 허용 여부
+            rowDragManaged: true, // 행 드래그를 그리드 외부에서 관리할지 여부
+            rowSelection: 'multiple', // 다중 행 선택 모드
+            suppressColumnMoveAnimation: true, // 컬럼 이동 애니메이션 사용 여부
+            getRowNodeId: data => data.번호, // 행 식별자 반환 함수
+            // onCellValueChanged: params => updateRowNumbers(params), // 셀 값 변경 이벤트 핸들러
+            onCellValueChanged: onCellValueChanged,
+            onGridReady: onGridReady,
+
+            getRowStyle: function (params) { // 행 배경색 다룸.
+                if (params.data.isCopied) {
+                    return { background: 'lightyellow' }; // 새로 생성된 행 배경색
+                }
+                return null;
+            },
+           
+        }
+
+        var gridDiv = document.querySelector('#myGrid');
+        new agGrid.Grid(gridDiv, gridOptions);
+        var gridApi = null;
+        var data = rowData
+        gridOptions.api.setRowData(data);
+        var column = gridOptions.columnApi.getColumn('index');
+        column.getColDef().cellClass = 'hidden-column';
+        column.getColDef().headerClass = "hidden-column";
+        gridOptions.api.refreshCells();
+        gridOptions.api.refreshHeader();
+        var modifiedRows = [];
+
+        document.addEventListener('click', function (event) { // 위치가 여기 맞나? ㅎㅎ
+            // 그리드 외부를 클릭할 때 선택 해제
+            if (!event.target.closest('.ag-root-wrapper')) {
+                gridOptions.api.deselectAll();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) { // 위치가 여기 맞나? ㅎㅎ
+            // ESC 키 누를 때 선택 해제
+            if (event.key === 'Escape') {
+                gridOptions.api.deselectAll();
+            }
+        });
+
+    });
+
+    function onGridReady(params) {
+        gridApi = params.api;
+    }
+
+    // 모든 행 선택 취소
+    function handleRowSelectionChange() {
+        if (gridApi) {
+            gridApi.deselectAll(); // 모든 행 선택 취소
+        }
+    }
+
+    // 그리드를 인쇄하는 함수
+    function printGrid() { // 여기 수정해야 함.
+                
+        if (gridApi) {
+            alert('print function is called');
+            window.print();
+            // gridApi.print();
+        }
+    }
+
+    // function printGrid() {
+        
+    //     if (gridApi) {
+    //         alert('print function is called');
+    //     }
+        
+
+    //     // 테이블 생성
+    //     const eTable = document.createElement("table");
+    //     eTable.style.width = "100%";
+    //     const eThead = document.createElement("thead");
+    //     const eTbody = document.createElement("tbody");
+    //     eTable.appendChild(eThead);
+    //     eTable.appendChild(eTbody);
+
+    //     // 컬럼 헤더 처리
+    //     const eTr = document.createElement("tr");
+    //     gridApi.getColumnDefs().forEach(colDef => {
+    //         const eTh = document.createElement("th");
+    //         eTh.innerText = colDef.headerName;
+    //         eTr.appendChild(eTh);
+    //     });
+    //     eThead.appendChild(eTr);
+
+    //     // 데이터 행 처리
+    //     gridApi.forEachNode(node => {
+            
+    //         const eRow = document.createElement("tr");
+    //         gridApi.getColumnDefs().forEach(colDef => {
+    //             const eTd = document.createElement("td");
+    //             eTd.innerText = node.data[colDef.field];
+    //             eRow.appendChild(eTd);
+    //         });
+    //         eTbody.appendChild(eRow);
+    //     });
+
+    //     // 인쇄용 창 생성
+    //     const printWindow = window.open('', '_blank', 'width=auto,height=auto');
+    //     printWindow.document.write('<html><head><title>Print</title></head><body>');
+    //     printWindow.document.body.appendChild(eTable);
+    //     printWindow.document.write('</body></html>');
+    //     printWindow.document.close();
+    //     printWindow.print();
+    // }
+
+    // 필터 검색
+    function onFilterTextBoxChanged() {
+    // 'filter-text-box'라는 ID를 가진 HTML 엘리먼트에서 값을 가져와서
+    // 그리드 옵션의 API를 통해 퀵 필터를 설정
+        gridApi.setQuickFilter(
+        document.getElementById('filter-text-box').value
+        );
+    }
+
+    // 그리드를 csv파일로 저장하는 함수
+    function saveToCSV() {
+        gridApi.exportDataAsCsv(); // 그리드 데이터를 CSV로 변환하고 다운로드
+    }
+
+    // 그리드를 Excel 파일로 저장하는 함수
+    function saveToExcel() {
+        var rowData = [];
+        gridApi.forEachNode(function(node) {
+            rowData.push(node.data);
+        });
+
+        // xlsx 라이브러리를 사용하여 워크시트 생성
+        var worksheet = XLSX.utils.json_to_sheet(rowData);
+        var workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
+        // 워크북을 xlsx 파일로 내보내기
+        XLSX.writeFile(workbook, 'GridData.xlsx');
+    }
+
+    function saveToExcelUsingCSV() {
+        // CSV 데이터 추출
+        var params = {
+            columnSeparator: ','
+        };
+        var csvData = gridApi.getDataAsCsv(params);
+
+        // CSV를 JSON으로 변환
+        Papa.parse(csvData, {
+            header: true,
+            complete: function(results) {
+                var jsonData = results.data;
+
+                // xlsx 라이브러리를 사용하여 워크시트 생성
+                var worksheet = XLSX.utils.json_to_sheet(jsonData);
+                var workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
+                // 워크북을 xlsx 파일로 내보내기
+                XLSX.writeFile(workbook, 'GridData.xlsx');
+            }
+        });
+    }
+
+    // "활동시간(연간)"을 계산하는 함수. 여기서 onCellValueChanged로 
+    function AutoCalculate(data) { 
+        
+        var actPrfrmCntAnn = parseFloat(data.act_prfrm_cnt_ann) || 0;
+        var actPrfrmTmCs = parseFloat(data.act_prfrm_tm_cs) || 0;
+
+        var worklvimprt = parseInt(data.work_lv_imprt) || 0;
+        var worklvdfclt = parseInt(data.work_lv_dfclt) || 0;
+        var worklvprfcn = parseInt(data.work_lv_prfcn) || 0;
+        
+        var calculatedTmAnn = actPrfrmCntAnn * actPrfrmTmCs || 0;
+        var calculatedWorkLv = worklvimprt + worklvdfclt + worklvprfcn || 0;
+
+        var workGrade;
+        
+
+        if (calculatedWorkLv >= 13) {
+            workGrade = "G1";
+        } else if (calculatedWorkLv >= 10) {
+            workGrade = "G2";
+        } else if (calculatedWorkLv >= 7) {
+            workGrade = "G3";
+        } else if (calculatedWorkLv >= 5) {
+            workGrade = "G4";
+        } else {
+            workGrade = "G5";
+        }
+        
+        return {
+            calculatedTmAnn : calculatedTmAnn,
+            calculatedWorkLv : calculatedWorkLv,
+            calculatedWorkGrade : workGrade, 
+        } 
+    }
+
+    function sendGridDataToForm() {
+
+        // 현재 필터 모델 저장
+        var currentQuickFilter = gridApi.getQuickFilter();
+        
+        // 모든 필터를 해제
+        gridApi.setQuickFilter(null);
+        gridApi.setFilterModel(null); 
+        
+        var rowData = gridApi.getDataAsCsv({
+            // CSV 형식으로 데이터 얻어오기
+            columnSeparator: '|', //Csv 컬럼 구분하는 기준.
+            suppressQuotes: true
+        });
+
+        // 데이터를 얻어온 후 quick filter 다시 설정
+        gridApi.setQuickFilter(currentQuickFilter);
+
+        Papa.parse(rowData, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                var dataObjects = results.data;
+                // alert('Parsed data: ' + JSON.stringify(results.data));
+
+                // 모든 데이터를 JSON 문자열로 변환하여 폼에 입력
+                var gridDataInput = document.getElementById('gridDataInput');
+                gridDataInput.value = JSON.stringify(dataObjects);
+
+                // 폼 제출
+                var gridDataForm = document.getElementById('gridDataForm');
+                gridDataForm.submit();
+            }
+        });
+    }
+
+    // function sendGridDataToForm() {
+    // var allRowData = [];
+    // gridOptions.api.forEachNodeAfterFilterAndSort(function (rowNode) {
+    //     allRowData.push(rowNode.data);
+    // });
+
+    // var csvData = Papa.unparse(allRowData, {
+    //     header: true
+    // });
+
+    // console.log("CSV Data:", csvData);  // 추가한 코드
+
+    // Papa.parse(csvData, {
+    //     header: true,
+    //     skipEmptyLines: true,
+    //     complete: function (results) {
+    //         var dataObjects = results.data;
+    //         alert('Parsed data: ' + JSON.stringify(results.data));
+
+    //         // 모든 데이터를 JSON 문자열로 변환하여 폼에 입력
+    //         var gridDataInput = document.getElementById('gridDataInput');
+    //         gridDataInput.value = JSON.stringify(dataObjects);
+
+    //         // 폼 제출
+    //         var gridDataForm = document.getElementById('gridDataForm');
+    //         gridDataForm.submit();
+    //     }
+    // });
+    // }
+
+    // function sendGridDataToForm() {
+        
+    //     var rowData;
+
+    //     if (applyFilter) {
+    //         // 필터를 적용한 경우
+    //         rowData = gridOptions.api.getModel().rowsToDisplay.map(function (rowNode) {
+    //             return rowNode.data;
+    //         });
+    //     } else {
+    //         // 필터를 적용하지 않은 경우
+    //         rowData = gridOptions.api.getModel().rowsAfterFilter.map(function (rowNode) {
+    //             return rowNode.data;
+    //         });
+    //     }
+
+
+    //     Papa.parse(rowData, {
+    //         header: true,
+    //         skipEmptyLines: true,
+    //         complete: function (results) {
+    //             var dataObjects = results.data;
+    //             alert('Parsed data: ' + JSON.stringify(results.data));
+
+    //             // 모든 데이터를 JSON 문자열로 변환하여 폼에 입력
+    //             var gridDataInput = document.getElementById('gridDataInput');
+    //             gridDataInput.value = JSON.stringify(dataObjects);
+
+    //             // 폼 제출
+    //             var gridDataForm = document.getElementById('gridDataForm');
+    //             gridDataForm.submit();
+    //         }
+    //     });
+    // }
+
+    // 기존의 onCellValueChanged 함수를 수정합니다.
+    function onCellValueChanged(params) {
+
+        // gridApi.setFilterModel(null); // 모든 필터를 해제
+        updateRowNumbers(params);
+
+        // 현재 행 데이터를 가져옵니다.
+        var rowData = params.api.getRowNode(params.node.id).data;
+
+        // "활동시간(연간)"을 계산합니다.
+        var calculated = AutoCalculate(rowData);
+        
+        rowData.act_prfrm_tm_ann = calculated.calculatedTmAnn;
+        rowData.work_lv_sum = calculated.calculatedWorkLv;
+        rowData.work_grade = calculated.calculatedWorkGrade;
+        // alert(JSON.stringify(rowData));
+
+
+         // 그리드에서 "활동시간(연간)" 셀을 업데이트합니다.
+        params.api.applyTransaction({
+            update: [rowData],  // 업데이트할 행을 명시
+        
+        });
+
+        // 값 변경 시 셀 배경색 변경
+        // if (params.oldValue !== params.newValue) {
+        //     params.node.cellClass = "green";
+        //     alert('Parsed data: ' + JSON.stringify(params.node.cellClass));
+        // } else {
+        //     params.node.cellClass = "";
+        // }
+        // console.log("params.api.refreshCells() 호출");
+        // params.api.refreshCells(); // 셀 업데이트 적용
+        
+    }
+
+    // Custom Cell Renderer 구현
+    // function customCellRenderer(params) {
+    //     const value = params.value;
+    //     const previousRowData = params.api.getRowNode(params.rowIndex - 1)?.data;
+
+    //     if (previousRowData && previousRowData.columnName === value) {
+    //         // 현재 셀 값과 이전 행의 값이 같으면 rowspan을 이용하여 병합
+    //         params.node.rowSpan = 2;
+    //         return null; // 현재 셀을 렌더링하지 않음
+    //     } else {
+    //         return value; // 일반적인 경우에는 값 그대로 반환
+    //     }
+    // }
+
+</script>
+
+</html>
+
+{% endblock %}

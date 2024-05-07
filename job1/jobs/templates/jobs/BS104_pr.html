@@ -1,0 +1,28 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <div id="input practice3">
+        <h1> [회기 삭제]_연습 </h1>
+        <form action = "{% url 'BS104_pr_1' %}" method="POST">
+            {% csrf_token %}
+            <select name="past_history" multiple onchange="this.form.submit()">
+                {% for item in contents %}
+                    <option value={{ item.prd_cd }}> {{ item.prd_cd }} - {{ item.prd_done }} </option>
+                {% endfor %}
+            </select>
+            <br><br>
+        </form>
+        <!--  여기는 확인용  -->
+        {{ contents_BS104_pr_1 }}
+    </div>
+    <div>
+        <form action="{% url 'delete_bs_prd_pr' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="delete" value={{ del_target }}>
+            <button onclick="return confirm('해당 회기를 정말로 삭제하시겠습니까?');" type="submit"> 삭제 </button> 
+        </form>
+    </div>
+</body>
+{% endblock %}

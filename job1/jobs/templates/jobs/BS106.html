@@ -1,0 +1,414 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+  <wrap>
+  
+  <!-- 전체 div -->
+  <div id = "bs106" style="margin-left: 50px; margin-top:50px;">
+    
+    <!-- 회기 및 직무 유형 선택 div -->
+    <div id = "bs106_1">
+      <!-- 회기 및 직무 유형 선택 form -->
+      <form method="POST" id="prd_select" action="{% url 'BS106' %}">
+        {% csrf_token %}
+        <!-- 회기 표시 박스-->
+        <div class="list-box-prd">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 100px;">
+                  <p>회 기</p>
+                </th>
+                <th>
+                  <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                    {% for item in prd_list %}
+                    <option value="{{ item.prd_cd }}" {%if prd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+                    {% endfor %}
+                  </select>
+                </th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </form>
+
+      <!-- 직무 유형 선택 form -->
+      <form method="POST" id="job_type_select" action="{% url 'BS106_1' %}">
+        {% csrf_token %}
+        <input type="hidden" name="prd_selected" value={{ prd_selected }}>
+        <!-- 직무 유형 선택 div : style 포함 -->
+        <div id="input-radio1">
+          <span class="label-text2" style="padding-right: 30px;"> 직무유형 </span>
+          <!-- 라디오 버튼 선택하면 바로 해당 값 조회됨(onchange) -->
+          <input type="radio" name="job_type" value="all" onchange="this.form.submit();" {% if job_type == "all" %} checked {% endif %}/>
+              <label for="all" style="font-family: Seed-Regular; font-size: 16px;">전체 직무</u></label>
+          &nbsp;&nbsp;&nbsp;
+          <input type="radio" name="job_type" value="common" onchange="this.form.submit();" {% if job_type == "common" %} checked {% endif %}/>
+              <label for="common" style="font-family: Seed-Regular; font-size: 16px;">공통 직무</label>
+          &nbsp;&nbsp;&nbsp;
+          <input type="radio" name="job_type" value="unique" onchange="this.form.submit();" {% if job_type == "unique" %} checked {% endif %}/>
+              <label for="unique" style="font-family: Seed-Regular; font-size: 16px;">고유 직무</label>
+        </div>
+      </form>
+    </div>  
+
+    <!-- 부서정보, 직무유형 선택에 따른 결과값 표시 및 직무 선택 div -->
+    <div id = "bs106_2" style="padding-left: 20px; padding-top: 20px;">
+      
+      <!-- 박스1 : 직무코드, 직무명, 직무개요, 직무 수행자 표시 -->
+      <div style="padding-bottom: 10px;">
+      <div id = "bs106_2_1" style="border:1px solid; border-radius: 5px; width:1400px; height:400px; padding: 20px;">
+        
+        <!-- 텍스트 메뉴 -->
+        <span class="label-text6" style="padding-left: 65px;">직무코드</span> 
+        <span class="label-text6" style="padding-left: 100px;">직무명</span> 
+        <span class="label-text6" style="padding-left: 480px;">직무 개요</span>
+        
+        <!-- 직무 선택 form -->
+        <form method="POST" id="job_management" action="{% url 'BS106_2' %}">
+          {% csrf_token %}
+          <input type="hidden" name="prd_selected" value={{ prd_selected }}>
+          <input type="hidden" name="job_type" value={{ job_type }}>
+          
+          <!-- 박스1 : 직무코드, 직무명, 직무개요 표시 -->
+          <div>
+            <div id="bs106_2_2" data-index="0" style="display: block; overflow-y: scroll; white-space: nowrap; 
+            height: 180px; width: 1300px; border: 1px solid #ccc; margin-top:5px; margin-left:20px;">
+            <div style="padding-left:5px; padding-top:5px;">
+              {% for item in job_list %}
+              <!-- 각 입력 필드를 감싸는 div 대신 span 사용 -->
+              <span style="display: inline-block; vertical-align: top; white-space: nowrap;">
+                <!-- 직무코드 hidden 값으로, view.py로 보내주는 값-->
+                <input type="hidden" name="job_cd_hidden" value="{{ item.job_cd }}">
+                <!-- 라디오 버튼 -->
+                <input type="radio" name="job_radio_102" value="{{ item.job_cd }}" onchange="this.form.submit();" {% if radio_selected == item.job_cd %} checked id="{{ radio_selected }}" {% endif %}>
+                <!-- 직무코드 -->
+                <input type="text" class="input-text4" name="job_cd_102" value="{{ item.job_cd }}" style="width:100px; margin-right: 5px;" disabled>
+                <!-- 직무명 -->
+                <input type="text" class="input-text4" name="job_nm_102" value="{{ item.job_nm }}" style="width:200px; margin-right: 5px;"
+                {%if new_key == "activate" %} readonly {% endif %} {% if job_type == "all" %} readonly {% endif %}>
+                <!-- 직무 개요 -->
+                <input type="text" class="input-text3" name="job_desc_102" value="{{ item.job_descrp }}" style="width:920px; margin-right: 5px;"
+                {%if new_key == "activate" %} readonly {% endif %} {% if job_type == "all" %} readonly {% endif %}>
+              </span>
+              <br>
+              {% endfor %}
+            </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- 추가 버튼 누르면 직무 기본사항 입력 추가할 수 있는 form -->
+        <form method="POST" id="job_management_new" action="{% url 'BS106_3' %}">
+          {% csrf_token %}
+          <!-- 직무유형 라디오 버튼을 클릭했을 때 -->
+          {% if activate == "activate" %}
+            
+            <input type="hidden" name="prd_selected" value={{ prd_selected }}>
+            <input type="hidden" name="job_type" value={{ job_type }}>
+
+            <!-- 추가 버튼 클릭하면 입력칸 나타남 -->
+            {% if new_key == "activate" %}
+              <div style="padding-left: 20px;">
+                <!-- 추가 란이 있다는 key값을 view.py에 넘겨줘서 여기 값도 DB에 저장할 것임 -->
+                <input type="hidden" name="new_y" value="new_member_yes" >
+                <!-- 직무코드 -->
+                <input type="text" class="input-text4" name="job_cd_102_new" style="width:130px;" readonly value={{ new_code }} >
+                <!-- 직무명 -->
+                <input type="text" class="input-text4" name="job_nm_102_new" id="job_nm_102_new" style="width:200px;">
+                <!-- 직무 개요 -->
+                <input type="text" class="input-text3" name="job_desc_102_new" id="job_desc_102_new" style="width:250px;">
+              </div>
+            {% endif %}
+          {% endif %}
+        </form>
+
+        <!-- 직무 기본사항 추가에 대한 button control - 전체 직무를 제외하면 직무사항 추가 가능 -->
+        {% if job_type == "all" %}
+        {% else %}
+        <div style="display: flex; justify-content: center; align-items: center; height: 80px;">
+          <!-- 행 추가 버튼 : job_managament form의 submit 버튼이다. -->
+          <button class="add" form="job_management" type="submit" name="action" value="action3">추가</button>
+            <!-- 행 추가 버튼 누르면 new_key는 activate라는 값을 가져온다. 행 추가 버튼을 누르면 취소 버튼을 activate 시킨다. -->
+            {% if new_key == "activate" %}
+              <button type="submit" class="cancel" form="job_management_new" name="action" value="action2">취소</button>
+            {% else %}
+            <button type="submit" class="cancel" form="job_management" name="action" value="action4">취소</button>
+            {% endif %}
+          <br>
+        </div>
+        {% endif %}
+
+        <!-- 직무 기본사항 수정(저장), 삭제에 대한 button control -->
+        <!-- 직무 유형이 고유일 때 -->
+        {% if job_type == "unique" %}
+        <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
+          <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
+          {% if new_key == "activate" %}
+            <div style="text-align: center; display: flex;">
+              <button type="input" name="action" class="save" form="job_management_new" value="action1" onclick="return submitButton()">저장</button>
+              <!-- <button style="display: inline-block;" type="submit" form="job_management_new" class="save" name="action" value="action1">저장</button> -->
+              <button style="display: inline-block;" class="del_disabled" disabled>삭제</button>
+            </div>
+          <!-- 행 추가 버튼 누르지 않았을 때: 저장버튼 활성화, 삭제버튼 비활성화 시키고 / 라디오 버튼 change되는 것 감지하면 삭제 버튼을 토글시켜서 삭제 버튼 활성화시킴 -->
+          {% else %}
+            <div style="text-align: center; display: flex;" >
+              <button style="display: inline;" type="submit" form="job_management" class="save" name="action" value="action1">저장</button>
+              <!-- 삭제 버튼은 직무 코드 선택 라디오 버튼 체크를 해야 활성화됨 -->
+              {% if act_del == "yes" %}
+              <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
+               onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+              {% else %}
+              <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        <!-- 직무 유형이 공통일 때 -->
+        {% if job_type == "common" %} 
+        <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
+          <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
+          {% if new_key == "activate" %}
+            <div style="text-align: center; display: flex;">
+              <button type="input" name="action" class="save" form="job_management_new" value="action1" onclick="return submitButton()">저장</button>
+              <!-- <button style="display: inline-block;" type="submit" form="job_management_new" class="save" name="action" value="action1">저장</button> -->
+              <button style="display: inline-block;" class="del_disabled" disabled>삭제</button>
+            </div>
+          <!-- 행 추가 버튼 누르지 않았을 때: 저장버튼 활성화, 삭제버튼 비활성화 시키고 / 라디오 버튼 change되는 것 감지하면 삭제 버튼을 토글시켜서 삭제 버튼 활성화시킴 -->
+          {% else %}
+            <div style="text-align: center; display: flex;" >
+              <button style="display: inline;" type="submit" form="job_management" class="save" name="action" value="action1">저장</button>
+              <!-- 삭제 버튼은 직무 코드 선택 라디오 버튼 체크를 해야 활성화됨 -->
+              {% if act_del == "yes" %}
+              <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
+               onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+              {% else %}
+              <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+      </div>
+      </div>
+
+      <!-- 박스2 : 직무 성과책임 표시 -->
+      <div>
+        <div id="bs106_3_1" style="border:1px solid; border-radius: 5px; width:1400px; height:300px; padding: 20px;">
+          <!-- 직무 성과책임 라벨 -->
+          <span class="label-text6" style="padding-left: 65px;">직무 성과책임</span>
+          <!-- 직무 성과책임 조회, 편집 form -->
+          <form action = "{% url 'BS106_4' %}" id="job_resp_edit" method="POST">
+            {% csrf_token %}
+
+            <input type="hidden" name="prd_selected" value={{ prd_selected }}>
+            <input type="hidden" name="job_type" value={{ job_type }}>
+            <input type="hidden" name="radio_selected" value={{ radio_selected }}>
+
+            <!-- 직무 성과책임 조회, 편집 div -->
+            <div id="bs106_3_2" data-index="0" style="display: block; overflow-y: scroll; white-space: nowrap; 
+            height: 150px; width: 1300px; border: 1px solid #ccc; margin-left:20px; margin-top:5px; ">
+              {% for item in job_resp_list %}
+              <div class="container" style="padding-left: 10px;">
+                <input type="text" class="input-text3" name="job_resp" value="{{ item.job_resp }}" style="width:800px;"
+                {% if job_type == "all" %} readonly {% endif %}>
+                {% if job_type == "all" %}
+                {% else %}
+                  <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
+                  <button type="button" class="move" onclick="moveUp(this)"> ▲ </button> <button type="button" class="move" onclick="moveDown(this)"> ▼ </button> 
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+
+
+          </form>
+          <!-- 직무 성과책임 편집 버튼 control div -->
+          {% if job_type == "all" %}
+          {% else %}
+          <div id="bs106_3_btn" style="padding-top:20px; text-align: center;">
+            <!-- 직무 선택 라디오 버튼 클릭을 하면 나타나도록 함 -->
+            {% if act_del == "yes" %}
+            <button type = button class="add" onclick="addForm()">추가</button>
+            <!-- <button type="submit" form="job_resp_edit" class="save" name="action" value="action1" onclick="return validateForm()">저장</button> -->
+            <button type="submit" form="job_resp_edit" class="save" name="action" value="action1" onclick="return validateJobRespForm()">저장</button>
+            <button type="submit" form="job_resp_edit" class="cancel" name="action" value="action2">취소</button>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div> 
+      </div>
+    </div>
+  </div>
+  </wrap>
+
+  <script>
+
+    function validateForm() { // 빈 칸 검사하는 함수
+      // 모든 input 요소를 가져옵니다.
+      const inputs = document.querySelectorAll("input[type='text'], input[type='number']");
+      // 모든 input 값을 검사합니다.
+      for (const input of inputs) {
+          if (input.value.trim() === "") {
+          alert("빈 칸을 채우십시오.");
+          return false; // 검증 실패 시 submit을 막습니다.
+          }
+      }
+      // 모든 검증을 통과하면 true를 반환합니다.
+      return true;
+    }
+
+    function submitButton() {
+
+      var job_nm_102_new = document.getElementById("job_nm_102_new").value;
+      var job_desc_102_new = document.getElementById("job_desc_102_new").value;
+      
+      if (job_nm_102_new === "" || job_desc_102_new === "") {
+        alert("빈칸을 채우십시오.");
+        return false;
+      } else {
+        document.getElementById("job_management_new").submit();
+      }
+    }
+
+    function deleteForm(button) { // 행 삭제
+      // Find the parent container and remove it
+      const container = button.parentNode;
+      container.remove();
+    }
+
+    function addForm() { // 행 추가 폼
+
+        // Create container div
+        const container = document.createElement('div');
+        container.className = 'container';
+
+        // Create input elements
+        const input1 = document.createElement('input');
+        input1.type = 'text';
+        input1.name = 'job_resp';
+        input1.placeholder = '성과책임';
+        input1.className = 'input-text5';
+        input1.style.width = '800px';
+        input1.style.marginLeft = '10px';
+        
+        // Create delete button
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = '-';
+        deleteButton.className = 'del_small'
+        deleteButton.onclick = function() {
+        // Remove the container when the delete button is clicked
+        container.remove();
+        };
+
+        // Create moveUp button
+        const moveUpButton = document.createElement('button');
+        moveUpButton.textContent = '▲';
+        moveUpButton.type="button";
+        moveUpButton.className = 'move'
+        moveUpButton.onclick = function() {
+          moveUp(this);
+        };
+
+        // Create moveDown button
+        const moveDownButton = document.createElement('button');
+        moveDownButton.textContent = '▼';
+        moveDownButton.type="button";
+        moveDownButton.className = 'move'
+        moveDownButton.onclick = function() {
+          moveDown(this);
+        };
+
+        // Append elements to the container
+        container.appendChild(input1);
+        container.appendChild(deleteButton);
+        container.appendChild(moveUpButton);
+        container.appendChild(moveDownButton);
+
+        // Append the container to the formContainer div
+        document.getElementById('bs106_3_2').appendChild(container);
+
+        var scrollableDiv = document.getElementById('bs106_3_2');
+        scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
+      
+    }
+
+    // Function to move container Up
+    function moveUp(button) {
+      const container = button.parentNode;
+      const formContainer = document.getElementById('bs106_3_2');
+
+      // Check if container is the first child
+      if (container.previousElementSibling) {
+        formContainer.insertBefore(container, container.previousElementSibling);
+      } else {
+        alert("가장 윗줄입니다.");
+      }
+    }
+
+    // Function to move container Down
+    function moveDown(button) {
+      const container = button.parentNode;
+      const formContainer = document.getElementById('bs106_3_2');
+
+      // Check if container is the last child
+      if (container.nextElementSibling) {
+        formContainer.insertBefore(container, container.nextElementSibling.nextSibling);
+      } else {
+        alert("가장 아랫줄입니다.");
+      }
+    }
+
+    window.onload = function() { // 선택한 라디오버튼으로 스크롤해주는 함수
+      var container = document.getElementById('bs106_2_2');
+      var selectedRadio = document.getElementById('{{ radio_selected }}');
+      
+      if(container && selectedRadio) {
+          var selectedRadioOffset = selectedRadio.offsetTop - container.offsetTop;
+          container.scrollTop = selectedRadioOffset - 20; // 20px만큼 여유를 둠
+      }
+    }
+
+    function validateJobRespForm() {
+
+      // 모든 input 요소를 가져옵니다.
+      const inputs2 = document.querySelectorAll("input[type='text'], input[type='number']");
+      // 모든 input 값을 검사합니다.
+      for (const input of inputs2) {
+          if (input.value.trim() === "") {
+          alert("빈 칸을 채우십시오.");
+          return false; // 검증 실패 시 submit을 막습니다.
+          }
+      }
+      // 모든 검증을 통과하면 true를 반환합니다.
+
+      // `job_resp` 이름을 가진 모든 input 필드를 가져옵니다.
+      const inputs = document.querySelectorAll("input[name='job_resp']");
+      let isEmpty = true; // 모든 필드가 비어 있는지 여부를 추적합니다.
+
+      // 입력 필드를 반복하여 하나라도 값이 있으면 isEmpty를 false로 설정합니다.
+      inputs.forEach(input => {
+        if (input.value.trim() !== "") {
+          isEmpty = false;
+        }
+      });
+
+      // 모든 입력 필드가 비어 있다면 경고를 표시하고 폼 제출을 막습니다.
+      if (isEmpty) {
+        alert("직무 성과책임을 최소 하나 입력해주세요.");
+        return false; // 폼 제출을 막습니다.
+      }
+
+      // 하나 이상의 입력 필드에 값이 있다면 폼 제출을 계속 진행합니다.
+      return true;
+    }
+
+  </script>
+
+
+
+</body>
+{% endblock %}

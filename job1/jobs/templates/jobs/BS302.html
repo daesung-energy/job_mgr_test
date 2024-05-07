@@ -1,0 +1,53 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <wrap>
+      <div id = "bs302" style="padding-left: 50px; padding-top: 50px;">
+        <form action = "{% url 'BS302_1' %}" method="POST">
+        {% csrf_token %}
+        <div class="list-box-prd">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 100px;">
+                  <p>회 기</p>
+                </th>
+                <th>
+                  <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                    {% for item in prd %}
+                    <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                    {% endfor %}
+                  </select>
+                </th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+        </form>
+
+        <div style="display: flex;">
+            <div id="grp_domain">
+                
+
+
+            </div>
+
+
+        </div>
+
+        
+    
+      </div>
+
+
+
+    </wrap>
+
+    <script>
+    </script>
+
+</body>
+
+{% endblock %}

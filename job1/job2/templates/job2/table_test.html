@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프린트 테스트 페이지</title>
+<link rel="stylesheet" href="{% static 'css/style.css' %}" media="all"> <!-- CSS 파일 로드 -->
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script> <!-- ExcelJS 라이브러리 로드 -->
+<script src="{% static 'js/test.js' %}"></script> <!-- JS 파일 로드 -->
+
+</head>
+
+<body>
+    <div id="container">
+        <!-- 검색조건 콤보박스 -->
+        <h2>검색 조건</h2>
+        <div class="search-criteria">
+            <label for="criteria1">검색조건1:</label>
+            <select id="criteria1">
+                <option value="테스트1">테스트1</option>
+                <option value="테스트2">테스트2</option>
+                <option value="테스트3">테스트3</option>
+            </select>
+
+            <label for="criteria2">검색조건2:</label>
+            <select id="criteria2">
+                <option value="테스트4">테스트4</option>
+                <option value="테스트5">테스트5</option>
+                <option value="테스트6">테스트6</option>
+            </select>
+
+            <label for="criteria3">검색조건3:</label>
+            <select id="criteria3">
+                <option value="테스트7">테스트7</option>
+                <option value="테스트8">테스트8</option>
+                <option value="테스트9">테스트9</option>
+            </select>
+        </div>
+
+        <div class="table-container">
+            <div class="title-and-button-container">
+                <div class="table-title table1-title">테이블 1</div>
+                <div class="button-container">
+                    <button class="table-button" onclick="printTableContent('table1')">Print Table</button>
+                    <button class="table-button" onclick="convertToCSV('table1')">Convert to CSV</button>
+                    <button class="table-button" onclick="exportToExcel('table1')">Export to Excel</button> 
+                </div>
+            </div>
+            <!-- 테이블 1 -->
+            <table class="my-table" id="table1">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Country</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>John Doe</td>
+                        <td>30</td>
+                        <td>USA</td>
+                    </tr>
+                    <tr>
+                        <td>Jane Smith</td>
+                        <td>25</td>
+                        <td>UK</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-container">
+            <div class="title-and-button-container">
+                <div class="table-title table2-title">테이블 2</div>
+                <div class="button-container">
+                    <button class="table-button" onclick="printTableContent('table2')">Print Table</button>
+                    <button class="table-button" onclick="convertToCSV('table2')">Convert to CSV</button>
+                    <button class="table-button" onclick="exportToExcel('table2')">Export to Excel</button> 
+                </div>
+            </div>
+            <!-- 테이블 2 -->
+            <table class="my-table" id="table2">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Country</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Kim Hyeonjin</td>
+                        <td>26</td>
+                        <td>KR</td>
+                    </tr>
+                    <tr>
+                        <td>Kim HyeonWoo</td>
+                        <td>26</td>
+                        <td>KR</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+
+</html>

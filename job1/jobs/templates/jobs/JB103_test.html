@@ -1,0 +1,770 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+<body>
+    <div id = "jb103">
+        <h1> [직무 상세내역 입력] </h1>
+
+        <!-- 팀 선택하는 폼, 이 값에 따라서 직무 목록이 바뀐다. -->
+        <form action = "{% url 'JB103_test' %}" method="POST" id="jb103_test">
+            {% csrf_token %}
+            <div class="team_select">
+                <p>2022A</p>
+                <select name="team_selected" onchange="this.form.submit()" size="1" style="width:100px;">
+                    <option> 부서 선택 </option>
+                    {% for item in dept_list %}
+                        <option value={{ item.dept_cd }} {%if select_team == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <form action="{% url 'submit_activity' %}" method="POST" id="jb103_test">
+            {% csrf_token %}
+        <!-- 직무 선택 -->
+            <p>직무</p>
+
+            {% for item in job_list %}
+                    <input type="radio" name="radio1" value={{ item.job_cd_id }} onchange="loadDutyNames('{{ item.job_cd_id }}')">
+                    <input type="text" name="job_cd" value={{ item.job_cd_id }}>
+                    <br>
+            {% endfor %}
+
+        <!-- 책무 선택 -->
+        <p>책무</p>
+        <input type="text" hidden name="team_selected" value={{ select_team }}>
+        <input type="hidden" id="ajaxUrlForDutyNames" value="{% url 'get_duty_names' %}">
+        
+        <div id="dutyNames" data-index="0" style="border: 1px solid #ccc; overflow-y: scroll; overflow-x: scroll; min-height:300px; max-height: 300px; max-width:300px; 
+        flex-wrap: wrap;">
+        </div>
+        <button id="addDuty" type="button">책무 추가</button>
+
+        <!-- 과업 선택 -->
+        <p>과업</p>
+        <input type="text" hidden name="team_selected" value={{ select_team }}>
+        <input type="hidden" id="ajaxUrlForTasks" value="{% url 'get_tasks' %}">
+        
+        <div id="taskNames" data-index="0" style="border: 1px solid #ccc; overflow-y: scroll; overflow-x: scroll; min-height:300px; max-height: 300px; max-width:300px; 
+        flex-wrap: wrap;">
+        </div>
+        <button id="addTask" type="button">과업 추가</button>
+
+        <!-- 활동 선택 -->
+        <p>활동</p>
+        <input type="text" hidden name="team_selected" value={{ select_team }}>
+        <input type="hidden" id="ajaxUrlForActivities" value="{% url 'get_activities' %}">
+        
+        <div id="activityNames" data-index="0" style="border: 1px solid #ccc; overflow-y: scroll; overflow-x: scroll; min-height:300px; max-height: 300px; max-width:300px; 
+        flex-wrap: wrap;">
+        </div>
+        <button id="addActivity" type="button">활동 추가</button>
+
+        <button type="submit">submit</button>
+
+        </form>
+   
+        
+</form>
+<button type="button" id="submitData" onclick="sendData()">데이터 전송</button>
+</body>
+
+<script>
+
+function sendData() {
+    console.log("a")
+    const data = collectData(); // 데이터 수집 함수 (아래에서 정의)
+    console.log(data)
+    fetch("{% url 'submit_activity' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'), // CSRF 토큰 추가
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => console.log('Success:', data))
+    .catch((error) => console.error('Error:', error));
+}
+
+function collectData() {
+    // 페이지의 모든 직무, 책무, 과업, 활동에 대한 수정 내역을 수집하여 반환
+    // 예제 구현은 단순화를 위해 생략
+    console.log("a")
+    return {
+        // 예시 데이터
+        jobs: [
+            {
+                jobCd: "job1",
+                duties: [
+                    {
+                        dutyNm: "duty1",
+                        tasks: [
+                            {
+                                taskNm: "task1",
+                                activities: ["activity1", "activity2"]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    };
+}
+
+// 필요시 CSRF 토큰 가져오는 함수
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+
+
+
+
+
+    // 책무 불러오기
+    function loadDutyNames(jobCd) {    
+
+    const teamSelected = document.querySelector('input[name="team_selected"]').value; // 현재 선택된 팀 값 가져오기
+
+    // 숨겨진 input 태그에서 URL 가져오기
+    const ajaxUrl = document.getElementById('ajaxUrlForDutyNames').value;
+    // URL에 jobCd 파라미터 추가
+    const fullUrl = `${ajaxUrl}?jobCd=${jobCd}&teamSelected=${teamSelected}`;
+
+    fetch(fullUrl)
+    .then(response => response.json())
+    .then(data => {
+        const dutyDiv = document.getElementById('dutyNames');
+        const taskDiv = document.getElementById('taskNames');
+        dutyDiv.innerHTML = ''; // 이전에 추가된 내용을 초기화
+        taskDiv.innerHTML = ''; // 이전에 추가된 내용을 초기화
+        
+        data.forEach(duty => {
+            const container = document.createElement('div'); // 책무와 버튼을 담을 컨테이너
+            // input text 생성
+            const inputText = document.createElement('input');
+            inputText.type = 'text';
+            inputText.name = 'dutyNm';
+            inputText.value = duty.duty_nm; // 서버로부터 받은 duty_nm 값 설정
+
+            // input text 옆에 위치할 라디오 버튼 생성
+            const radioInput = document.createElement('input');
+            radioInput.type = 'radio';
+            radioInput.name = 'dutyNmRadio';
+            radioInput.value = duty.duty_nm; // 서버로부터 받은 duty_nm 값 설정
+
+            // 삭제 버튼 생성 및 이벤트 리스너 설정
+            const deleteButton = createButton('삭제', container);
+
+            // 위로 이동 버튼 생성 및 이벤트 리스너 설정
+            const moveUpButton = createButton('위로', container, true);
+
+            // 아래로 이동 버튼 생성 및 이벤트 리스너 설정
+            const moveDownButton = createButton('아래로', container, false);
+
+            // 생성된 input text와 라디오 버튼을 dutyDiv에 추가
+            container.appendChild(radioInput);
+            container.appendChild(inputText);
+            container.appendChild(deleteButton);
+            container.appendChild(moveUpButton);
+            container.appendChild(moveDownButton);
+            dutyDiv.appendChild(container);
+        });
+        restoreDutyChanges(jobCd);
+        saveDutyChanges(); // 책무 추가 후 변경사항 저장
+        
+    })
+    .catch(error => console.error('Error:', error));    
+    }
+
+    document.getElementById('addDuty').addEventListener('click', function() {
+    const dutyDiv = document.getElementById('dutyNames');
+    const container = document.createElement('div'); // 새로운 책무와 버튼들을 담을 컨테이너
+
+    // 새로운 input text 생성
+    const inputText = document.createElement('input');
+    inputText.type = 'text';
+    inputText.name = 'dutyNm';
+    inputText.placeholder = '책무 이름 입력';
+
+    // 새로운 라디오 버튼 생성
+    const radioInput = document.createElement('input');
+    radioInput.type = 'radio';
+    radioInput.name = 'dutyNmRadio';
+
+    // 삭제 버튼 생성
+    const deleteButton = document.createElement('button');
+    deleteButton.innerText = '삭제';
+    deleteButton.type = 'button';
+    deleteButton.addEventListener('click', function() {
+        container.remove(); // 컨테이너 삭제
+        saveDutyChanges(); // 삭제 시 변경사항 저장
+    });
+
+    // 위로 이동 버튼 생성
+    const moveUpButton = document.createElement('button');
+    moveUpButton.innerText = '위로';
+    moveUpButton.type = 'button';
+    moveUpButton.addEventListener('click', function() {
+        if (container.previousElementSibling) {
+            container.parentNode.insertBefore(container, container.previousElementSibling);
+        }
+        saveDutyChanges(); // 삭제 시 변경사항 저장
+    });
+
+    // 아래로 이동 버튼 생성
+    const moveDownButton = document.createElement('button');
+    moveDownButton.innerText = '아래로';
+    moveDownButton.type = 'button';
+    moveDownButton.addEventListener('click', function() {
+        if (container.nextElementSibling) {
+            container.parentNode.insertBefore(container.nextElementSibling, container);
+        }
+        saveDutyChanges(); // 삭제 시 변경사항 저장
+    });
+
+    // 새 요소를 기존 요소에 추가
+    container.appendChild(radioInput);
+    container.appendChild(inputText);
+    container.appendChild(deleteButton);
+    container.appendChild(moveUpButton);
+    container.appendChild(moveDownButton);
+    dutyDiv.appendChild(container); // dutyDiv에 컨테이너 추가
+    saveDutyChanges(); // 책무 추가 후 변경사항 저장
+});
+
+
+// 버튼 생성 및 이벤트 리스너 설정 함수
+function createButton(text, container, isMoveUp = null) {
+    const button = document.createElement('button');
+    button.textContent = text;
+    button.type = 'button';
+    // if (text === '삭제') {
+        
+    //     button.addEventListener('click', () => container.remove());
+    if (text === '삭제') {
+        button.addEventListener('click', () => {
+            // 삭제된 책무의 상태를 추적하기 위한 코드 추가
+            const inputText = container.querySelector('input[type="text"]');
+            if (inputText) {
+                inputText.dataset.deleted = "true"; // 삭제 상태를 data attribute를 통해 설정
+            }
+            container.remove(); // 컨테이너 삭제
+            saveDutyChanges(); // 변경사항 저장
+        });
+    
+    } else if (isMoveUp !== null) {
+        button.addEventListener('click', () => moveElement(container, isMoveUp));
+    }
+
+    return button;
+    
+}
+
+// 요소 이동 함수
+function moveElement(element, isMoveUp) {
+    if (isMoveUp && element.previousElementSibling) {
+        element.parentNode.insertBefore(element, element.previousElementSibling);
+    } else if (!isMoveUp && element.nextElementSibling) {
+        element.parentNode.insertBefore(element.nextElementSibling, element);
+    }
+    saveDutyChanges(); // 책무 추가 후 변경사항 저장
+}
+
+function saveDutyChanges() {
+    const jobCd = document.querySelector('input[name="radio1"]:checked').value;
+    const duties = [];
+    document.querySelectorAll('#dutyNames div').forEach((container) => {
+        const inputText = container.querySelector('input[type="text"]');
+        if (inputText && !inputText.dataset.deleted) { // 삭제되지 않은 책무만 저장
+            duties.push({
+                dutyNm: inputText.value,
+                // checked: container.querySelector('input[type="radio"]').checked
+            });
+        }
+    });
+
+    localStorage.setItem('duties_' + jobCd, JSON.stringify(duties));
+}
+
+// 페이지 로드 시 책무 변경사항 복원하기
+function restoreDutyChanges(jobCd) {
+        const savedDuties = JSON.parse(localStorage.getItem('duties_' + jobCd)); // 직무 코드별로 복원
+        if (savedDuties) {
+            const dutyDiv = document.getElementById('dutyNames');
+            dutyDiv.innerHTML = ''; // 기존 내용 초기화
+            savedDuties.forEach(duty => {
+                // 각 책무 항목 복원 로직...
+                const container = document.createElement('div');
+
+                const inputText = document.createElement('input');
+                inputText.type = 'text';
+                inputText.name = 'dutyNm';
+                inputText.value = duty.dutyNm; // 로컬 스토리지에서 불러온 책무 이름을 설정
+
+                const radioInput = document.createElement('input');
+                radioInput.type = 'radio';
+                radioInput.name = 'dutyNmRadio';
+                radioInput.value = duty.dutyNm; // 로컬 스토리지에서 불러온 책무 이름을 설정
+
+                // 삭제 버튼 생성 및 이벤트 리스너 설정
+                const deleteButton = createButton('삭제', container);
+
+                // 위로 이동 버튼 생성 및 이벤트 리스너 설정
+                const moveUpButton = createButton('위로', container, true);
+
+                // 아래로 이동 버튼 생성 및 이벤트 리스너 설정
+                const moveDownButton = createButton('아래로', container, false);
+
+                container.appendChild(radioInput);
+                container.appendChild(inputText);
+                // 버튼들 추가
+                container.appendChild(deleteButton);
+                container.appendChild(moveUpButton);
+                container.appendChild(moveDownButton);
+                dutyDiv.appendChild(container);
+            });
+        }
+    }
+
+// 페이지 로드 시 혹은 직무 선택 변경 시 저장된 책무 상태 복원
+window.onload = function() {
+    // 현재 선택된 직무가 있다면 해당 직무의 책무 상태 복원
+    const selectedJobCd = document.querySelector('input[name="radio1"]:checked')?.value;
+    if (selectedJobCd) {
+        loadDutyNames(selectedJobCd); // 직무에 해당하는 책무 불러오기
+    } else {
+        // 선택된 직무가 없다면 기본 로직 수행
+        restoreDutyChanges(); // 저장된 책무 상태 복원
+    }
+};
+
+document.addEventListener('input', function(event) {
+    if (event.target.matches('input[type="text"]')) {
+        saveDutyChanges(); // 모든 input 요소의 현재 값을 저장
+    }
+});
+
+window.addEventListener('beforeunload', function() {
+    localStorage.clear(); // 페이지 종료 전 로컬 스토리지 초기화
+});
+
+// 책무 선택 시 과업 정보를 불러오고 표시하는 함수 추가
+function loadTaskNames(dutyNmRadio) {
+    const teamSelected = document.querySelector('input[name="team_selected"]').value; // 현재 선택된 팀 값 가져오기
+    // 숨겨진 input 태그에서 과업 정보를 불러오기 위한 URL 가져오기
+    const ajaxUrlForTasks = document.getElementById('ajaxUrlForTasks').value;
+    // URL에 dutyNm 파라미터 추가
+    const fullUrl = `${ajaxUrlForTasks}?dutyNmRadio=${dutyNmRadio}&teamSelected=${teamSelected}`; // URL에 team_selected 파라미터 추가
+
+    fetch(fullUrl)
+    .then(response => response.json())
+    .then(data => {
+        const taskDiv = document.getElementById('taskNames');
+        
+        taskDiv.innerHTML = ''; // 이전에 추가된 내용을 초기화
+        data.forEach(task => {
+            const container = document.createElement('div'); // 책무와 버튼을 담을 컨테이너
+
+            // input text 옆에 위치할 라디오 버튼 생성
+            const radioInput = document.createElement('input');
+            radioInput.type = 'radio';
+            radioInput.name = 'taskNmRadio';
+            radioInput.value = task.task_nm; // 서버로부터 받은 task_nm 값 설정
+            
+            const inputText = document.createElement('input');
+            inputText.type = 'text';
+            inputText.name = 'taskNm';
+            inputText.value = task.task_nm; // 서버로부터 받은 task_nm 값 설정
+
+            // 삭제 버튼 생성 및 이벤트 리스너 설정
+            const deleteButton = createButton('삭제', container);
+
+            // 위로 이동 버튼 생성 및 이벤트 리스너 설정
+            const moveUpButton = createButton('위로', container, true);
+
+            // 아래로 이동 버튼 생성 및 이벤트 리스너 설정
+            const moveDownButton = createButton('아래로', container, false);
+
+
+            container.appendChild(radioInput);
+            container.appendChild(inputText);
+            container.appendChild(deleteButton);
+            container.appendChild(moveUpButton);
+            container.appendChild(moveDownButton);
+            taskDiv.appendChild(container);
+        });
+
+        const selectedJobCd = document.querySelector('input[name="radio1"]:checked')?.value;
+        restoreTaskChanges(selectedJobCd, dutyNmRadio); // 올바른 인자를 전달하여 호출
+    })
+    .catch(error => console.error('Error:', error));
+    // console.log("Called loadTaskNames with dutyNmRadio:", dutyNmRadio);
+    // console.log("Fetching tasks from URL:", fullUrl);
+}
+
+// 책무 선택 라디오 버튼에 이벤트 리스너 추가하기 위한 코드
+document.addEventListener('change', function(event) {
+    if (event.target.matches('input[type="radio"][name="dutyNmRadio"]')) {
+        // 선택된 책무의 이름(dutyNm)을 loadTaskNames 함수에 전달
+        loadTaskNames(event.target.value);
+        setTimeout(() => restoreTaskChanges(event.target.value), 100); // 책무 변경 시 과업 상태 복원
+    }
+
+    if (event.target.matches('input[type="radio"][name="taskNmRadio"]')) {
+        // 선택된 책무의 이름(dutyNm)을 loadTaskNames 함수에 전달
+        loadActivityNames(event.target.value);
+        setTimeout(() => restoreActivityChanges(event.target.value), 100);
+        }
+});
+
+// // 책무 선택 라디오 버튼에 이벤트 리스너 추가하기 위한 코드
+// document.addEventListener('change', function(event) {
+//     if (event.target.matches('input[type="radio"][name="taskNmRadio"]')) {
+//         // 선택된 책무의 이름(dutyNm)을 loadTaskNames 함수에 전달
+//         loadActivityNames(event.target.value);
+//         }
+// });
+
+// 과업 추가 버튼 이벤트 리스너
+document.getElementById('addTask').addEventListener('click', function() {
+    const taskDiv = document.getElementById('taskNames');
+    const container = document.createElement('div'); // 새로운 과업과 버튼들을 담을 컨테이너
+
+    // 새로운 input text 생성
+    const inputText = document.createElement('input');
+    inputText.type = 'text';
+    inputText.name = 'taskNm';
+    inputText.placeholder = '과업 이름 입력';
+
+    // 새로운 라디오 버튼 생성
+    const radioInput = document.createElement('input');
+    radioInput.type = 'radio';
+    radioInput.name = 'taskNmRadio';
+
+    // 삭제 버튼 생성
+    const deleteButton = document.createElement('button');
+    deleteButton.innerText = '삭제';
+    deleteButton.type = 'button';
+    deleteButton.addEventListener('click', function() {
+        container.remove(); // 컨테이너 삭제
+        saveTaskChanges(); // 과업 추가 후 변경사항 저장
+    });
+
+    // 위로 이동 버튼 생성
+    const moveUpButton = document.createElement('button');
+    moveUpButton.innerText = '위로';
+    moveUpButton.type = 'button';
+    moveUpButton.addEventListener('click', function() {
+        if (container.previousElementSibling) {
+            container.parentNode.insertBefore(container, container.previousElementSibling);
+        }
+        saveTaskChanges(); // 과업 추가 후 변경사항 저장
+    });
+
+    // 아래로 이동 버튼 생성
+    const moveDownButton = document.createElement('button');
+    moveDownButton.innerText = '아래로';
+    moveDownButton.type = 'button';
+    moveDownButton.addEventListener('click', function() {
+        if (container.nextElementSibling) {
+            container.parentNode.insertBefore(container.nextElementSibling, container);
+        }
+        saveTaskChanges(); // 과업 추가 후 변경사항 저장
+    });
+
+    // 새 요소를 기존 요소에 추가
+    container.appendChild(radioInput);
+    container.appendChild(inputText);
+    container.appendChild(deleteButton);
+    container.appendChild(moveUpButton);
+    container.appendChild(moveDownButton);
+    taskDiv.appendChild(container); // taskDiv에 컨테이너 추가
+
+    saveTaskChanges(); // 과업 추가 후 변경사항 저장
+});
+
+function saveTaskChanges() {
+    // 현재 선택된 직무 코드와 책무 이름을 기준으로 과업 데이터 저장
+    const jobCd = document.querySelector('input[name="radio1"]:checked')?.value;
+    const dutyNm = document.querySelector('input[type="radio"][name="dutyNmRadio"]:checked')?.value;
+    if (!jobCd || !dutyNm) return; // 직무 또는 책무가 선택되지 않은 경우 함수 종료
+
+    const tasks = [];
+    document.querySelectorAll('#taskNames div').forEach((container) => {
+        const inputText = container.querySelector('input[type="text"]');
+        if (inputText) { // 삭제 표시가 없는 과업만 저장
+            tasks.push({
+                taskNm: inputText.value,
+            });
+        }
+    });
+
+    // 로컬 스토리지에 직무 코드와 책무 이름을 키로 사용하여 저장
+    localStorage.setItem(`tasks_${jobCd}_${dutyNm}`, JSON.stringify(tasks));
+}
+
+function restoreTaskChanges(jobCd, dutyNm) {
+    // 로컬 스토리지에서 직무 코드와 책무 이름에 해당하는 과업 데이터 로드
+    const savedTasks = JSON.parse(localStorage.getItem(`tasks_${jobCd}_${dutyNm}`));
+    if (savedTasks) {
+        const taskDiv = document.getElementById('taskNames');
+        taskDiv.innerHTML = ''; // 기존 내용 초기화
+        savedTasks.forEach(task => {
+            // 과업 항목 복원 로직
+            const container = document.createElement('div');
+
+            const inputText = document.createElement('input');
+            inputText.type = 'text';
+            inputText.name = 'taskNm';
+            inputText.value = task.taskNm; // 로컬 스토리지에서 불러온 과업 이름을 설정
+
+            const radioInput = document.createElement('input');
+            radioInput.type = 'radio';
+            radioInput.name = 'taskNmRadio';
+            radioInput.value = task.taskNm;
+
+            // 삭제, 이동 버튼 생성 및 이벤트 리스너 설정 (이전에 설명된 createButton 함수 사용)
+            const deleteButton = createButton('삭제', container);
+            const moveUpButton = createButton('위로', container, true);
+            const moveDownButton = createButton('아래로', container, false);
+
+            container.appendChild(radioInput);
+            container.appendChild(inputText);
+            container.appendChild(deleteButton);
+            container.appendChild(moveUpButton);
+            container.appendChild(moveDownButton);
+            taskDiv.appendChild(container);
+        });
+    }
+}
+
+// 과업 추가, 삭제, 이동 시 변경사항 저장 로직 호출
+document.querySelectorAll('#taskNames').forEach((container) => {
+    container.addEventListener('change', saveTaskChanges);
+    container.addEventListener('click', saveTaskChanges); // 삭제 및 이동 버튼 클릭도 포함
+});
+
+// 활동 추가, 삭제, 이동 시 변경사항 저장 로직 호출
+document.querySelectorAll('#activityNames').forEach((container) => {
+    container.addEventListener('change', saveActivityChanges);
+    container.addEventListener('click', saveActivityChanges); // 삭제 및 이동 버튼 클릭도 포함
+});
+
+// 직무 또는 책무 선택 변경 시 과업 변경사항 복원 로직 호출
+document.addEventListener('change', function(event) {
+    if (event.target.matches('input[type="radio"][name="radio1"]') || event.target.matches('input[type="radio"][name="dutyNmRadio"]')) {
+        // 선택된 직무와 책무 기반으로 과업 변경사항 복원
+        const selectedJobCd = document.querySelector('input[name="radio1"]:checked')?.value;
+        const selectedDutyNm = document.querySelector('input[type="radio"][name="dutyNmRadio"]:checked')?.value;
+        const selectedTaskNm = document.querySelector('input[type="radio"][name="taskNmRadio"]:checked')?.value;
+        if (selectedJobCd && selectedDutyNm) {
+            restoreTaskChanges(selectedJobCd, selectedDutyNm);
+        }
+        if (selectedJobCd && selectedDutyNm && selectedTaskNm) {
+            restoreActivityChanges(selectedJobCd, selectedDutyNm, selectedTaskNm);
+        }
+    }
+    
+});
+
+// 과업 변경 시 과업 변경사항 저장 로직 호출 (예: 텍스트 입력 변경 감지)
+document.getElementById('taskNames').addEventListener('input', function(event) {
+    if (event.target.matches('input[type="text"][name="taskNm"]')) {
+        saveTaskChanges(); // 과업 텍스트 변경 시 과업 변경사항 저장
+    }
+});
+
+// 활동 변경 시 활동 변경사항 저장 로직 호출 (예: 텍스트 입력 변경 감지)
+document.getElementById('activityNames').addEventListener('input', function(event) {
+    if (event.target.matches('input[type="text"][name="ActNm"]')) {
+        saveActivityChanges(); // 과업 텍스트 변경 시 과업 변경사항 저장
+    }
+});
+
+function loadActivityNames(taskNmRadio) {
+    const teamSelected = document.querySelector('input[name="team_selected"]').value; // 현재 선택된 팀 값 가져오기
+    const ajaxUrlForActivities = document.getElementById('ajaxUrlForActivities').value; // 활동 정보를 불러오기 위한 URL
+    const fullUrl = `${ajaxUrlForActivities}?taskNmRadio=${taskNmRadio}&teamSelected=${teamSelected}`;
+
+    fetch(fullUrl)
+    .then(response => response.json())
+    .then(data => {
+        const activityDiv = document.getElementById('activityNames');
+        activityDiv.innerHTML = ''; // 이전에 추가된 내용을 초기화
+        data.forEach(activity_list => {
+            // 활동 정보 표시 로직...
+            const container = document.createElement('div');
+
+            const inputText = document.createElement('input');
+            inputText.type = 'text';
+            inputText.name = 'ActNm';
+            inputText.value = activity_list.act_nm; // 로컬 스토리지에서 불러온 과업 이름을 설정
+
+            // 삭제 버튼 생성 및 이벤트 리스너 설정
+            const deleteButton = createButton('삭제', container);
+
+            // 위로 이동 버튼 생성 및 이벤트 리스너 설정
+            const moveUpButton = createButton('위로', container, true);
+
+            // 아래로 이동 버튼 생성 및 이벤트 리스너 설정
+            const moveDownButton = createButton('아래로', container, false);
+
+            container.appendChild(inputText);
+            container.appendChild(deleteButton);
+            container.appendChild(moveUpButton);
+            container.appendChild(moveDownButton);
+            activityDiv.appendChild(container);
+            // 활동 정보를 위한 요소 생성 및 container에 추가
+            // 예: 활동 이름을 표시하는 input text, 삭제/이동 버튼 등
+        });
+        // 활동 정보 로드 및 표시 완료 후 변경사항 복원 로직 호출
+        const selectedJobCd = document.querySelector('input[name="radio1"]:checked')?.value;
+        const selectedDutyNm = document.querySelector('input[type="radio"][name="dutyNmRadio"]:checked')?.value;
+        const selectedTaskNm = taskNmRadio;
+        restoreActivityChanges(selectedJobCd, selectedDutyNm, selectedTaskNm); // 복원 함수 호출
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// 과업 추가 버튼 클릭 이벤트에도 변경사항 저장 로직 호출
+document.getElementById('addTask').addEventListener('click', saveTaskChanges);
+
+// 활동 추가 버튼 클릭 이벤트에도 변경사항 저장 로직 호출
+document.getElementById('addActivity').addEventListener('click', saveActivityChanges);
+
+
+// 페이지 로드 시 직무 및 책무가 이미 선택되어 있을 경우 해당 과업 복원
+window.onload = function() {
+    const selectedJobCd = document.querySelector('input[name="radio1"]:checked')?.value;
+    const selectedDutyNm = document.querySelector('input[type="radio"][name="dutyNmRadio"]:checked')?.value;
+    const selectedTaskNm = document.querySelector('input[type="radio"][name="taskNmRadio"]:checked')?.value;
+    if (selectedJobCd && selectedDutyNm) {
+        restoreTaskChanges(selectedJobCd, selectedDutyNm);
+    }
+    if (selectedJobCd && selectedDutyNm && selectedTaskNm) {
+        restoreActivityChanges(selectedJobCd, selectedDutyNm, selectedTaskNm);
+    }
+};
+
+
+function saveActivityChanges() {
+    // 현재 선택된 직무, 책무, 과업 기반으로 활동 데이터 저장 로직 구현
+    const jobCd = document.querySelector('input[name="radio1"]:checked')?.value;
+    const dutyNm = document.querySelector('input[type="radio"][name="dutyNmRadio"]:checked')?.value;
+    const taskNm = document.querySelector('input[type="radio"][name="taskNmRadio"]:checked')?.value;
+    if (!jobCd || !dutyNm || !taskNm) return; // 필수 값이 없는 경우 함수 종료
+
+    const activities = [];
+    document.querySelectorAll('#activityNames div').forEach((container) => {
+        const inputText = container.querySelector('input[type="text"][name="ActNm"]');
+        if (inputText) { // 입력된 활동 이름만 저장
+            activities.push({
+                actNm: inputText.value,
+            });
+        }
+    });
+
+    // 로컬 스토리지에 직무 코드, 책무, 과업을 키로 사용하여 저장
+    const key = `activities_${jobCd}_${dutyNm}_${taskNm}`;
+    localStorage.setItem(key, JSON.stringify(activities));
+}
+
+function restoreActivityChanges(jobCd, dutyNm, taskNm) {
+    // 로컬 스토리지에서 해당 활동 데이터 로드 및 화면에 표시하는 로직 구현
+    const key = `activities_${jobCd}_${dutyNm}_${taskNm}`;
+    const savedActivities = JSON.parse(localStorage.getItem(key));
+    if (savedActivities) {
+        const activityDiv = document.getElementById('activityNames');
+        activityDiv.innerHTML = ''; // 기존 내용 초기화
+        savedActivities.forEach(activity => {
+            const container = document.createElement('div');
+
+            const inputText = document.createElement('input');
+            inputText.type = 'text';
+            inputText.name = 'ActNm';
+            inputText.value = activity.actNm; // 로컬 스토리지에서 불러온 활동 이름을 설정
+            // 삭제, 이동 버튼 생성 및 이벤트 리스너 설정 (이전에 설명된 createButton 함수 사용)
+            const deleteButton = createButton('삭제', container);
+            const moveUpButton = createButton('위로', container, true);
+            const moveDownButton = createButton('아래로', container, false);
+
+            container.appendChild(inputText);
+            container.appendChild(deleteButton);
+            container.appendChild(moveUpButton);
+            container.appendChild(moveDownButton);
+            activityDiv.appendChild(container);
+        });
+    }
+}
+
+document.getElementById('addActivity').addEventListener('click', function() {
+    const activityDiv = document.getElementById('activityNames');
+    const container = document.createElement('div'); // 새로운 책무와 버튼들을 담을 컨테이너
+
+    // 새로운 input text 생성
+    const inputText = document.createElement('input');
+    inputText.type = 'text';
+    inputText.name = 'ActNm';
+    inputText.placeholder = '책무 이름 입력';
+
+    // 삭제 버튼 생성
+    const deleteButton = document.createElement('button');
+    deleteButton.innerText = '삭제';
+    deleteButton.type = 'button';
+    deleteButton.addEventListener('click', function() {
+        container.remove(); // 컨테이너 삭제
+        saveActivityChanges(); // 삭제 시 변경사항 저장
+    });
+
+    // 위로 이동 버튼 생성
+    const moveUpButton = document.createElement('button');
+    moveUpButton.innerText = '위로';
+    moveUpButton.type = 'button';
+    moveUpButton.addEventListener('click', function() {
+        if (container.previousElementSibling) {
+            container.parentNode.insertBefore(container, container.previousElementSibling);
+        }
+        saveActivityChanges(); // 삭제 시 변경사항 저장
+    });
+
+    // 아래로 이동 버튼 생성
+    const moveDownButton = document.createElement('button');
+    moveDownButton.innerText = '아래로';
+    moveDownButton.type = 'button';
+    moveDownButton.addEventListener('click', function() {
+        if (container.nextElementSibling) {
+            container.parentNode.insertBefore(container.nextElementSibling, container);
+        }
+        saveActivityChanges(); // 과업 추가 후 변경사항 저장
+    });
+
+    // 새 요소를 기존 요소에 추가
+    container.appendChild(inputText);
+    container.appendChild(deleteButton);
+    container.appendChild(moveUpButton);
+    container.appendChild(moveDownButton);
+    activityDiv.appendChild(container); // taskDiv에 컨테이너 추가
+
+    saveActivityChanges(); // 과업 추가 후 변경사항 저장
+});
+
+
+
+</script>
+
+{% endblock %}

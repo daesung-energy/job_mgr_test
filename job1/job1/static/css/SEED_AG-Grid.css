@@ -1,0 +1,952 @@
+@media print {
+
+    /* 프린트할 때 숨길 요소를 선택하여 display: none; 설정 */
+    button,
+    #fileInput,
+    #filter-text-box {
+        display: none;
+    }
+}
+
+/* AG Grid 헤더 셀 라벨의 스타일 */
+.ag-header-cell-label {
+    text-align: right;
+    /* 헤더 셀 라벨을 오른쪽 정렬 */
+    font-weight: bold;
+    /* 헤더 셀 라벨에 볼드체 적용 */
+}
+
+/* 숫자 열에 대한 사용자 지정 스타일 */
+.numeric .ag-header-cell-label {
+    color: red;
+    /* 숫자 열의 헤더 셀 라벨 색상을 빨간색으로 지정 */
+}
+
+/* 텍스트 열에 대한 사용자 지정 스타일 */
+.text .ag-header-cell-label {
+    color: blue;
+    /* 텍스트 열의 헤더 셀 라벨 색상을 파란색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}
+
+/* 날짜 열에 대한 사용자 지정 스타일 */
+.date .ag-header-cell-label {
+    color: orangered;
+    /* 날짜 열의 헤더 셀 라벨 색상을 주홍색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}
+
+/* 연락처 열에 대한 사용자 지정 스타일 */
+.mobile .ag-header-cell-label {
+    color: tomato;
+    /* 연락처 열의 헤더 셀 라벨 색상을 토마토색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}
+
+/* 금액 열에 대한 사용자 지정 스타일 */
+.number .ag-header-cell-label {
+    color: lightblue;
+    /* 금액 열의 헤더 셀 라벨 색상을 연한 파란색으로 지정 */
+    /* 필요에 따라 다른 스타일 변경 가능 */
+}
+
+/* AG-Grid에서 숨길 열 지정하기 */
+.hidden-column {
+  display: none !important;
+}
+
+.select-combox3 { /* 회기용 박스 */
+    height: 50px;
+    padding: 5px;
+    text-align: left;
+    border: black;
+    outline: none; /* 선택 시 포커스 효과 제거 */
+    font-family: "Seed-Regular";
+    font-size: 16px;
+}
+
+
+/* ======================= font ============================*/
+@font-face {
+    font-family: "Seed-Bold";
+    src: url("../font/SCDream9.otf") format("truetype");
+  }
+  @font-face {
+    font-family: "Seed-Light";
+    src: url("../font/SCDream7.otf") format("truetype");
+  }
+  @font-face {
+    font-family: "Seed-Medium";
+    src: url("../font/SCDream5.otf") format("truetype");
+  }
+  @font-face {
+    font-family: "Seed-Regular";
+    src: url("../font/SCDream3.otf") format("truetype");
+  }
+  @font-face {
+    font-family: "Seed-Thin";
+    src: url("../font/SCDream1.otf") format("truetype");
+  }
+  
+  /* ======================== Basic_style ============================ */
+  /* 모든 설정의 기본이 되는 베이직 스타일 지정 */
+  * {
+    padding: 0; /* 모든 요소의 안쪽 여백을 0으로 지정 */
+    margin: 0; /* 모든 요소의 바깥쪽 여백을 0으로 지정 */
+    box-sizing: border-box; /* border-box : 너비와 높이를 지정할 때 테두리와 안쪽 여백까지 포함하여 크기를 계산 */
+    word-break: keep-all; /* 단어 단위로 줄 바꿈을 하는 기본 동작 대신, 긴 한글 단어를 줄 바꿈하지 않고 그대로 유지 */
+  }
+  *,
+  :after,
+  :before {
+    box-sizing: border-box;
+    transition: none 0.2s ease-in-out; /* 요소의 전환(transition) 효과를 설정 */
+    /* none: 전환 효과를 없음으로 설정. 요소의 상태 변화에 대한 애니메이션 효과가 적용되지 않다.
+       0.2s: 전환에 걸리는 시간을 지정. 요소가 상태 변화를 시작한 후 0.2초 동안 애니메이션 효과가 진행.
+       ease-in-out: 전환 효과의 타이밍 함수(timing function)를 지정. 처음에는 천천히 시작하고 중간에서 가속도를 높인 후 다시 천천히 끝나도록 애니메이션을 조절. */
+  }
+  a {
+    /* anchor 링크요소에 스타일을 적용하는 부분 */
+    cursor: pointer; /* 커서를 링크 요소 위에 올렸을 때 포인터 형태로 변경, 사용자가 해당 요소가 클릭 가능한 요소임을 알수 있도록 알려줌 */
+    display: inline-block; /* 링크 요소를 인라인 블록 요소로 표시, 다른 인라인 요소와 같이 한 줄에 배치되면서 너비와 높이 등의 속성을 조정 */
+    color: inherit; /* 링크의 글자 색상을 상위 (parent) 요소에서 상속 받은 값으로 설정 */
+    text-decoration: none; /* 텍스트를 꾸며주는 인자를 모두 없애고 기본적인 텍스트 스타일로 표시 */
+  }
+  a:link {
+    /* 방문하지 않은 링크 사이트를 스타일링 */
+    text-decoration: none;
+    color: #000;
+  }
+  a:hover {
+    /* 커서를 올려두었을때 적용할 기본 스타일링 */
+    color: #000;
+  }
+  a:visited {
+    /* 방문한 적이 있는 링크 사이트를 스타일링 */
+    color: #000;
+  }
+  ul,
+  li {
+    list-style: none;
+  }
+  
+  input:focus::placeholder {
+    color: transparent; /* input 에 커서가 선택되면 택스트 색상을 투명(transparent)으로 설정하여 텍스트가 사라진것 처럼 보여짐 */
+  }
+  textarea:focus::placeholder {
+    color: transparent; /* textarea 에 커서가 선택되면 택스트 색상을 투명(transparent)으로 설정하여 텍스트가 사라진것 처럼 보여짐 */
+  }
+  form {
+    display: block;
+    /* 해당 요소를 블록 수준으로 표시하도록 지정, from 요소는 한 줄을 차지하고, 너비가 100%로 자동 설정되어 다른 요소와 독립된 개별적인 공간을 차지합니다. */
+  }
+  caption {
+    color: transparent; /* caption 텍스트의 색상을 투명(transparent) 으로 설정 */
+    text-indent: 100%; /* caption 텍스트를 왼쪽으로 100% 들여쓰기 */
+    vertical-align: middle; /* caption 요소를 수직 정렬하여 중앙에 위치 */
+    white-space: nowrap; /* 공백이 있는 경우 줄 바꿈을 방지하여 캠션 텍스트가 한 줄로 유지되도록 설정 */
+    overflow: hidden; /* 넘치는 내용을 숨기고 요소의 경계 내에선만 보여줌 */
+    display: none; /* 해당 요소를 화면에서 숨깁니다. */
+    /* <caption> 태그로 감싸인 테이블의 캡션을 화면에서 보이지 않도록 만들고, 높이가 없는 공간 차지만 하도록 설정합니다. 
+    이렇게 함으로써 시각적인 영역 차지 없이 명세된 기능(테이블 설명 등)만 제공할 수 있습니다.
+    다른 요소들에 대해서도 동일한 스타일 규칙을 사용하면 해당 요소들 역시 비시각적인 역할만 수행하고 시각적 영역 차지 없이 사용될 수 있습니다. */
+  }
+  /* select {
+    -webkit-appearance: none; /* 크롬 화살표 없애기 */
+    /* -moz-appearance: none; 파이어폭스 화살표 없애기 */
+    /* appearance: none; 화살표 없애기 */
+  /* } */ 
+  img {
+    vertical-align: top; /* img 요소가 가장 상단에 위치 */
+  }
+  button {
+    border: 0; /* button 의 테두리(border)선 굵기가 0 즉 선이 표시 없음 */
+    background-color: #fff; /* 배경 컬러 #fff */
+    cursor: pointer; /* button 에 커서가 올라가면 pointer로 변경하여 사용자가 클릭이 가능하다는 것을 인지할 수 있도록 함 */
+  }
+  
+  wrap {
+    position: relative; /* 위치를 상대적(relative)으로 지정 */
+    width: 100%;
+  }
+  
+  contents {
+    position: relative; /* 위치를 상대적(relative)으로 지정 */
+    display: flex;
+    /* display: flex; 속성을 적용하면 해당 요소와 그 하위 요소들은 유연한 박스 모델의 일부가 됩니다.
+      자식 요소들이 한 줄에 나란히 배치되며, 너비를 동적으로 조정합니다.
+      남은 공간을 자동으로 분배하여 유연한 크기 조정이 가능합니다.
+      정렬과 간격 설정 등 다양한 레이아웃 기능을 제공합니다.
+      유연한 박스 모델은 웹 페이지의 레이아웃 설계에 많은 유용성을 제공하므로, 주로 컨테이너 역할인 부모 요소에 display: flex;를 적용합니다. 
+      이렇게 함으로써 자식 요소들 사이의 정렬, 간격 설정 등 다양한 레이아웃 구성 옵션을 활용할 수 있습니다. */
+  }
+  
+  /*=========================================== login_style =================================================*/
+  
+  .login_wrap {
+    position: relative; /* 위치를 상대적(relative)으로 지정 */
+    width: 440px; /* 너비를 440px로 지정 */
+  }
+  
+  .login {
+    position: absolute;
+    top: 300px;
+    padding: 0 20px;
+  }
+  
+  .login h1 {
+    width: 100%;
+    text-align: center;
+    color: white;
+    padding: 20px;
+  }
+  
+  .login_logo {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    padding: 20px 0 32px 0;
+  }
+  .login fieldset {
+    width: 400px;
+    padding: 24px;
+    border: none;
+    background-color: white;
+  }
+  
+  .field_wrap {
+    position: relative;
+    padding-bottom: 12px;
+  }
+  .field_wrap p {
+    display: block;
+    margin-bottom: 4px;
+  }
+  .field_wrap label {
+    display: block;
+  }
+  .field_wrap input {
+    width: 100%;
+    height: 40px;
+    background-color: #e8e8e8;
+    border: 1px solid #ccc;
+    text-indent: 10px; /* 텍스트의 들여쓰기를 설정하는 방법 */
+    border-radius: 1px;
+    text-decoration: black;
+  }
+  .login_btn {
+    width: 100%;
+    height: 40px;
+    background-color: #384e75;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .login_btn p {
+    color: white;
+    text-align: center;
+    padding: 8px;
+  }
+  
+  .login_btn:hover {
+    background-color: blue;
+  }
+  
+  .right_img {
+    position: relative; /* 위치를 상대적(relative)으로 지정 */
+    width: 100%; /*  */
+    height: 50px; /*  */
+    /* background-color: #000; /* 오른쪽(right_img) 이미지의 범위를 확인하기 위한 백그라운드로 확인 */
+  }
+  
+  copyright p {
+    position: absolute;
+    right: 40px;
+    bottom: 20px;
+    color: #888;
+    font-size: 11px;
+  }
+  /* ================================ table_main =================================== */
+  
+  header {
+    position: relative;
+    background-color: white;
+    border-bottom: 1px solid lightgray;
+    width: 100%;
+    padding: 15px;
+  }
+  
+  .top {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .top-menu img {
+    padding: auto;
+    width: 30px;
+  }
+  
+  .top-menu dd {
+    padding-top: 10px;
+  }
+  
+  .logo {
+    padding-left: 20px;
+  }
+  
+  .top dl {
+    display: flex;
+    flex-direction: row;
+    padding-top: 20px;
+    padding-right: 30px;
+  }
+  
+  .top dl a {
+    text-decoration: none;
+    color: black;
+    font-size: 20px;
+    font-family: "Seed-bold";
+    padding-right: 15px;
+  }
+  
+  .row {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .side {
+    flex-basis: 300px;
+    flex-shrink: 0;
+    /* width: 300px; sdie 넓이를 250px로 고정 */
+    background-color: lightgray;
+  }
+  
+  .main {
+    flex: auto; /* sdie 넓이를 300px로 고정되고 나머지를 자치 */
+    /* background-color: rgb(230, 16, 16); */ /* background-color로 main이 차지하는 공간을 확인 */
+    padding: 20px;
+    border-bottom: 2px solid #e6e9f4;
+  }
+  
+  .main img {
+    position: relative;
+    width: 90%;
+    height: auto;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+  
+  .fakeimg {
+    background-color: white;
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid #e6e9f4;
+  }
+  
+  .fakeimg a {
+    color: black;
+    padding: 5px;
+    padding-left: 60px;
+    text-decoration: none;
+    text-align: left;
+    font-size: 16px;
+    font-family: "Seed-Regular";
+  }
+  
+  .fakeimg p {
+    padding: 10px;
+    font-size: 20px;
+    font-family: "Seed-bold";
+    padding-left: 40px;
+  }
+  
+  .fakeimg a:hover {
+    background-color: red;
+    color: white;
+  }
+  
+  .choice:hover {
+    background-color: red;
+    color: white;
+  }
+  
+  .choice {
+    color: red;
+  }
+  
+  /* ================================= article class="main" 구조 ============================================ */
+  
+  .main {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .main-nav {
+    line-height: 40px;
+  }
+  
+  .main-header p {
+    padding-top: 10px;
+    text-align: center;
+  }
+  
+  .button-grup {
+    text-align: right;
+    padding-right: 230px;
+    margin-top: 25px;
+  }
+  
+  /* ========================================== main table ================================================== */
+  .main-table td {
+    margin-top: -1px;
+  }
+  
+  .main-table {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    /* border: 1px solid grey; */
+  }
+  
+  .main-table table,
+  .main-table th,
+  .main-table td {
+    border: 1px solid grey;
+    border-collapse: collapse;
+  }
+  
+  .main-table th {
+    padding: 10px;
+  }
+  
+  .main-table select option {
+    padding: 10px;
+  }
+  
+  .main-table select option:hover {
+    border: 1px solid red;
+    cursor: pointer;
+  }
+  
+  /* ========================================== main-under ============================================== */
+  .main-down {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .main-under {
+    margin-top: 40px;
+    width: 1400px;
+    height: 200px;
+    border: 1px solid grey;
+    border-radius: 5px;
+  }
+  
+  .main-under-title p {
+    font-family: "Seed-Medium";
+    font-size: 20px;
+    padding: 20px;
+  }
+  
+  /* ========================================== text =================================================== */
+  .main-title {
+    margin-left: 20px;
+    font-family: "Seed-bold";
+    /* font-weight: bold; */
+    font-size: 40px;
+  }
+  
+  .sub-title {
+    font-family: "Seed-bold";
+    font-size: 35px;
+    margin-left: 20px;
+  }
+  
+  #sub-title1 {
+    margin-left: 20px;
+    font-family: "Seed-bold";
+    font-size: 35px;
+  }
+  
+  #sub-title2 {
+    margin-left: 20px;
+    font-family: "Seed-Medium";
+    font-size: 25px;
+  }
+  
+  #sub-title3 {
+    margin-left: 20px;
+    font-family: "Seed-Regular";
+    font-size: 25px;
+  }
+  
+  .basic-text {
+    font-family: "Seed-Medium";
+    font-size: 16px;
+  }
+  
+  .nav-text {
+    font-family: "Seed-Regular";
+    font-size: 12px;
+  }
+  
+  .Choice {
+    font-weight: bold;
+    color: black;
+    background-color: red;
+    /* 선택된 텍스트의 배경 색상 */
+    /* 선택된 텍스트가 굵은 경우 적용할 다른 스타일들도 여기에 추가 가능 */
+  }
+  
+  /* ============================================ select ================================================= */
+  .select-combox {
+    margin-left: 50px;
+    padding: 10px;
+    text-align: left;
+    border-radius: 5px;
+    /* border: none; select 선 제거 */
+    outline: none; /* 선택 시 포커스 효과 제거 */
+    font-family: "Seed-Regular";
+    font-size: 16px;
+  }
+  
+  .select-combox2 {
+    margin-left: 10px;
+    padding: 5px;
+    text-align: left;
+    border-radius: 5px;
+    /* border: none; select 선 제거 */
+    outline: none; /* 선택 시 포커스 효과 제거 */
+    font-family: "Seed-Regular";
+    font-size: 16px;
+  }
+  
+  .select-combox3 { /* 회기용 박스 */
+    height: 50px;
+    padding: 5px;
+    text-align: left;
+    border: black;
+    outline: none; /* 선택 시 포커스 효과 제거 */
+    font-family: "Seed-Regular";
+    font-size: 16px;
+  }
+  
+  .select-combox-list {
+    height: 200px;
+    padding: 10px;
+    text-align: left;
+    border: black; /* select 선 제거 */
+    outline: none; /* 선택 시 포커스 효과 제거 */
+    font-family: "Seed-Regular";
+    font-size: 20px;
+  }
+  
+  .list-box {
+    display: flex;
+    padding: 20px;
+    font-family: "Seed-Medium";
+    font-size: 16px;
+    line-height: 5px;
+  }
+  
+  .list-box-prd {
+    display: flex;
+    padding: 20px;
+    font-family: "Seed-Regular";
+    font-size: 16px;
+    line-height: 5px;
+  }
+  
+  .list-box-prd th {
+    width: 200px;
+    background-color: white;
+    height: 40px;
+  }
+  .list-box-prd table,
+  .list-box-prd tr,
+  .list-box-prd th,
+  
+  .list-box-prd td {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+  
+  .list-box table,
+  .list-box tr,
+  .list-box th,
+  
+  .list-box td {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+  
+  .list-box th {
+    width: 250px;
+    background-color: rgb(241, 241, 241);
+    height: 50px;
+    
+  }
+  
+  .list-box1 {
+    width: 600px;
+  }
+  
+  .list-box thead th,
+  .list-box tbody select {
+    width: 300px;
+  }
+  
+  .list-box2 {
+    margin-left: 50px;
+    width: 600px;
+  }
+  
+  .list-box1 select option:hover {
+    border: 1px solid #d1372c;
+    cursor: pointer;
+  }
+  
+  .list-box2 select option:hover {
+    background-color: #d1372c;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .label {
+    font-family: "Seed-Medium";
+    font-size: 16px;
+    text-align: right;
+    width: 200px;
+    padding-right: 10px;
+  }
+  
+  .label-text1 {
+    font-family: "Seed-Regular";
+    font-size: 12px;
+  }
+  
+  .label-text2 {
+    font-family: "Seed-Medium";
+    font-size: 16px;
+    padding-left: 20px;
+  }
+  
+  .label-text3 {
+    margin-left: 50px;
+    font-family: "Seed-Light";
+    font-size: 20px;
+  }
+  
+  .label-text4 {
+    margin-left: 50px;
+    font-family: "Seed-Regular";
+    font-size: 25px;
+  }
+  
+  .label-text5 {
+    margin-left: 50px;
+    font-family: "Seed-Medium";
+    font-size: 25px;
+  }
+  
+  .label-text6 {
+    font-family: "Seed-Medium";
+    font-size: 16px;
+  }
+  
+  
+  
+  /* ============================================  button  ================================================= */
+  .add,
+  .del,
+  .save,
+  .cancel,
+  .back,
+  
+  .add {
+    margin-left: 20px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    border: 3px solid #1c7293;
+    color: black;
+    font-family: "Seed-Medium";
+    font-size : 16px;
+  }
+  
+  .back {
+    margin-left: 20px;
+    padding: 8px 18px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    border: 3px solid #ee6c4d;
+    color: black;
+    font-family: "Seed-Medium";
+  }
+  
+  .del {
+    margin-left: 20px;
+    padding: 8px 18px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    border: 3px solid #d1372c;
+    color: black;
+    font-family: "Seed-Medium";
+    font-size : 16px;
+  }
+  
+  .del_small {
+    margin-left: 10px;
+    padding: 1px 10px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    border: 2px solid #d1372c;
+    color: black;
+    font-family: "Seed-Medium";
+    font-size : 12px;
+  }
+  
+  .del_disabled {
+    margin-left: 20px;
+    padding: 8px 18px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    border: 3px solid gray;
+    /* filter: blur(1px); */
+    color: black;
+    font-family: "Seed-Medium";
+    font-size : 16px;
+  }
+  
+  .save {
+    margin-left: 20px;
+    padding: 5px 10px;
+    border-radius: 2px;
+    border: none;
+    cursor: pointer;
+    border: 3px solid #60a561;
+    color: black;
+    font-family: "Seed-Regular";
+    font-size : 12px;
+  }
+  
+  .cancel {
+    margin-left: 20px;
+    padding: 8px 18px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    border: 3px solid #ee6c4d;
+    color: black;
+    font-family: "Seed-Medium";
+    font-size : 16px;
+  }
+  
+  .register {
+    margin-left: 20px;
+    padding: 8px 18px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    border: 3px solid #98c1d9;
+    color: black;
+    font-family: "Seed-Medium";
+    font-size : 16px;
+  }
+  
+  /* =========================================== input ================================================== */
+  
+  .input-radio1 input[type="radio"]:checked + label {
+    font-size: 16px;
+    width: 130px;
+    color: black;
+    border: 3px solid #ee6c4d;
+    padding: 2px 5px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  
+  .input-text {
+    /* width: 200px;
+    padding: 5px;
+    text-align: center;
+    border-radius: 5px; */
+    border: none;
+    text-align: center;
+    border-bottom: 1px solid black;
+    outline: none;
+    font-size: 16px;
+    font-family: "Seed-Regular";
+  }
+  
+  .input-text2 {
+    /* width: 200px;
+    padding: 5px;
+    text-align: center;
+    border-radius: 5px; */
+    border: none;
+    text-align: center;
+    border-bottom: 1px solid black;
+    outline: none;
+    font-size: 16px;
+    width: 80px;
+    font-family: "Seed-Regular";
+  }
+  
+  .input-text3 {
+    border: none;
+    text-align: left;
+    border-bottom: 1px solid black;
+    outline: none;
+    font-size: 16px;
+    font-family: "Seed-Regular";
+  }
+  
+  .input-text4 {
+    border: none;
+    text-align: center;
+    border-bottom: 1px solid black;
+    outline: none;
+    font-size: 16px;
+    font-family: "Seed-Regular";
+  }
+  
+  .input-text5 {
+    border: none;
+    text-align: left;
+    border-bottom: 1px solid black;
+    outline: none;
+    font-size: 16px;
+    width: 120px;
+    font-family: "Seed-Regular";
+  }
+  
+  .input-emt {
+    width: 200px;
+    padding: 5px;
+    text-align: center;
+    border-radius: 5px;
+    border: 2px solid red;
+  }
+  
+  .input-passwd input {
+    width: 200px;
+    padding: 5px;
+    text-align: center;
+    border-radius: 5px;
+  }
+  
+  .input-date {
+    display: flex;
+    padding: 20px;
+    font-family: "Seed-Regular";
+    font-size: 16px;
+  }
+  
+  .date-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+  }
+  
+  .input-date1 input {
+    margin-left: 10px;
+    text-align: left;
+    padding: 5px 15px;
+    font-family: "Seed-Regular";
+    font-size: 16px;
+    /* border-radius: 5px; */
+    border: none;
+    border-bottom: 1px solid black;
+  }
+  
+  /* =========================================== img ================================================== */
+  .add-img,
+  .del-img,
+  .copy-img,
+  .check-img,
+  .error-img {
+    position: relative;
+    display: inline-block;
+  }
+  
+  /* =========================================== info ================================================== */
+  .info {
+    width: 80%;
+    height: 200px;
+    border: 1px solid brown;
+    border-radius: 5px;
+    padding: 20px;
+  }
+  
+  .info-title {
+    margin-top: -10px;
+    width: 120px;
+    text-align: center;
+    font-family: "Seed-Medium";
+    font-size: 16px;
+    border: 1px solid brown;
+    border-radius: 5px;
+  }
+  
+  .info-message {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+  }
+  
+  .info-message img {
+    width: 30px;
+  }
+  
+  .info-message p {
+    font-family: "Seed-Medium";
+    font-size: 16px;
+    padding: 5px;
+  }
+  
+  .info-message1 {
+    border: 1px solid #1c7293;
+    background-color: white;
+    width: 500px;
+    height: auto;
+    /* height: auto; */
+    border-radius: 5px;
+    padding-left: 10px;
+    padding-bottom: 10px;
+  }
+  
+  .info-message1 h3 {
+    color: #49adf4;
+    padding: 10px;
+  }
+  
+  .info-message2 {
+    border: 1px solid #0db561;
+    background-color: white;
+    width: 500px;
+    height: auto;
+    border-radius: 5px;
+    padding-left: 10px;
+    padding-bottom: 10px;
+  }
+  
+  .info-message2 h3 {
+    color: #0db561;
+    padding: 10px;
+  }
+  
+  .bold-link {
+    font-weight: bold;
+  }
+  
+  
