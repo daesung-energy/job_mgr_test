@@ -1133,8 +1133,10 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
 
             if last_year == str(now.year):
                 period_new = str(now.year) + chr(ord(last_char)+1)
+                # period_new = "2023A"
             else:
                 period_new = str(now.year) + "A"
+                # period_new = "2023A"
 
             # copy_period_data(period_old, period_new)
 
@@ -6026,7 +6028,7 @@ def copy_period_data(period_old, period_new):
     pwd='cdh0706**' #비밀번호
     db_host='130.1.112.100' #호스트명/IP
     db_port=3306 #포트번호 (고정값)
-    db_name="testdb" #사용할 데이터베이스
+    db_name="betadb" #사용할 데이터베이스 testdb
 
     dict_table = { # 테이블 목록
         'bs_prd' : '회기',
@@ -6101,7 +6103,7 @@ def delete_period_data(period):
     pwd='cdh0706**' #비밀번호
     db_host='130.1.112.100' #호스트명/IP
     db_port=3306 #포트번호 (고정값)
-    db_name="testdb" #사용할 데이터베이스
+    db_name="betadb" #사용할 데이터베이스 testdb
 
     dict_table = { # 테이블 목록
         'job_spcfc' : '직무명세서',

@@ -1,1 +1,4 @@
 myenv
+.gitignore
+job_mgr.venv
+Requirements.txt

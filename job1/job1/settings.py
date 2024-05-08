@@ -24,10 +24,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-s0=g(aab+0xz#*s^v+cwukx=9$=^1=8=z(ntr^a!rm)19_isk!"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True ##배포할때는 false로
+DEBUG = False #배포때 추가
 
-ALLOWED_HOSTS = []
-
+# ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*'] # 모든 호스트 허용. 배포때 추가
 
 # Application definition
 
@@ -82,7 +83,7 @@ WSGI_APPLICATION = "job1.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # mysqlclient library 설치 필요
-        'NAME': 'testdb', #MariaDB에서 내가 접근할 DB이름
+        'NAME': 'betadb', #MariaDB에서 내가 접근할 DB이름 testdb
         'USER': 'cdh', #내 계정(모든 권한이 필요함)
         'PASSWORD': 'cdh0706**', #내 계정의 비밀번호
         'HOST': '130.1.112.100', #DB IP주소
@@ -136,6 +137,13 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     BASE_DIR / 'job1/static',
 ]
+
+# 배포때 추가된 코드
+STATITIC_ROOT = BASE_DIR / 'staticfiles' #이렇게 하면 collectstatic 명령어로 static 파일을 한 곳에 모아준다. 
+
+# 미디어(배포때 추가)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Default primary key field type
