@@ -1,4 +1,5 @@
 myenv
 .gitignore
-job_mgr.venv
+job_mgr.venv/
 Requirements.txt
+__pycache__/
