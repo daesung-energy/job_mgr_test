@@ -1,0 +1,95 @@
+/* 전체 컨테이너 스타일 */
+#container {
+    text-align: center; /* 내용을 가운데 정렬 */
+    width: 80%; /* 전체 컨테이너의 너비를 80%로 설정 */
+    margin: 20px auto; /* 가운데 정렬 및 위아래 마진 추가 */
+}
+
+/* 표 스타일 */
+.my-table {
+    border-collapse: collapse;
+    border: 1px solid #ddd;
+    table-layout: fixed; /* 테이블 레이아웃을 고정 */
+    width: 100%; /* 표의 너비를 100%로 설정 */
+    margin-top: 20px; /* 테이블 위쪽 마진 추가 */
+    margin-bottom: 20px; /* 테이블 아래쪽 마진 추가 */
+}
+
+/* 테이블 셀 스타일 */
+th, td {
+    padding: 12px; /* 셀 내부 여백 증가 */
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+/* 테이블 헤더 배경 스타일 */
+th {
+    background-color: #a6c0ff;
+    color: white;
+}
+
+/* 검색 조건 드롭다운 스타일 */
+.search-criteria {
+    margin: 20px 0; /* 상하 마진 조정 */
+    text-align: center;
+}
+
+.search-criteria label, .search-criteria select {
+    margin-right: 10px; /* 라벨과 셀렉트 박스 사이의 마진 */
+    font-size: 16px; /* 글씨 크기 조정 */
+}
+
+.search-criteria select {
+    padding: 5px 10px; /* 드롭다운 내부 패딩 조정 */
+    border: 1px solid #ddd; /* 테두리 스타일 */
+    border-radius: 4px; /* 경계선 둥글게 */
+}
+
+/* 테이블 제목 및 버튼 컨테이너 스타일 */
+.title-and-button-container {
+    display: flex;
+    justify-content: space-between; /* 항목들을 양쪽 끝으로 정렬 */
+    align-items: center; /* 세로축 중앙 정렬 */
+    margin-bottom: 10px; /* 테이블과의 간격 */
+}
+
+/* 테이블 제목 스타일 */
+.table-title {
+    font-weight: bold; /* 테이블 제목 진하게 */
+    text-align: left;
+}
+
+/* 버튼 컨테이너 스타일 */
+.button-container {
+    /* 추가된 스타일 없음, 기존의 스타일 적용 */
+}
+
+/* 버튼 스타일 */
+.button-container button {
+    padding: 8px 16px;
+    margin-left: 8px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.button-container button:hover {
+    background-color: #45a049;
+}
+
+/* 인쇄 시 적용되는 스타일 */
+@media print {
+    * {
+        -webkit-print-color-adjust: exact;
+    }
+
+    th {
+        background-color: #a6c0ff !important;
+    }
+
+    .title-and-button-container {
+        display: none; /* 인쇄 시 제목과 버튼 컨테이너 숨김 */
+    }
+}

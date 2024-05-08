@@ -139,11 +139,11 @@ STATICFILES_DIRS = [
 ]
 
 # 배포때 추가된 코드
-STATITIC_ROOT = BASE_DIR / 'staticfiles' #이렇게 하면 collectstatic 명령어로 static 파일을 한 곳에 모아준다. 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  #이렇게 하면 collectstatic 명령어로 static 파일을 한 곳에 모아준다. 
 
 # 미디어(배포때 추가)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Default primary key field type
