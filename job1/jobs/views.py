@@ -6046,6 +6046,7 @@ def copy_period_data(period_old, period_new):
         'bs_ttl_cnt' : '직책별 부서원수',
         'bs_mbr_grp_nm' : '부서원 그룹명',
         'bs_mbr_grp' : '부서원 그룹',
+        'bs_acnt' : '계정',
         'bs_job' : '직무 리스트',
         'bs_job_resp' : '직무 성과책임',
         'bs_job_dept' : '부서별 직무',
