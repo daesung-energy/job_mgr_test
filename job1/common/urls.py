@@ -14,7 +14,7 @@ urlpatterns = [
   path('', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
   # django.contrib.auth앱의 LoginView 클래스를 활용했으므로 별도의 views.py 파일 수정이 필요 없음
   # path('logout/', auth_views.LogoutView.as_view(), name='logout'), # 코드 추가하기
-  path('logout/', auth_views.LogoutView.as_view(), name='logout')
+  path('', auth_views.LogoutView.as_view(), name='logout')
 ]
 
 # 배포시 추가
