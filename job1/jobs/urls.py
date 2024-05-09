@@ -2,6 +2,13 @@ from django.urls import path
 from django.shortcuts import render #template 호출. 즉, loader()와 HttpResponse()를 합친 개념
 from . import views
 
+# 배포 때 추가
+from django.conf import settings
+from django.conf.urls.static import static
+from django.urls import re_path as url
+from django.views.static import serve
+
+
 urlpatterns = [
     path('', views.index, name='index'),
     path('ag_grid/', views.ag_grid, name='ag_grid'),
@@ -110,4 +117,10 @@ urlpatterns = [
     path('get_tasks/', views.get_tasks, name='get_tasks'),
     path('get_activities/', views.get_activities, name='get_activities'),
     path('submit_activity/', views.submit_activity, name='submit_activity'),
+]
+
+# 배포 때 추가
+urlpatterns += [
+        url(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
+        url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
