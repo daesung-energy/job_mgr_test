@@ -135,7 +135,8 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'job1/static',
+    # BASE_DIR / 'job1/static', 배포전
+    os.path.join(BASE_DIR, 'job1' 'static'), # 배포후
 ]
 
 # 배포때 추가된 코드
