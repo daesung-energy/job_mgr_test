@@ -86,7 +86,7 @@
                                 </tr>
                                 <tr>
                                     <td>
-                                    <select name="dept_selected" class="select-combox3" size="5" style="height: 145px; width: 150px;" onchange="this.form.submit()">
+                                    <select name="dept_selected" class="select-combox3" size="5" style="height: 300px; width: 150px;" onchange="this.form.submit()">
                                         {% for index, row in dept_list.iterrows %}
                                         <option value="{{ row.dept_cd }}" {% if row.dept_cd == dept_selected %} selected {% endif %}> {{ row.dept_nm }} </option>
                                         {% endfor %}
@@ -183,7 +183,7 @@
                             <button type="submit" form="dept_edit" class="add" name="action" value="action2">추가</button>
                             {% if del_activate == "del_activate" %}
                             <button type="submit" form="dept_edit" class="del" name="action" value="action3"
-                            onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?')">삭제</button>
+                            onclick="return confirm('해당 부서가 삭제됩니다. 계속하시겠습니까?')">삭제</button>
                             <button type="submit" form="dept_edit" class="cancel" name="action" value="action4">취소</button>
                             {% else %}
                             <button type="submit" class="del_disabled" disabled>삭제</button>

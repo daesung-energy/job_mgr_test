@@ -54,7 +54,7 @@
                     <div id="job">
                     <p style="font-family: Seed-Medium;"><span>직무</span></p>
                     <div id="jobDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                    height:100px; width:200px; flex-wrap: wrap; margin-top:5px;">
+                    height:180px; width:200px; flex-wrap: wrap; margin-top:5px;">
                     <!-- 여기에 직무 목록이 동적으로 생성 -->
                     </div>
                     </div>
@@ -63,7 +63,7 @@
                     <div id="duty" style="padding-left:20px;">
                     <p style="font-family: Seed-Medium; font-size: 14px;"><span>책무</span></p>
                     <div id="dutyDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                    height:100px; width:400px; flex-wrap: wrap; margin-top:5px;">
+                    height:180px; width:400px; flex-wrap: wrap; margin-top:5px;">
                         <!-- 선택된 직무에 따라 책무 목록이 동적으로 생성 -->
                     </div>
                     <button id="addDuty" class="add_3" type="button">책무 추가</button>
@@ -78,7 +78,7 @@
                 <span style="margin-left:15px;">연간 수행시간</span>
                 </p>
                 <div id="task" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                height:130px; width:1420px; flex-wrap: wrap; margin-top:5px;">
+                height:250px; width:1420px; flex-wrap: wrap; margin-top:5px;">
                 <div id="taskDiv" >
                     <!-- 선택된 직무와 책무에 따라 과업 목록이 동적으로 생성 -->
                 </div>
@@ -93,7 +93,7 @@
                 
                 </p>
                 <div id="activity" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                height:130px; width:1420px; flex-wrap: wrap; margin-top:5px;">
+                height:250px; width:1420px; flex-wrap: wrap; margin-top:5px;">
                 <div id="activityDiv" >
                     <!-- 선택된 직무와 책무와 과업에 따라 활동 목록이 동적으로 생성 -->
                 </div>
@@ -1110,7 +1110,25 @@
                 inputText5.setAttribute('name', 'act_prfrm_tm_ann'); // inputText5의 name을 'act_prfrm_tm_ann'로 설정
                 inputText5.setAttribute('class', 'input_text_num');
                 inputText5.setAttribute('value', parseFloat(act.act_prfrm_tm_ann).toFixed(1)); // 연간 업무량 value로 설정(소숫점 1자리까지)
-                inputText5.setAttribute('readonly', true); // 읽기 전용 속성 설정
+                // inputText5 변경 시 jsonData 업데이트
+                inputText5.addEventListener('change', function(event) { // 연간 업무량 변경 시 jsonData 업데이트
+
+                    var newActPrfrmTmAnn = event.target.value; // 새로운 연간 업무량 입력값을 저장
+
+                    // 입력값이 소숫점 첫째자리까지의 숫자인지 확인
+                    if (/^\d+(\.\d{1})?$/.test(newActPrfrmTmAnn)) {
+                        jsonData.forEach(activity => { // jsonData 내의 모든 task에 대해서, task의 value는 taskData
+                            if (act.duty_nm === selectedDuty && act.task_nm === selectedTask && act.job_cd === selectedJob && act.act_nm === act.act_nm) {
+                                act.act_prfrm_tm_ann = parseFloat(newActPrfrmTmAnn).toFixed(1); // 새로운 연간 업무량 값으로 업데이트
+                            }
+                        });
+                        updateTaskPerformanceTime(selectedJob, selectedDuty, selectedTask); // 과업의 연간 수행 시간 업데이트 함수 호출
+                    } else {
+                        alert('소숫점 첫째자리까지의 숫자만 입력 가능합니다.');
+                        event.target.value = parseFloat(act.act_prfrm_tm_ann).toFixed(1); // 입력값이 유효하지 않으면 원래 값으로 되돌림
+                    }
+                });
+
 
                 function updateTime() { // act_prfrm_tm_ann을 업데이트하는 함수 정의
                     
@@ -1257,10 +1275,11 @@
                 inputText7.value = act.final_rpt_to ? act.final_rpt_to : '';
                 inputText8.value = act.rpt_nm ? act.rpt_nm : '';
 
-                // 직무코드가 JC001, JC002, JC004인 경우 활동명, 담당자, 연간 수행횟수, 건당 소요시간, 관련부서, 최종 보고대상, 보고명을 수정할 수 없도록 설정
+                // 직무코드가 JC001, JC002, JC004인 경우 활동명, 담당자, 연간 수행횟수, 건당 소요시간, 연간 소요시간, 수행빈도 입력 필드를 읽기 전용으로 설정
                 if (act.job_cd === 'JC001' || act.job_cd === 'JC002' || act.job_cd === 'JC004') {
                     inputText3.setAttribute('readonly', true); // 연간 수행횟수
                     inputText4.setAttribute('readonly', true); // 건당 소요시간
+                    inputText5.setAttribute('readonly', true); // 연간 소요시간
                     inputSelect.disabled = true; // 수행 빈도 선택 비활성화
                 }
                 

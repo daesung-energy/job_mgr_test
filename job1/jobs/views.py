@@ -1691,6 +1691,7 @@ def BS300_3(request): # BS300 부서관리 탭에서 부서 선택했을 때, �
         context = {
             'prd' : BsPrd.objects.all(),
             'prd_cd_selected' : prd_cd_selected,
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
             'dept_list' : df1,
             'activate' : 'yes', #버튼 컨트롤 on
             'tab' : tab,
@@ -6113,6 +6114,7 @@ def delete_period_data(period):
         'bs_job_dept' : '부서별 직무',
         'bs_job_resp' : '직무 성과책임',
         'bs_job' : '직무 리스트',
+        'bs_acnt' : '계정',
         'bs_mbr_grp' : '부서원 그룹',
         'bs_mbr_grp_nm' : '부서원 그룹명',
         'bs_ttl_cnt' : '직책별 부서원수',
