@@ -539,3 +539,16 @@ class JobTask(models.Model):
         managed = False
         db_table = 'job_task'
         unique_together = (('prd_cd', 'dept_cd', 'job_cd', 'duty_nm', 'task_nm'),)
+
+
+# class v_jb110_f(models.Model):
+#     prd_cd = models.CharField(max_length=5, blank=True, null=True)
+#     dept_cd = models.CharField(max_length=4, blank=True, null=True)
+#     job_cd = models.CharField(max_length=5, blank=True, null=True)
+#     job_nm = models.CharField(max_length=50, blank=True, null=True)
+#     cnt_task = models.IntegerField(blank=True, null=True)
+
+
+#     class Meta:
+#         managed = False
+#         db_table = 'v_jb110_f'
