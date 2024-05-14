@@ -466,7 +466,7 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
         
     user_name = request.user.username # 아이디(ID___)
     # print('user name', user_name)
-    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드. 회기 수정해야 함. 아이디 테이블에 없기 때문.
+    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드. 회기 수정해야 함. 아이디 테이블에 없기 때문.
     dept_login_nm = BsDept.objects.get(prd_cd=BsPrd.objects.all().last().prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
     context = {
@@ -504,7 +504,7 @@ def JB102(request): # JB102 페이지의 초기화면 - 회기 선택 화면
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
 
-    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
     context = {
@@ -547,7 +547,7 @@ def JB103(request): # JB103페이지의 초기화면
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
     print('user', request.user.username)
 
-    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
     context = {
@@ -612,7 +612,7 @@ def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화�
         #html에서 회기 선택
         prd_selected = request.POST["prd_selected"]
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         context = {
@@ -734,7 +734,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
         prd_selected = request.POST["prd_selected"]
         dept_cd_selected = request.POST["dept_cd_selected"]
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         if 'action' in request.POST: # 저장, 삭제, 추가, 취소 버튼을 눌렀을 때
@@ -1228,7 +1228,7 @@ def JB108(request): # 직무현황 제출 초기화면 - 회기선택화면
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
     prd_done_yn = BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn
 
-    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
     submit_yn = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).job_details_submit_yn
 
     if prd_done_yn == 'N':
@@ -2954,7 +2954,7 @@ def jb101_1(request): #JB101에서 회기를 선택한 후 탭을 선택했을 �
         # span을 탭을 어느 것을 선택하느냐에 따라 다르게 연산을 수행할 것임. 일단 그 span이 뭔지 알아낼 것임.
         span_name = request.POST.get('span_name', '')
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         # 공통으로 사용하는 context 설정
@@ -3209,7 +3209,7 @@ def jb101_3(request): # 저장 및 취소 버튼을 눌렀을 때(부서정보, 
         tab = request.POST.get('tab')  # 탭 정보
         action = request.POST.get('action')
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         # 공통 context 설정
@@ -3352,7 +3352,7 @@ def jb101_4(request): # 부서원 그룹 탭에서 저장 및 취소 눌렀을 �
         tab = request.POST.get('tab')
         action = request.POST["action"]
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         if action == 'action1': # 저장 버튼 눌렀을 때
@@ -3526,7 +3526,7 @@ def JB102_1(request): # 직무 기본정보의 부서 선택할 수 있도록 �
         prd_selected = request.POST["prd_selected"]
         key = request.POST["key_prd_select"]
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         context = {
@@ -3589,7 +3589,7 @@ def JB102_3(request): # 직무 기본정보의 직무 유형 선택할 수 있�
         dept_selected = request.POST.get('dept_selected')
         job_type = request.POST.get('job_type')
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected)
@@ -3645,7 +3645,7 @@ def JB102_4(request): # 직무 선택 후 직무 성과책임 조회 / 저장, �
         filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected) # 해당 회기, 부서의 BsJobDept object들
         filtered_value = list(filtered_set.values_list('job_cd', flat=True)) # 위의 object들의 job_cd 리스트. 이를 이용해 BsJob 테이블에 접근.
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
         dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
         if 'job_radio_102' in request.POST:
@@ -3916,7 +3916,7 @@ def JB102_5(request): # 새로운 직무를 선택하고, 직무 수행자를 �
     dept_selected = request.POST['dept_selected'] # 부서
     job_type = request.POST['job_type'] # 직무 유형
 
-    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+    dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
     action = request.POST['action']
@@ -5726,7 +5726,7 @@ def JB108_1(request): # 직무현황 제출 - 부서를 선택할 수 있도록 
         key = request.POST["key_prd_select"]
         # print(prd_selected)
         prd_done_yn = BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
 
         submit_yn = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).job_details_submit_yn
 
@@ -5799,7 +5799,7 @@ def JB108_3(request): # 직무현황 제출/제출취소 버튼 누르고 난 �
         prd_done_yn = BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn
         submit_yn = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_selected).job_details_submit_yn
 
-        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
+        dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2023A").dept_cd_id # 로그인한 부서의 부서코드
 
         action = request.POST["action"]
 
