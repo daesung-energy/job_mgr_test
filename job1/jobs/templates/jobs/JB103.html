@@ -54,14 +54,14 @@
                     <div id="job">
                     <p style="font-family: Seed-Medium;"><span>직무</span></p>
                     <div id="jobDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                    height:180px; width:200px; flex-wrap: wrap; margin-top:5px;">
+                    height:180px; width:400px; flex-wrap: wrap; margin-top:5px;">
                     <!-- 여기에 직무 목록이 동적으로 생성 -->
                     </div>
                     </div>
                     
                     <!-- 책무 Div -->
                     <div id="duty" style="padding-left:20px;">
-                    <p style="font-family: Seed-Medium; font-size: 14px;"><span>책무</span></p>
+                    <p style="font-family: Seed-Medium;"><span>책무</span></p>
                     <div id="dutyDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
                     height:180px; width:400px; flex-wrap: wrap; margin-top:5px;">
                         <!-- 선택된 직무에 따라 책무 목록이 동적으로 생성 -->
@@ -92,8 +92,10 @@
                 <span style="margin-left:70px;">수행 결과물</span>
                 
                 </p>
-                <div id="activity" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                height:250px; width:1420px; flex-wrap: wrap; margin-top:5px;">
+                <!-- <div id="activity" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
+                height:250px; width:1420px; flex-wrap: wrap; margin-top:5px;"> -->
+                <div id="activity" style="padding-left: 10px; padding-top:10px; padding-bottom: 10px; border: 1px solid #ccc;
+                height:auto; width:1420px; flex-wrap: wrap; margin-top:5px;">
                 <div id="activityDiv" >
                     <!-- 선택된 직무와 책무와 과업에 따라 활동 목록이 동적으로 생성 -->
                 </div>
@@ -731,8 +733,6 @@
                 inputText7.value = taskData.work_grade ? taskData.work_grade : '';
                 inputText8.value = taskData.prfrm_tm_ann ? parseFloat(taskData.prfrm_tm_ann).toFixed(1) : '';
 
-                
-
                 container.appendChild(radioInput);
                 container.appendChild(inputText);
                 container.appendChild(inputText2);
@@ -992,7 +992,7 @@
                 });
 
                 const inputSelect = document.createElement('select'); // 수행빈도 입력 필드 생성
-                inputSelect.setAttribute('name', 'act_prfrm_freq'); // inputSelect의 name을 'work_attrbt'로 설정
+                inputSelect.setAttribute('name', 'act_prfrm_freq'); // inputSelect의 name을 'act_prfrm_freq'로 설정
                 inputSelect.setAttribute('class', 'select-combox4');
 
                 // 옵션 생성 및 추가
@@ -1021,15 +1021,20 @@
                 option5.text = 'WW';
                 inputSelect.appendChild(option5);
 
-                // 선택된 업무특성을 설정 (기존 데이터에 따라)
+                const option6 = document.createElement('option');
+                option6.value = 'DD';
+                option6.text = 'DD';
+                inputSelect.appendChild(option6);
+
+                // 기존 데이터를 기반으로 수행빈도 초기 설정
                 inputSelect.value = act.act_prfrm_freq;
 
-                // 업무특성 변경 시 jsonData 업데이트
+                // 수행빈도 변경 시 jsonData 업데이트
                 inputSelect.addEventListener('change', function(event) {
-                    var newActPrfrmFreq = event.target.value; // 새로운 업무특성 입력값을 저장
+                    var newActPrfrmFreq = event.target.value; // 새로운 수행빈도 입력값을 저장
 
-                    // 각 선택 옵션에 따라 연간 업무량을 설정
-                    var newActPrfrmCntAnn;
+                    // 각 선택 옵션에 따라, 수행횟수에 빈도를 곱해서 연간 수행 횟수를 계산함.
+                    var newActPrfrmCntAnn; // 새로운 연간 업무 수행 빈도를 저장할 변수. 초기값은 0이며, YY이면 1, HH이면 2, QQ이면 4, MM이면 12, WW이면 52로 설정
                     switch (newActPrfrmFreq) {
                         case 'YY':
                             newActPrfrmCntAnn = 1;
@@ -1046,6 +1051,9 @@
                         case 'WW':
                             newActPrfrmCntAnn = 52;
                             break;
+                        case 'DD':
+                            newActPrfrmCntAnn = 226;
+                            break;
                         default:
                             newActPrfrmCntAnn = 0;
                             break;
@@ -1054,41 +1062,53 @@
                     jsonData.forEach(activity => { // jsonData 내의 모든 task에 대해서, task의 value는 taskData
                         // 직무와 책무가 선택값과 같은 해당 task_nm을 가진 모든 json 데이터의 work_attrbt 새로운 값으로 업데이트
                         if (act.duty_nm === selectedDuty && act.task_nm === selectedTask && act.job_cd === selectedJob && act.act_nm === act.act_nm) { 
-                            act.act_prfrm_freq = newActPrfrmFreq;
-                            act.act_prfrm_cnt_ann = newActPrfrmCntAnn; // 연간 업무량 업데이트
+                            act.act_prfrm_freq = newActPrfrmFreq; // 수행빈도 업데이트
+                            // act.act_prfrm_cnt_ann = newActPrfrmCntAnn; // 연간 업무량 업데이트
                         }
                     });
 
                     // 연간 업무량을 표시하는 입력 필드 업데이트
-                    inputText3.value = newActPrfrmCntAnn;
+                    // inputText3.value = newActPrfrmCntAnn;
                     updateTime();
                 });
 
-                const inputText3 = document.createElement('input'); // 업무량 입력 필드 생성
-                inputText3.setAttribute('type', 'text'); 
-                inputText3.setAttribute('name', 'act_prfrm_cnt_ann'); // inputText3 name을 'act_prfrm_cnt_ann'로 설정
+                const inputText3 = document.createElement('input'); // 연간 업무량 입력 필드 생성
+                inputText3.setAttribute('type', 'text');
+                inputText3.setAttribute('name', 'act_prfrm_cnt'); // inputText3 name을 'act_prfrm_cnt'로 설정
+                inputText3.setAttribute('value', act.act_prfrm_cnt); // 연간 업무량 value로 설정
                 inputText3.setAttribute('class', 'input_text_num');
-                inputText3.setAttribute('value', act.act_prfrm_cnt_ann); // 연간 업무량 value로 설정
-                // inputText3.setAttribute('readonly', true); // 읽기 전용 속성 설정
-                inputText3.addEventListener('change', function(event) { // 연간 업무량 변경 시 jsonData 업데이트
+                inputText3.addEventListener('change', function(event) {
+                    var newActPrfrmCnt = event.target.value; // 새로운 연간 업무량 입력값을 저장
 
-                    var newActPrfrmCntAnn = event.target.value; // 새로운 담당자 입력값을 저장
-
-                    jsonData.forEach(activity => { // jsonData 내의 모든 task에 대해서, task의 value는 taskData
-                        // 직무와 책무가 선택값과 같은 해당 task_nm을 가진 모든 json 데이터의 task_prsn_chrg를 새로운 값으로 업데이트
-                        if (act.duty_nm === selectedDuty && act.task_nm === selectedTask && act.job_cd === selectedJob && act.act_nm === act.act_nm) { 
-                            act.act_prfrm_cnt_ann = newActPrfrmCntAnn;
-                        }
-                    });
-                    updateTime();
+                    // 입력값이 0 이상의 정수인지 확인
+                    if (/^\d+$/.test(newActPrfrmCnt)) { // 정규 표현식을 사용하여 0 이상의 정수만 허용
+                        jsonData.forEach(activity => { // jsonData 내의 모든 활동에 대해서
+                            if (activity.duty_nm === selectedDuty && activity.task_nm === selectedTask && activity.job_cd === selectedJob && activity.act_nm === act.act_nm) {
+                                activity.act_prfrm_cnt = parseInt(newActPrfrmCnt, 10); // 새로운 연간 업무량 값으로 업데이트
+                            }
+                        });
+                        updateTime(); // 전체 업데이트
+                    } else {
+                        alert('0 이상의 정수만 입력 가능합니다.');
+                        event.target.value = act.act_prfrm_cnt; // 입력값이 유효하지 않으면 원래 값으로 되돌림
+                    }
                 });
 
-                const inputText4 = document.createElement('input'); // 건당 소요시간
-                inputText4.setAttribute('type', 'text');
-                inputText4.setAttribute('name', 'act_prfrm_tm_cs'); // inputText4의 name을 'act_prfrm_tm_ann'로 설정
+                const inputText4 = document.createElement('input'); // 업무량 입력 필드 생성
+                inputText4.setAttribute('type', 'text'); 
+                inputText4.setAttribute('name', 'act_prfrm_cnt_ann'); // inputText3 name을 'act_prfrm_cnt_ann'로 설정
                 inputText4.setAttribute('class', 'input_text_num');
-                inputText4.setAttribute('value', parseFloat(act.act_prfrm_tm_cs).toFixed(1)); // 연간 업무량 value로 설정(소숫점 1자리까지)
-                inputText4.addEventListener('change', function(event) { // 중요도 변경 시 jsonData 업데이트
+                inputText4.setAttribute('value', act.act_prfrm_cnt_ann); // 연간 업무량 value로 설정
+                inputText4.setAttribute('readonly', true); // 읽기 전용 속성 설정
+                inputText4.style.display = 'none';
+                // 이 값은 바뀌지 않는다. 앞에서 수행빈도와 연간 수행횟수를 곱해서 계산한 값이다. 그 두 값이 바뀌면 이 값도 바뀌며 그 때 jsonData에 반영된다.
+
+                const inputText5 = document.createElement('input'); // 건당 소요시간
+                inputText5.setAttribute('type', 'text');
+                inputText5.setAttribute('name', 'act_prfrm_tm_cs'); // inputText4의 name을 'act_prfrm_tm_ann'로 설정
+                inputText5.setAttribute('class', 'input_text_num');
+                inputText5.setAttribute('value', parseFloat(act.act_prfrm_tm_cs).toFixed(1)); // 연간 업무량 value로 설정(소숫점 1자리까지)
+                inputText5.addEventListener('change', function(event) { // 중요도 변경 시 jsonData 업데이트
                     var newActPrfrmTmCs = event.target.value; // 새로운 중요도 입력값을 저장
 
                     // 입력값이 소숫점 첫째자리까지의 숫자인지 확인
@@ -1098,20 +1118,21 @@
                                 act.act_prfrm_tm_cs = parseFloat(newActPrfrmTmCs).toFixed(1); // 새로운 중요도 값으로 업데이트
                             }
                         });
-                        updateTime();
+                        
                     } else {
                         alert('소숫점 첫째자리까지의 숫자만 입력 가능합니다.');
                         event.target.value = parseFloat(act.act_prfrm_tm_cs).toFixed(1); // 입력값이 유효하지 않으면 원래 값으로 되돌림
                     }
+                    updateTime();
                 });
 
-                const inputText5 = document.createElement('input'); // 연간 소요시간
-                inputText5.setAttribute('type', 'text');
-                inputText5.setAttribute('name', 'act_prfrm_tm_ann'); // inputText5의 name을 'act_prfrm_tm_ann'로 설정
-                inputText5.setAttribute('class', 'input_text_num');
-                inputText5.setAttribute('value', parseFloat(act.act_prfrm_tm_ann).toFixed(1)); // 연간 업무량 value로 설정(소숫점 1자리까지)
-                // inputText5 변경 시 jsonData 업데이트
-                inputText5.addEventListener('change', function(event) { // 연간 업무량 변경 시 jsonData 업데이트
+                const inputText6 = document.createElement('input'); // 연간 소요시간
+                inputText6.setAttribute('type', 'text');
+                inputText6.setAttribute('name', 'act_prfrm_tm_ann'); // inputText5의 name을 'act_prfrm_tm_ann'로 설정
+                inputText6.setAttribute('class', 'input_text_num');
+                inputText6.setAttribute('value', parseFloat(act.act_prfrm_tm_ann).toFixed(1)); // 연간 업무량 value로 설정(소숫점 1자리까지)
+                // inputText6 변경 시 jsonData 업데이트
+                inputText6.addEventListener('change', function(event) { // 연간 업무량 변경 시 jsonData 업데이트
 
                     var newActPrfrmTmAnn = event.target.value; // 새로운 연간 업무량 입력값을 저장
 
@@ -1123,27 +1144,50 @@
                             }
                         });
                         updateTaskPerformanceTime(selectedJob, selectedDuty, selectedTask); // 과업의 연간 수행 시간 업데이트 함수 호출
+                        
                     } else {
                         alert('소숫점 첫째자리까지의 숫자만 입력 가능합니다.');
                         event.target.value = parseFloat(act.act_prfrm_tm_ann).toFixed(1); // 입력값이 유효하지 않으면 원래 값으로 되돌림
                     }
                 });
 
-
                 function updateTime() { // act_prfrm_tm_ann을 업데이트하는 함수 정의
                     
-                    // 업무수준 계산
-                    const cnt = parseFloat(inputText3.value) || 0;
-                    const tm = parseFloat(inputText4.value) || 0;
+                    var newActPrfrmCnt = parseFloat(inputText3.value) || 0;  // act_prfrm_cnt 변할 수 있는 값
+                    var newActPrfrmFreq = inputSelect.value;                 // act_prfrm_freq 변할 수 있는 값
+                    var newActPrfrmTmCs = parseFloat(inputText5.value) || 0; // act_prfrm_tm_cs 변할 수 있는 값
 
-                    inputText5.value = (cnt * tm).toFixed(1); // 연간 업무량을 계산하여 inputText5에 설정
+                    // 연간 수행 횟수 계산
+                    const frequencyMap = {
+                        'YY': 1,
+                        'HH': 2,
+                        'QQ': 4,
+                        'MM': 12,
+                        'WW': 52,
+                        'DD': 226
+                    };
+
+                    var newActPrfrmCntAnn = frequencyMap[newActPrfrmFreq] * newActPrfrmCnt;
+                    act.act_prfrm_cnt_ann = newActPrfrmCntAnn;
+
+                    // 연간 소요 시간(act_prfrm_tm_ann) 계산
+                    var newActPrfrmTmAnn = (newActPrfrmCntAnn * newActPrfrmTmCs).toFixed(1);
+                    act.act_prfrm_tm_ann = newActPrfrmTmAnn;
+
+                    // 입력 필드 업데이트
+                    inputText4.value = newActPrfrmCntAnn;
+                    inputText6.value = newActPrfrmTmAnn;
+
 
                     // 이 변경사항을 jsonData에도 반영
                     jsonData.forEach(activity => {
                         if (activity.duty_nm === selectedDuty && activity.task_nm === selectedTask && activity.job_cd === selectedJob && activity.act_nm === act.act_nm) {
-                            activity.act_prfrm_tm_ann = parseFloat(inputText5.value).toFixed(1); // 새로운 연간 업무량 값으로 업데이트
+                            activity.act_prfrm_cnt_ann = parseFloat(inputText4.value); // 새로운 연간 수행 횟수 값으로 업데이트
+                            activity.act_prfrm_tm_ann = parseFloat(inputText6.value).toFixed(1); // 새로운 연간 업무량 값으로 업데이트
                         }
                     });
+
+                    
                     updateTaskPerformanceTime(selectedJob, selectedDuty, selectedTask); // 과업의 연간 수행 시간 업데이트 함수 호출
                 }
 
@@ -1177,12 +1221,12 @@
                     });
                 }
 
-                const inputText6 = document.createElement('input'); // 관련부서 입력 필드 생성
-                inputText6.setAttribute('type', 'text');
-                inputText6.setAttribute('name', 'dept_rltd'); // inputText6의 name을 'dept_rltd'로 설정
-                inputText6.setAttribute('class', 'input_text_duty_nm');
-                inputText6.setAttribute('value', act.dept_rltd); // 부서연관 value로 설정
-                inputText6.addEventListener('change', function(event) { // 부서연관 변경 시 jsonData 업데이트
+                const inputText7 = document.createElement('input'); // 관련부서 입력 필드 생성
+                inputText7.setAttribute('type', 'text');
+                inputText7.setAttribute('name', 'dept_rltd'); // inputText6의 name을 'dept_rltd'로 설정
+                inputText7.setAttribute('class', 'input_text_duty_nm');
+                inputText7.setAttribute('value', act.dept_rltd); // 부서연관 value로 설정
+                inputText7.addEventListener('change', function(event) { // 부서연관 변경 시 jsonData 업데이트
 
                     var newDeptRltd = event.target.value; // 새로운 부서연관 입력값을 저장
 
@@ -1194,12 +1238,12 @@
                     });
                 });
 
-                const inputText7 = document.createElement('input'); // 최종 보고대상 입력 필드 생성
-                inputText7.setAttribute('type', 'text');
-                inputText7.setAttribute('name', 'final_rpt_to'); // inputText7의 name을 'final_rpt_to'로 설정
-                inputText7.setAttribute('class', 'input_text_duty_nm');
-                inputText7.setAttribute('value', act.final_rpt_to); // 최종보고자 value로 설정
-                inputText7.addEventListener('change', function(event) { // 최종보고자 변경 시 jsonData 업데이트
+                const inputText8 = document.createElement('input'); // 최종 보고대상 입력 필드 생성
+                inputText8.setAttribute('type', 'text');
+                inputText8.setAttribute('name', 'final_rpt_to'); // inputText7의 name을 'final_rpt_to'로 설정
+                inputText8.setAttribute('class', 'input_text_duty_nm');
+                inputText8.setAttribute('value', act.final_rpt_to); // 최종보고자 value로 설정
+                inputText8.addEventListener('change', function(event) { // 최종보고자 변경 시 jsonData 업데이트
 
                     var newFinalRptTo = event.target.value; // 새로운 최종보고자 입력값을 저장
 
@@ -1211,12 +1255,12 @@
                     });
                 });
 
-                const inputText8 = document.createElement('input'); // 수행 결과물 입력 필드 생성
-                inputText8.setAttribute('type', 'text');
-                inputText8.setAttribute('name', 'rpt_nm'); // inputText8의 name을 'rpt_nm'로 설정
-                inputText8.setAttribute('class', 'input_text_duty_nm');
-                inputText8.setAttribute('value', act.rpt_nm); // 보고명 value로 설정
-                inputText8.addEventListener('change', function(event) { // 보고명 변경 시 jsonData 업데이트
+                const inputText9 = document.createElement('input'); // 수행 결과물 입력 필드 생성
+                inputText9.setAttribute('type', 'text');
+                inputText9.setAttribute('name', 'rpt_nm'); // inputText8의 name을 'rpt_nm'로 설정
+                inputText9.setAttribute('class', 'input_text_duty_nm');
+                inputText9.setAttribute('value', act.rpt_nm); // 보고명 value로 설정
+                inputText9.addEventListener('change', function(event) { // 보고명 변경 시 jsonData 업데이트
 
                     var newRptNm = event.target.value; // 새로운 보고명 입력값을 저장
 
@@ -1268,18 +1312,20 @@
 
                 // 담당자, 연간 수행횟수, 건당 소요시간, 연간 소요시간 등을 업데이트하는 코드 부분
                 inputText2.value = act.act_prsn_chrg ? act.act_prsn_chrg : '';
-                inputText3.value = act.act_prfrm_cnt_ann ? act.act_prfrm_cnt_ann.toString() : '';
-                inputText4.value = act.act_prfrm_tm_cs ? parseFloat(act.act_prfrm_tm_cs).toFixed(1) : '';
-                inputText5.value = act.act_prfrm_tm_ann ? parseFloat(act.act_prfrm_tm_ann).toFixed(1) : '';
-                inputText6.value = act.dept_rltd ? act.dept_rltd : '';
-                inputText7.value = act.final_rpt_to ? act.final_rpt_to : '';
-                inputText8.value = act.rpt_nm ? act.rpt_nm : '';
+                inputText3.value = act.act_prfrm_cnt ? act.act_prfrm_cnt : '';
+                inputText4.value = act.act_prfrm_cnt_ann ? act.act_prfrm_cnt_ann.toString() : '';
+                inputText5.value = act.act_prfrm_tm_cs ? parseFloat(act.act_prfrm_tm_cs).toFixed(1) : '';
+                inputText6.value = act.act_prfrm_tm_ann ? parseFloat(act.act_prfrm_tm_ann).toFixed(1) : '';
+                inputText7.value = act.dept_rltd ? act.dept_rltd : '';
+                inputText8.value = act.final_rpt_to ? act.final_rpt_to : '';
+                inputText9.value = act.rpt_nm ? act.rpt_nm : '';
 
-                // 직무코드가 JC001, JC002, JC004인 경우 활동명, 담당자, 연간 수행횟수, 건당 소요시간, 연간 소요시간, 수행빈도 입력 필드를 읽기 전용으로 설정
+                // 직무코드가 JC001, JC002, JC004인 경우 연간 수행횟수, 건당 소요시간, 연간 소요시간, 수행빈도 입력 필드를 읽기 전용으로 설정
                 if (act.job_cd === 'JC001' || act.job_cd === 'JC002' || act.job_cd === 'JC004') {
                     inputText3.setAttribute('readonly', true); // 연간 수행횟수
-                    inputText4.setAttribute('readonly', true); // 건당 소요시간
-                    inputText5.setAttribute('readonly', true); // 연간 소요시간
+                    inputText4.setAttribute('readonly', true); // 연간 수행횟수
+                    inputText5.setAttribute('readonly', true); // 건당 소요시간
+                    inputText6.setAttribute('readonly', true); // 연간 소요시간
                     inputSelect.disabled = true; // 수행 빈도 선택 비활성화
                 }
                 
@@ -1292,6 +1338,7 @@
                 container.appendChild(inputText6);
                 container.appendChild(inputText7);
                 container.appendChild(inputText8);
+                container.appendChild(inputText9);
                 container.appendChild(moveUpButton);
                 container.appendChild(moveDownButton);
                 container.appendChild(deleteButton);
@@ -1373,6 +1420,7 @@
                 act_prsn_chrg : '담당자',
                 act_prsn_chrg: isReadonlyJob ? null : '담당자',
                 act_prfrm_freq: isReadonlyJob ? null : 'WW',
+                act_prfrm_cnt: 0,
                 act_prfrm_cnt_ann: isReadonlyJob ? null : 52,
                 act_prfrm_tm_cs: isReadonlyJob ? null : 0,
                 act_prfrm_tm_ann: isReadonlyJob ? null : 0,

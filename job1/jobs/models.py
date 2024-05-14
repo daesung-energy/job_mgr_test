@@ -484,6 +484,7 @@ class JobActivity(models.Model):
     act_nm = models.CharField(max_length=300)
     act_prsn_chrg = models.CharField(max_length=100, blank=True, null=True)
     act_prfrm_freq = models.CharField(max_length=2)
+    act_prfrm_cnt = models.IntegerField(blank=True, null=True)
     act_prfrm_cnt_ann = models.IntegerField(blank=True, null=True)
     act_prfrm_tm_cs = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True)
     act_prfrm_tm_ann = models.DecimalField(max_digits=6, decimal_places=1, blank=True, null=True)
