@@ -273,13 +273,24 @@
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = '-';
                 deleteButton.className = 'del_small_2';
+                // deleteButton.onclick = function() {
+                //     // jsonData에서 해당 직무 내에서 선택한 책무를 제외한 데이터를 필터링하여 새로운 jsonData 생성
+                //     jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
+                //     // DOM에서 컨테이너 제거
+                //     dutyDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
+                //     // act_seq 업데이트 추후 구현
+                //     updateDutySequence(selectedJob); // 순서 업데이트
+                // };
                 deleteButton.onclick = function() {
-                    // jsonData에서 해당 직무 내에서 선택한 책무를 제외한 데이터를 필터링하여 새로운 jsonData 생성
-                    jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
-                    // DOM에서 컨테이너 제거
-                    dutyDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
-                    // act_seq 업데이트 추후 구현
-                    updateDutySequence(selectedJob); // 순서 업데이트
+                    var dutiesInJob = jsonData.filter(item => item.job_cd === selectedJob).map(item => item.duty_nm);
+                    var uniqueDuties = [...new Set(dutiesInJob)]; // 중복 제거하여 unique 리스트 생성
+                    if (uniqueDuties.length <= 1) {
+                        alert("최소 하나의 책무가 있어야 합니다.");
+                    } else {
+                        jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
+                        dutyDiv.removeChild(container); // 해당 책무 컨테이너를 삭제
+                        updateDutySequence(selectedJob); // 순서 업데이트
+                    }
                 };
                 
                 container.appendChild(radioInput); // 라디오 버튼을 컨테이너에 추가
@@ -716,13 +727,24 @@
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = '-';
                 deleteButton.className = 'del_small_2';
+                // deleteButton.onclick = function() {
+                //     // jsonData에서 해당 직무, 책무 내에서 선택한 과업을 제외한 데이터를 필터링하여 새로운 jsonData 생성
+                //     jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === taskName)); // 해당 과업 데이터를 제외하고 새로운 jsonData를 생성
+                //     // DOM에서 컨테이너 제거
+                //     taskDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
+                //     // act_seq 업데이트 추후 구현
+                //     updateTaskSequence(selectedJob, selectedDuty); // 순서 업데이트 
+                // };
                 deleteButton.onclick = function() {
-                    // jsonData에서 해당 직무, 책무 내에서 선택한 과업을 제외한 데이터를 필터링하여 새로운 jsonData 생성
-                    jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === taskName)); // 해당 과업 데이터를 제외하고 새로운 jsonData를 생성
-                    // DOM에서 컨테이너 제거
-                    taskDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
-                    // act_seq 업데이트 추후 구현
-                    updateTaskSequence(selectedJob, selectedDuty); // 순서 업데이트 
+                    var tasksInDuty = jsonData.filter(item => item.job_cd === selectedJob && item.duty_nm === selectedDuty).map(item => item.task_nm);
+                    var uniqueTasks = [...new Set(tasksInDuty)]; // 중복 제거하여 unique 리스트 생성
+                    if (uniqueTasks.length <= 1) {
+                        alert("최소 하나의 과업이 남아있어야 합니다.");
+                    } else {
+                        jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === taskName)); // 해당 과업 데이터를 제외하고 새로운 jsonData를 생성
+                        taskDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
+                        updateTaskSequence(selectedJob, selectedDuty); // 순서 업데이트
+                    }
                 };
 
                 // 중요도, 난이도, 숙련도, 연간 수행시간 등을 업데이트하는 코드 부분
@@ -1300,13 +1322,24 @@
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = '-';
                 deleteButton.className = 'del_small_2';
+                // deleteButton.onclick = function() {
+                //     // jsonData에서 해당 직무, 책무, 과업 내에서 선택한 활동을 제외한 데이터를 필터링하여 새로운 jsonData 생성
+                //     jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask && item.act_nm === activity)); // 해당 활동 데이터를 제외하고 새로운 jsonData를 생성, activity의 값은 위에서 가져온 데이터
+                //     // DOM에서 컨테이너 제거
+                //     activityDiv.removeChild(container); // 해당 활동 컨테이너를 삭제
+                //     // act_seq 업데이트 추후 구현
+                //     updateActivitySequence(selectedJob, selectedDuty, selectedTask);
+                // };
                 deleteButton.onclick = function() {
-                    // jsonData에서 해당 직무, 책무, 과업 내에서 선택한 활동을 제외한 데이터를 필터링하여 새로운 jsonData 생성
-                    jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask && item.act_nm === activity)); // 해당 활동 데이터를 제외하고 새로운 jsonData를 생성, activity의 값은 위에서 가져온 데이터
-                    // DOM에서 컨테이너 제거
-                    activityDiv.removeChild(container); // 해당 활동 컨테이너를 삭제
-                    // act_seq 업데이트 추후 구현
-                    updateActivitySequence(selectedJob, selectedDuty, selectedTask);
+                    var activitiesInTask = jsonData.filter(item => item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask).map(item => item.act_nm);
+                    var uniqueActivities = [...new Set(activitiesInTask)]; // 중복 제거하여 unique 리스트 생성
+                    if (uniqueActivities.length <= 1) {
+                        alert("최소 하나의 활동이 남아있어야 합니다.");
+                    } else {
+                        jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask && item.act_nm === activity)); // 해당 활동 데이터를 제외하고 새로운 jsonData를 생성
+                        activityDiv.removeChild(container); // 해당 활동 컨테이너를 삭제
+                        updateActivitySequence(selectedJob, selectedDuty, selectedTask);
+                    }
                 };
 
 

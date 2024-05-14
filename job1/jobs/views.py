@@ -545,6 +545,7 @@ def JB102_copy(request): #JB102 회기 띄워줌
 def JB103(request): # JB103페이지의 초기화면
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
+    print('user', request.user.username)
 
     dept_login = BsAcnt.objects.get(dept_id=request.user.username, prd_cd_id="2022A").dept_cd_id # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
@@ -843,6 +844,8 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                 print('df_activity', df_activity.dtypes)
                 if df2.empty == False:
                     print('df2가 비어있지 않다면')
+                    df2['act_prfrm_cnt'] = df2['act_prfrm_cnt'].astype(float) # 
+
                     df2['act_prfrm_cnt_ann'] = df2['act_prfrm_cnt_ann'].astype(float) # 테이블에서는 int로 되어있는데, df2에서는 float로 되어있어서 맞춰줌
                     df_activity.loc[:, 'act_prfrm_cnt_ann'] = df_activity.loc[:, 'act_prfrm_cnt_ann'].astype(float) # df_activity의 act_prfrm_cnt_ann을 float로 바꿔줌
                     df2['act_prfrm_tm_cs'] = df2['act_prfrm_tm_cs'].astype(float) # 테이블에서는 int로 되어있는데, df2에서는 float로 되어있어서 맞춰줌
