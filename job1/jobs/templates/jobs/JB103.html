@@ -230,7 +230,8 @@
                     var newDutyName = event.target.value.trim(); // 새로운 책무명을 newDutyName에 저장
                     var oldDutyName = event.target.getAttribute('value').trim(); // 원래 책무 이름을 oldDutyName에 저장
 
-                    var isDuplicate = jsonData.some(duty => duty.duty_nm.trim() === newDutyName && newDutyName !== oldDutyName); // 중복 책무명 검사
+                    // var isDuplicate = jsonData.some(duty => duty.duty_nm.trim() === newDutyName && newDutyName !== oldDutyName); // 중복 책무명 검사
+                    var isDuplicate = jsonData.some(duty => duty.duty_nm.trim() === newDutyName && duty.job_cd === selectedJob); // 중복 책무명 검사
 
                     if(isDuplicate) { // 중복된 책무명이 있을 경우, 사용자에게 경고를 표시하고 원래의 값으로 되돌림
                         alert("이미 존재하는 책무명입니다. 다른 이름을 사용해주세요.");
