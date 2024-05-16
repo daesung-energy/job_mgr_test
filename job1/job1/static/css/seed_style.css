@@ -252,6 +252,7 @@ header {
   flex-basis: 200px;
   flex-shrink: 0;
   /* width: 300px; sdie 넓이를 250px로 고정 */
+  /* width: 400px; */
   background-color: lightgray;
 }
 
@@ -283,7 +284,7 @@ header {
 .fakeimg a {
   color: black;
   padding: 5px;
-  padding-left: 60px;
+  padding-left: 40px;
   text-decoration: none;
   text-align: left;
   font-size: 16px;
@@ -294,7 +295,7 @@ header {
   padding: 10px;
   font-size: 20px;
   font-family: "Seed-bold";
-  padding-left: 40px;
+  padding-left: 20px;
 }
 
 .fakeimg a:hover {
@@ -870,7 +871,7 @@ header {
 }
 
 .input_text_duty_nm {
-  width: 220px;
+  width: 400px;
   margin-left: 5px;
   border: none;
   text-align: left;
