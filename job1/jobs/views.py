@@ -752,7 +752,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                 df = pd.DataFrame(data).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq'])
                 # df.to_excel('df.xlsx')
 
-                # df에서 job_cd가 JC001이거나, JC002이거나, JC004이면, work_lv_imprt, work_lv_dfclt, work_lv_prfcn, work_lv_sum, prfrm_tm_ann을 0으로 바꿔준다.
+                # df에서 job_cd가 JC001 or JC002 or JC004이면, work_lv_imprt, work_lv_dfclt, work_lv_prfcn, work_lv_sum, prfrm_tm_ann을 0으로 바꿔준다.
                 # 그리고 act_prfrm_cnt, act_prfrm_cnt_ann, act_prfrm_tm_cs, act_prfrm_tm_ann, act_prfrm_tm_ann을 0으로 바꿔준다.
                 df.loc[df['job_cd'].isin(['JC001', 'JC002', 'JC004']), ['work_lv_imprt', 'work_lv_dfclt', 'work_lv_prfcn', 'work_lv_sum', 'prfrm_tm_ann']] = 0
                 df.loc[df['job_cd'].isin(['JC001', 'JC002', 'JC004']), ['act_prfrm_cnt', 'act_prfrm_cnt_ann', 'act_prfrm_tm_cs']] = 0
@@ -765,14 +765,17 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                             'work_lv_prfcn', 'work_lv_sum', 'work_grade', 'work_attrbt', 'prfrm_tm_ann', 'job_seq', 'duty_seq', 'task_seq']] #act_seq 신경쓰기
                 df_activity = df[['job_cd', 'duty_nm', 'task_nm', 'act_nm', 'act_prsn_chrg', 'act_prfrm_freq', 'act_prfrm_cnt', 'act_prfrm_cnt_ann', 'act_prfrm_tm_cs', 'act_prfrm_tm_ann',
                                 'dept_rltd', 'final_rpt_to', 'rpt_nm', 'job_seq', 'duty_seq', 'task_seq', 'act_seq']]
-                df_task = df_task.drop_duplicates()
+                df_task = df_task.drop_duplicates() # df_task에서 중복된 것들은 없애준다.
                 # df_task.to_excel('df_task.xlsx')
                 # df_activity.to_excel('df_activity.xlsx')
                 # print('df_task', df_task)
                 # print('df_activity', df_activity)
 
+                
                 # DB에 저장하기 - 기존 데이터와 비교하여 추가, 삭제. JobTask부터 먼저 처리하고 JobActivity 처리
-                ################################################################ job_task 접근
+                ################################################################ job_task 접근 ################################################################
+                
+                # 기존 데이터(해당 회기에 해당 부서의 job_task)에 접근하여 dataframe 생성
                 original_rows=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected) 
                 data_list = [{'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
                             'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
@@ -787,31 +790,31 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                 df_task.loc[:, 'prfrm_tm_ann'] = df_task.loc[:, 'prfrm_tm_ann'].astype(float)
                 
                 # 비교 하는 부분 - merge 기능을 이용해 추가된 행, 삭제된 행을 추출할 것이다. 수정은 삭제 후 추가로 볼 것이다.
-                # df1(DB)에 있고 df_task(UI)에 없는 것. 즉, 삭제된 것
+                # df_left_task : df1(DB)에 있고 df_task(UI)에 없는 것. 즉, 삭제된 것
                 df_left_task = pd.merge(df1, df_task, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
-                # df_task(UI)에 있고 df1(DB)에 없는 것. 즉, 추가된 것
+                # df_right_task : df_task(UI)에 있고 df1(DB)에 없는 것. 즉, 추가된 것
                 df_right_task = pd.merge(df1, df_task, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
 
-                print(df_left_task)
-                print(df_right_task)
+                # print(df_left_task)
+                # print(df_right_task)
 
                 # df_left_task를 먼저 다룸. 삭제를 먼저 하고 추가를 나중에 할 것이다. 그래야 중복같은 까다로운 문제를 피할 수 있다. job_cd, duty_nm, task_nm을 보고 삭제할 것이다.
 
-                if df_left_task.empty == False: # df_left_task가 비어있지 않다면
+                if df_left_task.empty == False: # df_left_task가 비어있지 않다면, 즉, 삭제할 것이 있다면
                     for i in range(0, len(df_left_task)): # df_left_task의 행 수만큼 반복
                         # df_left_task에 있다는 것은 UI에는 없다는 뜻이다. 즉 삭제해도 되는 값이다.
                         # df_left_task의 i행 1열이 job_cd, 2열이 duty_nm, 3열이 task_nm이다.
                         # DB에서 job_cd가 df_left_task의 i행 1열과 같고, duty_nm이 df_left_task의 i행 2열과 같고, task_nm이 df_left_task의 i행 3열과 같은 것을 찾아서 삭제할 것이다.
                         # 여기서 row_to_delete 따로 정의하고 (get으로) row_to_delete.delete()하면 싹 다 지워짐. prd_cd도 잘 지정해줘야 함.
-                        print('jobTask행 삭제')
+                        # print('jobTask행 삭제')
                         JobTask.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_cd_selected,
                                                 job_cd_id=df_left_task.iloc[i, 0], duty_nm=df_left_task.iloc[i, 1], task_nm=df_left_task.iloc[i, 2]).delete()
 
-                if df_right_task.empty == False: # df_right_task가 비어있지 않다면
+                if df_right_task.empty == False: # df_right_task가 비어있지 않다면, 즉 추가할 것이 있다면
                     for i in range(0, len(df_right_task)): # df_right_task의 행 수만큼 반복
                         # df_right_task에 있다는 것은 UI에만 있다는 뜻이다. 즉 추가해야 하는 값이다.
                         # 여기서 .save()쓰면 foreign key 때문에 참조무결성 오류 발생하므로 create를 써준다.
-                        # 이미 JobTask에 있는 값이면 추가하지 않는다.
+                        # 이미 JobTask에 있는 값(회기, 부서, 직무, 책무, 과업이름이 같은 과업이라면 -- 같은 과업이라는 얘기다.)이면 추가하지 않는다.
                         # if JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected, job_cd=df_right_task.iloc[i, 0],
                         #                         duty_nm=df_right_task.iloc[i, 1], task_nm=df_right_task.iloc[i, 2], task_prsn_chrg=df_right_task.iloc[i, 3],
                         #                         work_lv_imprt=df_right_task.iloc[i, 4], work_lv_dfclt=df_right_task.iloc[i, 5], work_lv_prfcn=df_right_task.iloc[i, 6],
@@ -820,7 +823,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                         if JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected, job_cd=df_right_task.iloc[i, 0],
                                                    duty_nm=df_right_task.iloc[i, 1], task_nm=df_right_task.iloc[i, 2]).exists():
                             pass
-                        else: # 존재하지 않는 값이면 추가한다.
+                        else: # 존재하지 않는 값이면 추가한다. 이 때 JC001, JC002, JC004이면 일부 값들이 0이나 0.0으로 저장이 된다.
                             JobTask.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_cd_selected, job_cd_id=df_right_task.iloc[i, 0], duty_nm=df_right_task.iloc[i, 1],
                                                     task_nm=df_right_task.iloc[i, 2], task_prsn_chrg=df_right_task.iloc[i, 3], work_lv_imprt=df_right_task.iloc[i, 4],
                                                     work_lv_dfclt=df_right_task.iloc[i, 5], work_lv_prfcn=df_right_task.iloc[i, 6], work_lv_sum=df_right_task.iloc[i, 7],
@@ -829,22 +832,23 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
 
 
                 # print('jobTask', JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected))
-                ################################################################ job_activity 접근
+                ################################################################ job_activity 접근 ################################################################ 
                 # job_activity 접근
-                original_rows_2=JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected) # 수정된 후임
+                # JobTask가 수정된 후, JobActivity의 정보를 가져와 데이터프레임을 만든다.
+                original_rows_2=JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected)
                 data_list_2 = [{'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
                             'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq, 'act_prfrm_cnt' : rows.act_prfrm_cnt,
                             'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
                             'dept_rltd': rows.dept_rltd, 'final_rpt_to' : rows.final_rpt_to, 'rpt_nm': rows.rpt_nm,
-                            'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq} for rows in original_rows_2] # 수정된 후의 job_activity
-                df2 = pd.DataFrame(data_list_2) # 수정된 후의 job_activity로 만든 데이터프레임
-                print('df2_act', df2)
+                            'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq} for rows in original_rows_2]
+                df2 = pd.DataFrame(data_list_2) # job_task를 수정한 다음 상태의 job_activity로 만든 데이터프레임
+                # print('df2_act', df2)
                 # df_activity와 df2의 자료형 정리
                 # print('df2', df2.dtypes)
                 print('df_activity', df_activity.dtypes)
-                if df2.empty == False:
-                    print('df2가 비어있지 않다면')
-                    df2['act_prfrm_cnt'] = df2['act_prfrm_cnt'].astype(float) # 
+                
+                if df2.empty == False: # df2가 비어있지 않다면 즉, UI에서 수정을 할 때 한 줄이라도 그대로 둔 상태라면 merge이용해 비교를 해서 삭제할 거 삭제하고 추가할 거 추가한다.
+                    # print('df2가 비어있지 않다면')
 
                     df2['act_prfrm_cnt_ann'] = df2['act_prfrm_cnt_ann'].astype(float) # 테이블에서는 int로 되어있는데, df2에서는 float로 되어있어서 맞춰줌
                     df_activity.loc[:, 'act_prfrm_cnt_ann'] = df_activity.loc[:, 'act_prfrm_cnt_ann'].astype(float) # df_activity의 act_prfrm_cnt_ann을 float로 바꿔줌
@@ -854,10 +858,8 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                     df_activity.loc[:, 'act_prfrm_tm_ann'] = df_activity.loc[:, 'act_prfrm_tm_ann'].astype(float) # df_activity의 act_prfrm_tm_ann을 float로 바꿔줌
 
                     # 비교 하는 부분 - merge 기능을 이용해 추가된 행, 삭제된 행을 추출할 것이다. 수정은 삭제 후 추가로 볼 것이다.
-                    # df2(DB)에 있고 df_activity(UI)에 없는 것. 즉, 삭제된 것
-
                     # df2가 비어있지 않다면 비교를 해야 한다.
-                
+                    # df2(DB)에 있고 df_activity(UI)에 없는 것. 즉, 삭제된 것
                     df_left_activity = pd.merge(df2, df_activity, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
                     # df_activity(UI)에 있고 df2(DB)에 없는 것. 즉, 추가된 것
                     df_right_activity = pd.merge(df2, df_activity, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
@@ -865,7 +867,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                     # print('df_left_activity', df_left_activity)
                     # df_right_activity.to_excel('df_right_activity.xlsx')
 
-                    if df_left_activity.empty == False: # df_left_activity가 비어있지 않다면
+                    if df_left_activity.empty == False: # df_left_activity가 비어있지 않다면 즉, 삭제할 것이 있다면
                         for i in range(0, len(df_left_activity)): # df_left_activity의 행 수만큼 반복
                             # df_left_activity에 있다는 것은 UI에는 없다는 뜻이다. 즉 삭제해도 되는 값이다.
                             # df_left_activity의 i행 1열이 job_cd, 2열이 duty_nm, 3열이 task_nm, 4열이 act_nm이다.
@@ -874,7 +876,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                                                     job_cd_id=df_left_activity.iloc[i, 0], duty_nm_id=df_left_activity.iloc[i, 1],
                                                     task_nm_id=df_left_activity.iloc[i, 2], act_nm=df_left_activity.iloc[i, 3]).delete()
                     
-                    if df_right_activity.empty == False: # df_right_activity가 비어있지 않다면
+                    if df_right_activity.empty == False: # df_right_activity가 비어있지 않다면, 즉, 추가할 것이 있다면
                         for i in range(0, len(df_right_activity)): # df_right_activity의 행 수만큼 반복
                             # df_right_activity에 있다는 것은 UI에만 있다는 뜻이다. 즉 추가해야 하는 값이다.
                             # 여기서 .save()쓰면 foreign key 때문에 참조무결성 오류 발생하므로 create를 써준다.
@@ -884,7 +886,6 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                                                     act_prfrm_tm_ann=df_right_activity.iloc[i, 9], dept_rltd=df_right_activity.iloc[i, 10], final_rpt_to=df_right_activity.iloc[i, 11],
                                                     rpt_nm=df_right_activity.iloc[i, 12], job_seq=df_right_activity.iloc[i, 13], duty_seq=df_right_activity.iloc[i, 14],
                                                     task_seq=df_right_activity.iloc[i, 15], act_seq=df_right_activity.iloc[i, 16])
-                            
                     
                     # df_right_task의 job_cd가 JC001, JC002, JC004를 포함할 때, 0으로 바꿔줬던 field들을 다시 Null로 업데이트
                     # JobTask와 JobActivity에 대해서 작업. 다만, act_prfrm_cnt는 예외로 한다.
@@ -895,21 +896,29 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                         JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected, job_cd__in=['JC001', 'JC002', 'JC004']).update(
                             act_prfrm_cnt_ann=None, act_prfrm_tm_cs=None, act_prfrm_tm_ann=None)
                 
-                # df2가 비어있다면 추가만 하면 된다.
-                else:
-                    print(df_activity)
-                    print('df2가 비어있다')
+                # df2가 비어있다면, 즉 JobTask를 수정하고 난 후 JobActivity가 비어있다면(상세정보에서 모든 data에 접근해서 다 수정한 경우)
+                else: # 이 경우에는 그냥 df_activity를 이용해 JobActivity를 생성해주면 된다.
+                    # print(df_activity)
+                    # print('df2가 비어있다')
                     df_activity.loc[:, 'act_prfrm_tm_ann'] = df_activity.loc[:, 'act_prfrm_tm_ann'].astype(float) # df_activity의 act_prfrm_tm_ann을 float로 바꿔줌
 
                     for i in range(0, len(df_activity)): # df_activity의 행 수만큼 반복
-                        print('생성완료')
+                        # print('생성완료')
                         JobActivity.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_cd_selected, job_cd_id=df_activity.iloc[i, 0], duty_nm_id=df_activity.iloc[i, 1],
                                                 task_nm_id=df_activity.iloc[i, 2], act_nm=df_activity.iloc[i, 3], act_prsn_chrg=df_activity.iloc[i, 4],
                                                 act_prfrm_freq=df_activity.iloc[i, 5], act_prfrm_cnt=df_activity.iloc[i, 6], act_prfrm_cnt_ann=df_activity.iloc[i, 7], act_prfrm_tm_cs=df_activity.iloc[i, 8],
                                                 act_prfrm_tm_ann=df_activity.iloc[i, 9], dept_rltd=df_activity.iloc[i, 10], final_rpt_to=df_activity.iloc[i, 11],
                                                 rpt_nm=df_activity.iloc[i, 12], job_seq=df_activity.iloc[i, 13], duty_seq=df_activity.iloc[i, 14],
                                                 task_seq=df_activity.iloc[i, 15], act_seq=df_activity.iloc[i, 16])
+                    
+                    # df_right_task의 job_cd가 JC001, JC002, JC004를 포함할 때, 0으로 바꿔줬던 field들을 다시 Null로 업데이트
+                    # JobTask와 JobActivity에 대해서 작업. 다만, act_prfrm_cnt는 예외로 한다.
+                    if df_right_task['job_cd'].isin(['JC001', 'JC002', 'JC004']).any():
 
+                        JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected, job_cd__in=['JC001', 'JC002', 'JC004']).update(
+                            work_lv_imprt=None, work_lv_dfclt=None, work_lv_prfcn=None, work_lv_sum=None, prfrm_tm_ann=None)
+                        JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected, job_cd__in=['JC001', 'JC002', 'JC004']).update(
+                            act_prfrm_cnt_ann=None, act_prfrm_tm_cs=None, act_prfrm_tm_ann=None)
 
                 ########################################## DB에 저장 완료. 다시 DB 불러오기 ##########################################
                 # DB 다시 접근해서 json 생성
@@ -3978,16 +3987,16 @@ def JB102_5(request): # 새로운 직무를 선택하고, 직무 수행자를 �
             # new_job_cd가 JC001이거나 JC002이거나 JC004이면,
             if new_job_cd == "JC001" or new_job_cd == "JC002" or new_job_cd == "JC004":
                 JobTask.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm="책무1", task_nm="과업1",
-                                       job_seq=job_count+1, duty_seq=1, task_seq=1)
+                                       job_seq=job_count, duty_seq=1, task_seq=1)
                 JobActivity.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm_id="책무1", task_nm_id="과업1",
-                                           act_nm="활동1", act_prfrm_cnt=0, job_seq=job_count+1, duty_seq=1, task_seq=1, act_seq=1)
+                                           act_nm="활동1", act_prfrm_cnt=0, job_seq=job_count, duty_seq=1, task_seq=1, act_seq=1)
             else:
                 JobTask.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm="책무1", task_nm="과업1",
                                        work_lv_imprt=1, work_lv_dfclt=1, work_lv_prfcn=1, work_lv_sum=3, work_grade_id="G5",
-                                         prfrm_tm_ann=0, job_seq=job_count+1, duty_seq=1, task_seq=1)
+                                         prfrm_tm_ann=0, job_seq=job_count, duty_seq=1, task_seq=1)
                 JobActivity.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm_id="책무1", task_nm_id="과업1",
                                            act_nm="활동1", act_prfrm_cnt=0, act_prfrm_cnt_ann=0, act_prfrm_tm_cs=0, act_prfrm_tm_ann=0,
-                                             job_seq=job_count+1, duty_seq=1, task_seq=1, act_seq=1)
+                                             job_seq=job_count, duty_seq=1, task_seq=1, act_seq=1)
 
             filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected) # 해당 회기, 부서의 BsJobDept object들
             filtered_value = list(filtered_set.values_list('job_cd', flat=True)) # 위의 object들의 job_cd 리스트. 이를 이용해 BsJob 테이블에 접근.
@@ -6399,7 +6408,7 @@ def delete_period_data(period):
 
 
 def get_dept_code(user_id):
-    prd_cd_id = "2023A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다.
+    prd_cd_id = "2023A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
     try:
         account = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id)
         return account.dept_cd_id

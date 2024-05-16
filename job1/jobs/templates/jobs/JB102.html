@@ -159,9 +159,9 @@
                   <!-- 직무코드 hidden 값으로, view.py로 보내주는 값-->
                   <input type="hidden" name="job_cd_hidden" value="{{ item.job_cd }}">
                   <!-- 직무명 -->
-                  <input type="text" class="input-text4" name="job_nm_102" value="{{ item.job_nm }}" style="width:200px;" readonly>
+                  <input type="text" class="input-text4" name="job_nm_102" value="{{ item.job_nm }}" style="width:200px; background-color: #f2f2f2;" readonly>
                   <!-- 직무 개요 -->
-                  <input type="text" class="input-text3" name="job_desc_102" value="{{ item.job_descrp }}" style="width:810px;" readonly>
+                  <input type="text" class="input-text3" name="job_desc_102" value="{{ item.job_descrp }}" style="width:810px; background-color: #f2f2f2;" readonly>
                   <br>
                 {% endfor %}
               </div>
@@ -253,7 +253,7 @@
             <div id="jb102_copy_4_2_edit" data-index="0" style="display: block; overflow-y: scroll; white-space: nowrap; 
             height: 100px; width: 1300px; border: 1px solid #ccc; margin-left:10px; margin-top:5px;">
               {% for item in job_resp_list %}
-                <input type="text" class="input-text3" name="job_resp" value="{{ item.job_resp }}" style="width:800px;" readonly>
+                <input type="text" class="input-text3" name="job_resp" value="{{ item.job_resp }}" style="width:800px; background-color: #f2f2f2;" readonly>
                 <br>
               {% endfor %}
             </div> 

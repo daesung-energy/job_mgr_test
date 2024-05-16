@@ -152,6 +152,7 @@
             var jobDiv = document.getElementById('jobDiv'); // 직무 목록을 담을 div 요소 찾기
             
             jobs.forEach(jobCd => { // 직무 목록을 동적으로 생성
+            // jobs.forEach((jobCd, index) => {
 
                 // var jobData = jobs.find(jobCd => jobCd.job_cd === jobCd); // 과업명이 taskName인 데이터를 찾아서 taskData에 저장
                 // var taskData = tasks.find(task => task.task_nm === taskName); // 과업명이 taskName인 데이터를 찾아서 taskData에 저장
@@ -165,6 +166,9 @@
                 radioInput.setAttribute('type', 'radio'); 
                 radioInput.setAttribute('name', 'job'); // 라디오 버튼의 name을 'job'으로 설정
                 radioInput.setAttribute('value', jobCd); // 직무 코드를 value로 설정
+                // if (index === 0) { // 첫 번째 직무를 기본 선택값으로 설정
+                //     radioInput.setAttribute('checked', 'checked');
+                // }
                 
                 container.appendChild(radioInput); // 라디오 버튼을 컨테이너에 추가
 
@@ -193,8 +197,20 @@
                     activityDiv.innerHTML = ''; // 활동 목록 초기화
                     taskDiv.style.display = 'none'; // 과업 Div 숨김
                     activityDiv.style.display = 'none'; // 활동 Div 숨김
+
+                    
                 });
+                // if (jobs.indexOf(jobCd) === 0) { // 첫 번째 직무를 기본 선택
+                //         radioInput.checked = true;
+                //         updateDutyList(jobCd);
+                //     }
+                
             });
+
+            // // 첫 번째 직무에 대한 책무 목록을 업데이트
+            // if (jobs.length > 0) {
+            //     updateDutyList(jobs[0]);
+            // }
         }
 
 /////////////////////////////////////////////////////// 책무 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -210,7 +226,8 @@
             var dutyDiv = document.getElementById('dutyDiv'); // 책무 목록을 담을 div 요소 찾기
             dutyDiv.innerHTML = ''; // 이전 내용을 지우고 제목을 다시 추가
             
-            duties.forEach((duty) => { // 책무명을 이용하여 책무 목록을 동적으로 생성. duty는 duties 배열의 각 요소이다.
+            // duties.forEach((duty, index) => { // 책무명을 이용하여 책무 목록을 동적으로 생성. duty는 duties 배열의 각 요소이다.
+            duties.forEach(duty => {
                 
                 const container = document.createElement('div'); // 책무와 버튼을 담을 컨테이너
 
@@ -218,13 +235,16 @@
                 radioInput.setAttribute('type', 'radio'); // 라디오 버튼 생성
                 radioInput.setAttribute('name', 'duty'); // 라디오 버튼의 name을 'duty'로 설정
                 radioInput.setAttribute('value', duty); // 책무명을 value로 설정
+                // if (index === 0) { // 첫 번째 책무를 기본 선택값으로 설정
+                //     radioInput.setAttribute('checked', 'checked');
+                // }
                 
                 const inputText = document.createElement('input');
                 inputText.setAttribute('type', 'text'); // 입력 필드 생성
                 inputText.setAttribute('name', 'duty_nm'); // inputText의 name을 'duty_nm'으로 설정
                 inputText.setAttribute('class', 'input_text_duty_nm');
                 inputText.setAttribute('value', duty); // 책무명을 value로 설정
-
+                
                 inputText.addEventListener('change', function(event) { // 책무명을 변경할 때 jsonData를 업데이트하는 함수
                     
                     var newDutyName = event.target.value.trim(); // 새로운 책무명을 newDutyName에 저장
@@ -308,7 +328,17 @@
                     activityDiv.innerHTML = ''; // 활동 목록 초기화
                     activityDiv.style.display = 'none'; // 활동 Div 숨김
                 });
+                // if (duties.indexOf(duty) === 0) { // 첫 번째 책무를 기본 선택
+                //     radioInput.checked = true;
+                //     updateTaskList(selectedJob, duty);
+                // }
             });
+
+            // // 첫 번째 책무에 대한 과업 목록을 업데이트
+            // if (duties.length > 0) {
+            //     updateTaskList(selectedJob, duties[0]);
+            // }
+
             dutyDiv.style.display = 'block'; // 책무 div의 display 속성을 block으로 변경하여 표시
         } // 책무 목록 업데이트 함수 끝
 
@@ -354,7 +384,7 @@
             // 중복 책무명 검사
             var isDuplicate = jsonData.some(duty => duty.duty_nm === newDutyNm && duty.job_cd === selectedJobCd);
 
-            var isReadonlyJob = ['JC001', 'JC002', 'JC004'].includes(selectedJobCd);  // Read-only condition for specific job codes
+            var isReadonlyJob = ['JC001', 'JC002', 'JC004'].includes(selectedJobCd);  // 일부 직무는 일부 값을 readonly해줘야 함.
 
             if (isDuplicate) {
                 alert("기존 책무명을 변경해주세요.");
@@ -478,7 +508,8 @@
             
             taskDiv.innerHTML = ''; // 이전 내용을 지우고 제목을 다시 추가
             
-            uniqueTasks.forEach(taskName => { // 과업 목록을 동적으로 생성, taskName은 uniqueTasks 배열의 각 요소이다. taskName은 과업명이다.
+            // uniqueTasks.forEach((taskName, index) => { // 과업 목록을 동적으로 생성, taskName은 uniqueTasks 배열의 각 요소이다. taskName은 과업명이다.
+            uniqueTasks.forEach(taskName => {
 
                 var taskData = tasks.find(task => task.task_nm === taskName); // 과업명이 taskName인 데이터를 찾아서 taskData에 저장
 
@@ -488,6 +519,9 @@
                 radioInput.setAttribute('type', 'radio'); 
                 radioInput.setAttribute('name', 'task'); // 라디오 버튼의 name을 'task'로 설정
                 radioInput.setAttribute('value', taskName); // 과업명을 value로 설정
+                // if (index === 0) { // 첫 번째 과업을 기본 선택값으로 설정
+                //     radioInput.setAttribute('checked', 'checked');
+                // }
 
                 const inputText = document.createElement('input'); // 입력 필드 생성
                 inputText.setAttribute('type', 'text'); 
@@ -619,13 +653,14 @@
                 inputText6.setAttribute('class', 'input_text_num');
                 inputText6.setAttribute('value', taskData.work_lv_sum); // 업무수준 value로 설정
                 inputText6.setAttribute('readonly', true); // 읽기 전용 속성 설정
+                inputText6.style.backgroundColor = '#f2f2f2';
 
                 function updateSum() { // work_lv_sum과 work_grade값을 업데이트하는 함수 정의
                     
                     // 업무수준 계산
-                    const lvImprt = parseInt(inputText3.value) || 0;
-                    const lvDfclt = parseInt(inputText4.value) || 0;
-                    const lvPrfcn = parseInt(inputText5.value) || 0;
+                    const lvImprt = parseInt(inputText3.value) || 0; // 중요도 입력값을 정수로 변환, 없으면 0으로 설정
+                    const lvDfclt = parseInt(inputText4.value) || 0; // 난이도 입력값을 정수로 변환, 없으면 0으로 설정
+                    const lvPrfcn = parseInt(inputText5.value) || 0; // 숙련도 입력값을 정수로 변환, 없으면 0으로 설정
                     inputText6.value = lvImprt + lvDfclt + lvPrfcn; // 세 값의 합을 계산하여 inputText6에 설정
                     // 이 변경사항을 jsonData에도 반영
                     jsonData.forEach(task => {
@@ -636,7 +671,7 @@
 
                     // 업무등급 계산
                     var workGrade;
-                    calculatedWorkLv = parseInt(inputText6.value);
+                    calculatedWorkLv = parseInt(inputText6.value); // 업무수준 입력값을 정수로 변환
                     if (calculatedWorkLv >= 13) {
                         workGrade = "G1";
                     } else if (calculatedWorkLv >= 10) {
@@ -648,21 +683,23 @@
                     } else {
                         workGrade = "G5";
                     }
-                    inputText7.value = workGrade;
+                    inputText7.value = workGrade; // 계산된 업무등급을 inputText7에 설정
                     // 이 변경사항을 jsonData에도 반영
-                    jsonData.forEach(task => {
-                        if (task.duty_nm === selectedDuty && task.task_nm === taskName && task.job_cd === selectedJob) {
+                    jsonData.forEach(task => { // jsonData 내의 모든 task에 대해서, task의 value는 taskData
+                        // 해당 task_nm을 가진 직무책무가 같은 모든 json 데이터의 work_grade 새로운 값으로 업데이트
+                        if (task.duty_nm === selectedDuty && task.task_nm === taskName && task.job_cd === selectedJob) { 
                             task.work_grade = workGrade; // 새로운 업무등급 값으로 업데이트
                         }
                     });
                 }
-
+                
                 const inputText7 = document.createElement('input'); // 업무등급 입력 필드 생성
                 inputText7.setAttribute('type', 'text'); 
                 inputText7.setAttribute('name', 'work_grade'); // inputText4의 name을 'work_lv_prfcn'로 설정
                 inputText7.setAttribute('class', 'input_text_num');
                 inputText7.setAttribute('value', taskData.work_grade); // 난이도 value로 설정
                 inputText7.setAttribute('readonly', true); // 읽기 전용 속성 설정
+                inputText7.style.backgroundColor = '#f2f2f2';
 
                 const inputSelect = document.createElement('select'); // 업무특성 입력 필드 생성
                 inputSelect.setAttribute('name', 'work_attrbt'); // inputSelect의 name을 'work_attrbt'로 설정
@@ -694,12 +731,13 @@
                     });
                 });
 
-                const inputText8 = document.createElement('input'); // 숙련도 입력 필드 생성
+                const inputText8 = document.createElement('input'); // 연간 수행시간 입력 필드 생성
                 inputText8.setAttribute('type', 'text'); 
-                inputText8.setAttribute('name', 'prfrm_tm_ann'); // inputText4의 name을 'work_lv_prfcn'로 설정
+                inputText8.setAttribute('name', 'prfrm_tm_ann'); // inputText8 name을 'prfrm_tm_ann'로 설정
                 inputText8.setAttribute('class', 'input_text_num2');
                 inputText8.setAttribute('value', parseFloat(taskData.prfrm_tm_ann).toFixed(1)); // 연간 업무량 value로 설정(소숫점 1자리까지)
                 inputText8.setAttribute('readonly', true); // 읽기 전용 속성 설정
+                inputText8.style.backgroundColor = '#f2f2f2';
 
                 // 위로 이동 버튼
                 const moveUpButton = document.createElement('button');
@@ -729,14 +767,6 @@
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = '-';
                 deleteButton.className = 'del_small_2';
-                // deleteButton.onclick = function() {
-                //     // jsonData에서 해당 직무, 책무 내에서 선택한 과업을 제외한 데이터를 필터링하여 새로운 jsonData 생성
-                //     jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === taskName)); // 해당 과업 데이터를 제외하고 새로운 jsonData를 생성
-                //     // DOM에서 컨테이너 제거
-                //     taskDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
-                //     // act_seq 업데이트 추후 구현
-                //     updateTaskSequence(selectedJob, selectedDuty); // 순서 업데이트 
-                // };
                 deleteButton.onclick = function() {
                     var tasksInDuty = jsonData.filter(item => item.job_cd === selectedJob && item.duty_nm === selectedDuty).map(item => item.task_nm);
                     var uniqueTasks = [...new Set(tasksInDuty)]; // 중복 제거하여 unique 리스트 생성
@@ -749,13 +779,13 @@
                     }
                 };
 
-                // 중요도, 난이도, 숙련도, 연간 수행시간 등을 업데이트하는 코드 부분
-                inputText3.value = taskData.work_lv_imprt ? taskData.work_lv_imprt.toString() : '';
-                inputText4.value = taskData.work_lv_dfclt ? taskData.work_lv_dfclt.toString() : '';
-                inputText5.value = taskData.work_lv_prfcn ? taskData.work_lv_prfcn.toString() : '';
-                inputText6.value = taskData.work_lv_sum ? taskData.work_lv_sum.toString() : '';
+                // 중요도, 난이도, 숙련도, 연간 수행시간 등을 업데이트하는 코드 부분(? 뒤는 일부 공통 코드일 때 필요함. 나머지 직무코드들은 validation check해서 괜찮음)
+                inputText3.value = taskData.work_lv_imprt ? taskData.work_lv_imprt.toString() : ''; // 중요도 입력값이 없으면 빈 문자열로 설정(blank로 나타냄)
+                inputText4.value = taskData.work_lv_dfclt ? taskData.work_lv_dfclt.toString() : ''; // 난이도 입력값이 없으면 빈 문자열로 설정
+                inputText5.value = taskData.work_lv_prfcn ? taskData.work_lv_prfcn.toString() : ''; // 숙련도 입력값이 없으면 빈 문자열로 설정
+                inputText6.value = taskData.work_lv_sum ? taskData.work_lv_sum.toString() : ''; // 업무수준 입력값이 없으면 빈 문자열로 설정
                 inputText7.value = taskData.work_grade ? taskData.work_grade : '';
-                inputText8.value = taskData.prfrm_tm_ann ? parseFloat(taskData.prfrm_tm_ann).toFixed(1) : '';
+                inputText8.value = taskData.prfrm_tm_ann ? parseFloat(taskData.prfrm_tm_ann).toFixed(1) : ''; // 연간 업무량 입력값이 없으면 빈 문자열로 설정
 
                 container.appendChild(radioInput);
                 container.appendChild(inputText);
@@ -785,6 +815,12 @@
                 });
                 
             });
+
+            // // 첫 번째 과업에 대한 활동 목록을 업데이트
+            // if (uniqueTasks.length > 0) {
+            //         updateActivityList(selectedJob, selectedDuty, uniqueTasks[0]);
+            // }
+
             taskDiv.style.display = 'block'; // 과업 Div를 표시
         }
 
@@ -1118,6 +1154,7 @@
                         event.target.value = act.act_prfrm_cnt; // 입력값이 유효하지 않으면 원래 값으로 되돌림
                     }
                 });
+                // act_prfrm_cnt의 경우 일부 공통코드일때 작성 못하도록 하고 0이 왔다가 null값이 가지만, view.py에서 0을 넣어줌.
 
                 const inputText4 = document.createElement('input'); // 업무량 입력 필드 생성
                 inputText4.setAttribute('type', 'text'); 
@@ -1325,14 +1362,7 @@
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = '-';
                 deleteButton.className = 'del_small_2';
-                // deleteButton.onclick = function() {
-                //     // jsonData에서 해당 직무, 책무, 과업 내에서 선택한 활동을 제외한 데이터를 필터링하여 새로운 jsonData 생성
-                //     jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask && item.act_nm === activity)); // 해당 활동 데이터를 제외하고 새로운 jsonData를 생성, activity의 값은 위에서 가져온 데이터
-                //     // DOM에서 컨테이너 제거
-                //     activityDiv.removeChild(container); // 해당 활동 컨테이너를 삭제
-                //     // act_seq 업데이트 추후 구현
-                //     updateActivitySequence(selectedJob, selectedDuty, selectedTask);
-                // };
+
                 deleteButton.onclick = function() {
                     var activitiesInTask = jsonData.filter(item => item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask).map(item => item.act_nm);
                     var uniqueActivities = [...new Set(activitiesInTask)]; // 중복 제거하여 unique 리스트 생성
@@ -1346,10 +1376,11 @@
                 };
 
 
-                // 담당자, 연간 수행횟수, 건당 소요시간, 연간 소요시간 등을 업데이트하는 코드 부분
+                // 담당자, 연간 수행횟수, 건당 소요시간, 연간 소요시간 등을 업데이트하는 코드 부분(? 뒤의 부분은 null일 때 필요함)
+                // 0은 빈칸으로 해줌.
                 inputText2.value = act.act_prsn_chrg ? act.act_prsn_chrg : '';
                 inputText3.value = act.act_prfrm_cnt ? act.act_prfrm_cnt : '';
-                inputText4.value = act.act_prfrm_cnt_ann ? act.act_prfrm_cnt_ann.toString() : '';
+                inputText4.value = act.act_prfrm_cnt_ann ? act.act_prfrm_cnt_ann.toString() : ''; // 연간 수행 횟수, 없으면 빈 문자열
                 inputText5.value = act.act_prfrm_tm_cs ? parseFloat(act.act_prfrm_tm_cs).toFixed(1) : '';
                 inputText6.value = act.act_prfrm_tm_ann ? parseFloat(act.act_prfrm_tm_ann).toFixed(1) : '';
                 inputText7.value = act.dept_rltd ? act.dept_rltd : '';
@@ -1518,6 +1549,10 @@
 
         // 초기 직무 목록 생성
         createJobList();
+        // document.querySelector('input[name="job"]:first-of-type').click();
+        // document.querySelector('input[name="duty"]:first-of-type').click();
+        // document.querySelector('input[name="task"]:first-of-type').click();
+        // document.querySelector('input[name="activity"]:first-of-type').click();
         });
 
     </script>
