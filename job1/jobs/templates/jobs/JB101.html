@@ -36,6 +36,7 @@
         </div>
       </form>
 
+      <!-- 탭 선택 폼 -->
       <form id="jb101_1" action="{% url 'jb101_1' %}" method="POST">
         {% csrf_token %}
 
@@ -127,11 +128,11 @@
           <div id="jb101_3_1" style="padding-left: 50px; padding-top:10px;">
             {% for row in dept_resp_list %}
               <input type="hidden" name="dept_resp_ordr" value="{{ row.dept_resp_ordr }}" readonly>
-              <input type="text" class="input-text7" style="width: 800px; text-align: left;" name="dept_resp" value="{{ row.dept_resp }}" /><br>
+              <input type="text" class="input-text7" style="width: 1200px; text-align: left;" name="dept_resp" value="{{ row.dept_resp }}" /><br>
             {% endfor %}
         
             {% for i in range %}
-              <input type="text" class="input-text7" style="width: 800px; text-align: left;" name="dept_resp" value="" />
+              <input type="text" class="input-text7" style="width: 1200px; text-align: left;" name="dept_resp" value="" />
             {% endfor %}
           </div>
         {% endif %}

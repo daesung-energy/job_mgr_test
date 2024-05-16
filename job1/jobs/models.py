@@ -541,14 +541,20 @@ class JobTask(models.Model):
         unique_together = (('prd_cd', 'dept_cd', 'job_cd', 'duty_nm', 'task_nm'),)
 
 
-# class v_jb110_f(models.Model):
-#     prd_cd = models.CharField(max_length=5, blank=True, null=True)
-#     dept_cd = models.CharField(max_length=4, blank=True, null=True)
-#     job_cd = models.CharField(max_length=5, blank=True, null=True)
-#     job_nm = models.CharField(max_length=50, blank=True, null=True)
-#     cnt_task = models.IntegerField(blank=True, null=True)
+class VJb110F(models.Model):
+    prd_cd = models.CharField(max_length=5, primary_key=True)
+    dept_cd = models.CharField(max_length=4, blank=True, null=True)
+    job_cd = models.CharField(max_length=5, blank=True, null=True)
+    job_nm = models.CharField(max_length=50, blank=True, null=True)
+    cnt_task = models.IntegerField(blank=True, null=True)
+    imprt = models.IntegerField(blank=True, null=True)
+    dfclt = models.IntegerField(blank=True, null=True)
+    prfcn = models.IntegerField(blank=True, null=True)
+    wrk_lv_sum = models.IntegerField(blank=True, null=True)
+    wrk_tm = models.DecimalField(max_digits=6, decimal_places=1, blank=True, null=True)
+    wrk_ratio1 = models.DecimalField(max_digits=1, decimal_places=1, blank=True, null=True)
+    work_grade = models.CharField(max_length=2, blank=True, null=True)
 
-
-#     class Meta:
-#         managed = False
-#         db_table = 'v_jb110_f'
+    class Meta:
+        managed = False
+        db_table = 'v_jb110_f'

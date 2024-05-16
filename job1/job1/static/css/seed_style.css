@@ -249,7 +249,7 @@ header {
 }
 
 .side {
-  flex-basis: 300px;
+  flex-basis: 200px;
   flex-shrink: 0;
   /* width: 300px; sdie 넓이를 250px로 고정 */
   background-color: lightgray;
@@ -870,6 +870,7 @@ header {
 }
 
 .input_text_duty_nm {
+  width: 220px;
   margin-left: 5px;
   border: none;
   text-align: left;

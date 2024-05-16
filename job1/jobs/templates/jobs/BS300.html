@@ -86,7 +86,7 @@
                                 </tr>
                                 <tr>
                                     <td>
-                                    <select name="dept_selected" class="select-combox3" size="5" style="height: 300px; width: 150px;" onchange="this.form.submit()">
+                                    <select id="dept_select" name="dept_selected" class="select-combox3" size="5" style="height: 300px; width: 150px;" onchange="submitAndScroll(this)">
                                         {% for index, row in dept_list.iterrows %}
                                         <option value="{{ row.dept_cd }}" {% if row.dept_cd == dept_selected %} selected {% endif %}> {{ row.dept_nm }} </option>
                                         {% endfor %}
@@ -262,7 +262,7 @@
                         {% endif %}
                         {% if activate == "yes" %}
                         <button type=button class="add" onclick="addForm('{{ tab }}')">추가</button>
-                        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm()">저장</button>
+                        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm()">저장</button> 
                         <button type="submit" class="cancel" name="action" value="action2">취소</button>
                         {% endif %}
                     {% endif %}
@@ -280,7 +280,8 @@
                         {% endif %}
                         {% if activate == "yes" %}
                         <button type=button class="add" onclick="addForm('{{ tab }}')">추가</button>
-                        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm()">저장</button>
+                        <!-- 여기 수정해야 함 -->
+                        <button type="submit" class="save" name="action" value="action1" onclick="return validateForm()" disabled>저장</button>
                         <button type="submit" class="cancel" name="action" value="action2">취소</button>
                         {% endif %}
                     {% endif %}
@@ -325,30 +326,24 @@
         return true;
         }
 
-        // function validateForm2() { // 빈 칸 검사하는 함수
-        // // 모든 input 요소를 가져옵니다.
-        // const inputs = document.querySelectorAll("input[type='text'], input[type='number']");
+        function submitAndScroll(selectElement) {
+            // 폼을 제출합니다.
+            selectElement.form.submit();
 
-        // // 모든 input 값을 검사합니다.
-        // for (const input of inputs) {
-        //     if (input.value.trim() === "") {
-        //     alert("빈 칸을 채우십시오.");
-        //     return false; // 검증 실패 시 submit을 막습니다.
-        //     }
+            // 선택된 옵션의 인덱스를 찾습니다.
+            const selectedIndex = selectElement.selectedIndex;
 
-        //     // dept_ttl_cnt 필드에 대한 추가 검증
-        //     if (input.name === "dept_ttl_cnt") {
-        //         const value = parseFloat(input.value); // 입력 값을 숫자로 변환합니다.
-        //         if (!Number.isInteger(value)) {
-        //             alert("TO는 정수만 입력해야 합니다.");
-        //             return false; // 검증 실패 시 submit을 막습니다.
-        //         }
-        //     }
-        // }
+            // 선택된 옵션을 최상단으로 스크롤합니다.
+            selectElement.scrollTop = selectElement.options[selectedIndex].offsetTop;
+        }
 
-        // // 모든 검증을 통과하면 true를 반환합니다.
-        // return true;
-        // }
+        window.addEventListener('load', function() {
+            const selectElement = document.getElementById('dept_select');
+            const selectedIndex = selectElement.selectedIndex;
+
+            // 페이지가 로드될 때 선택된 옵션을 최상단으로 스크롤합니다.
+            selectElement.scrollTop = selectElement.options[selectedIndex].offsetTop;
+        });
 
 
         function validateForm2() {

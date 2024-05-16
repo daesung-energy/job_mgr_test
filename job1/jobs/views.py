@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import HttpResponse
 #BsPrd 메시지 끌고옴
-from .models import BsPrd, CcCdDetail, CcCdHeader, BsJob, BsDept, BsJobDept, BsMbr, BsWorkGrade, MbrJobGrp, MbrJobGrpDetail, JobTask, JobActivity, BsPrd, BsAcnt, BsJobResp, JobSpcfc, BsStdWrkTm, BsWlOvSht, BsPosGrade, BsPosList, BsDeptGrp, BsDeptResp, BsDeptGrpDomain, BsTtlList, BsTtlCnt, BsMbrGrp, BsMbrGrpNm
+from .models import BsPrd, CcCdDetail, CcCdHeader, BsJob, BsDept, BsJobDept, BsMbr, BsWorkGrade, MbrJobGrp, MbrJobGrpDetail, JobTask, JobActivity, BsPrd, BsAcnt, BsJobResp, JobSpcfc, BsStdWrkTm, BsWlOvSht, BsPosGrade, BsPosList, BsDeptGrp, BsDeptResp, BsDeptGrpDomain, BsTtlList, BsTtlCnt, BsMbrGrp, BsMbrGrpNm, VJb110F
 #확인하는 메시지 끌고옴
 #from .models import TextConfirm
 from datetime import datetime
@@ -407,7 +407,7 @@ def BS106(request): #BS106 초기화면 + 회기 선택 화면
         'title' : '직무 관리', # 제목
         'prd_list' : BsPrd.objects.all().order_by('prd_cd'), # 회기 리스트
         'prd_selected' : BsPrd.objects.all().order_by('prd_cd').last().prd_cd, # 마지막 회기가 디폴트로 뜰 것임.
-        'job_type_selected' : "former" # 직무유형 선택 전
+        'job_type_selected' : "former", # 직무유형 선택 전
         # attribute error 처리 필요
     }
 
@@ -418,7 +418,7 @@ def BS106(request): #BS106 초기화면 + 회기 선택 화면
             'title' : '직무 관리', # 제목
             'prd_list' : BsPrd.objects.all().order_by('prd_cd'), # 회기 리스트
             'prd_selected' : prd_selected,
-            'job_type_selected' : "former" # 직무유형 선택 전
+            'job_type_selected' : "former", # 직무유형 선택 전
         }
 
     return render(request, 'jobs/BS106.html', context)
@@ -509,7 +509,6 @@ def JB102(request): # JB102 페이지의 초기화면 - 회기 선택 화면
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
     context = {
-
         'prd_list' : BsPrd.objects.all(),
         'title' : '직무 기본정보', # 제목
         'prd_selected' : last_prd_cd,
@@ -547,6 +546,7 @@ def JB103(request): # JB103페이지의 초기화면
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
     print('user', request.user.username)
+    # print(VJb110F.objects.get(prd_cd="2022A", dept_cd="DD01", job_cd="JC001", job_nm="팀리더").cnt_task)
 
     dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
@@ -1163,7 +1163,7 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
         if action == 'action1':
             period_old = request.POST['prd_cd'] # 복사 대상 회기
 
-                # 마지막 회기만 복사할 수 있음
+            # 마지막 회기만 복사할 수 있음
 
             last_prd_cd = BsPrd.objects.last().prd_cd #BsPrd모델 중 마지막 줄의 prd_cd를 last_prd_cd 문자열 변수에 입력.
             last_year = last_prd_cd.strip()[0:4] #BsPrd 모델의 마지막 prd_cd 중 연도 정보
@@ -1176,12 +1176,15 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
                 period_new = str(now.year) + "A"
                 # period_new = "2023A"
 
-            # copy_period_data(period_old, period_new)
-
             messages = copy_period_data(period_old, period_new)
 
             last_bs_prd = BsPrd.objects.last()
+
             if last_bs_prd:
+                
+                # 복사한 회기의 year는 지금 현재 년도
+                last_bs_prd.year = int(now.year)
+
                 last_bs_prd.prd_done_yn = 'N'
                 last_bs_prd.prd_str_dt = dt.datetime.today()
                 last_bs_prd.job_srv_str_dt = None
@@ -1272,6 +1275,44 @@ def JB109(request): # 업무량 분석화면 - 회기선택화면
     }
 
     return render(request, 'jobs/JB109.html', context)
+
+
+def JB110(request): # 부서 업무량 분석화면 초기 화면 + 회기 선택 화면
+
+    # 초기화면
+        
+    user_name = request.user.username # 아이디(ID___)
+    # print('user name', user_name)
+    dept_login = get_dept_code(user_name) # 로그인한 부서의 부서코드. 회기 수정해야 함. 아이디 테이블에 없기 때문.
+    dept_login_nm = BsDept.objects.get(prd_cd=BsPrd.objects.all().last().prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+    context = {
+        'title' : '부서 기본정보', # 제목
+        'prd_list' : BsPrd.objects.all(),
+        'user_name' : user_name,
+        'activate' : 'no', #버튼 컨트롤 off
+        'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
+        'dept_login_nm' : dept_login_nm,
+        'status' : 'tab_before'
+    }
+
+    # 회기 선택 후 화면
+
+    if request.method == 'POST':
+        prd_cd_selected = request.POST["prd_cd_selected"]
+        dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+        context = {
+            'title' : '부서 기본정보', # 제목
+            'prd_list' : BsPrd.objects.all(),
+            'user_name' : user_name,
+            'activate' : 'no', #버튼 컨트롤 off
+            'prd_cd_selected' : prd_cd_selected,
+            'dept_login_nm' : dept_login_nm,
+            'status' : 'tab_before'
+        }
+
+    return render(request, 'jobs/JB110.html', context)
 
 
 def BS200_1(request): #BS200에서 탭 선택 후 display
@@ -2393,7 +2434,7 @@ def BS106_1(request): # 직무 관리에서 회기 및 직무 유형을 선택�
             'job_list': job_list,
             'job_type': job_type,
             'save': save,
-            'job_type_selected' : "latter" # 직무유형 선택 전
+            'job_type_selected' : "latter" # 직무유형 선택 후
         })
 
     return render(request, 'jobs/BS106.html', context)
@@ -5955,9 +5996,11 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
         sum_7 = round(analysis['po_right'].sum(), 1)
         sum_8 = round(analysis['overless'].sum(), 1)
 
-        if sum_7 >= 0:
+        if sum_8 > BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_max:
+            overless = "여유"
+        elif sum_8 <= BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_max and sum_8 >= BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_min:
             overless = "적정"
-        else:
+        elif sum_8:
             overless = "부족"
 
         context = {
@@ -5982,6 +6025,137 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
             }
 
     return render(request, 'jobs/JB109.html', context)
+
+
+def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 부서의 부서 업무량 정보를 탭에 따라 띄워준다.
+
+    context = {}
+    
+    if request.method == 'POST':
+        # 선택한 회기를 input으로 받아옴.
+        prd_cd_selected = request.POST['prd_cd_selected']
+        # span을 탭을 어느 것을 선택하느냐에 따라 다르게 연산을 수행할 것임. 일단 그 span이 뭔지 알아낼 것임.
+        span_name = request.POST.get('span_name', '')
+
+        dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
+        dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+        # 공통으로 사용하는 context 설정
+        context = {
+            'title': '부서 기본정보',  # 제목
+            'prd_list': BsPrd.objects.all(),
+            'prd_cd_selected': prd_cd_selected,
+            'activate': 'no',  # 버튼 컨트롤 off
+            'status': 'tab_after',
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+            'dept_login_nm' : dept_login_nm
+        }
+
+        if dept_login == 'DD06': # 경영기획팀이 로그인했을 경우 다른 팀들도 선택할 수 있도록 함.
+            context.update({
+                'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
+            })
+        else:
+            context.update({
+                'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login),
+            })
+
+        # 선택된 탭에 따라 tab 값 설정
+        if span_name == 'span1': # 직무별 업무량 분석 탭일 경우
+            context['tab'] = "tab1"
+
+            # v_jb110f 뷰에서 해당 부서의 업무량 분석 정보를 가져와서 dataframe 생성
+            analysis_target = VJb110F.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+            data_list = [{'job_nm' : rows.job_nm, 'cnt_task' : rows.cnt_task, 'wrk_tm' : rows.wrk_tm, 'wrk_ratio1' : rows.wrk_ratio1,
+                          'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
+                            'work_grade' : rows.work_grade  } for rows in analysis_target]
+            df1 = pd.DataFrame(data_list)
+            df1 = df1.fillna('') # NaN값을 ''로 채워줌
+
+            sum_1 = df1['cnt_task'].sum() # 과업수 합계
+            # ''을 제외하고 wrK_tm의 합계를 구한다.
+            sum_2 = df1.loc[df1['wrk_tm'] != '', 'wrk_tm'].sum() # 업무량 합계
+            # ''을 제외하고 wrk_ratio1의 합계를 구한다.
+            sum_3 = df1.loc[df1['wrk_ratio1'] != '', 'wrk_ratio1'].sum() # 중요도 합계
+            
+            
+            # sum_2 = df1['wrk_tm'].sum() # 업무량 합계
+            # sum_3 = df1['imprt'].sum() # 중요도 합계
+
+            context.update({
+                'dept_selected': dept_login,
+                'activate': 'yes', # 버튼 컨트롤 on
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+                'analysis' : df1,
+                'sum_1' : sum_1,
+                'sum_2' : sum_2,
+                'sum_3' : sum_3,
+            })
+
+        elif span_name == 'span2':
+            context['tab'] = "tab2"
+
+            context.update({
+                'activate': 'yes', # 버튼 컨트롤 on
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+                'dept_selected' : dept_login
+            })
+
+    return render(request, 'jobs/JB110.html', context)
+
+
+def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때. 경영기획팀만 해당
+
+    if request.method == 'POST':
+        prd_cd_selected = request.POST['prd_cd_selected']
+        dept_selected = request.POST['dept_selected']
+        
+        tab = request.POST['tab']  # 탭 정보
+
+        # 공통 context 설정
+        context = {
+            'title': '부서 기본정보',
+            'prd_list': BsPrd.objects.all(),
+            'prd_cd_selected': prd_cd_selected,
+            'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
+            'dept_selected': dept_selected,
+            'tab': tab,
+            'activate': 'yes', # 버튼 컨트롤 on
+            'status': 'tab_after',
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn
+        }
+
+        if tab == "tab1": # 부서 정보 탭 선택한 상태일 시 - 부서 성과책임 표시
+
+            # v_jb110f 뷰에서 해당 부서의 업무량 분석 정보를 가져와서 dataframe 생성
+            analysis_target = VJb110F.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
+            data_list = [{'job_nm' : rows.job_nm, 'cnt_task' : rows.cnt_task, 'wrk_tm' : rows.wrk_tm, 'wrk_ratio1' : rows.wrk_ratio1,
+                          'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
+                            'work_grade' : rows.work_grade  } for rows in analysis_target]
+            df1 = pd.DataFrame(data_list)
+            df1 = df1.fillna('') # NaN값을 ''로 채워줌
+
+            sum_1 = df1['cnt_task'].sum() # 과업수 합계
+            # ''을 제외하고 wrK_tm의 합계를 구한다.
+            sum_2 = df1.loc[df1['wrk_tm'] != '', 'wrk_tm'].sum() # 업무량 합계
+            # ''을 제외하고 wrk_ratio1의 합계를 구한다.
+            sum_3 = df1.loc[df1['wrk_ratio1'] != '', 'wrk_ratio1'].sum() # 중요도 합계
+
+            context.update({
+                'analysis' : df1,
+                'sum_1' : sum_1,
+                'sum_2' : sum_2,
+                'sum_3' : sum_3,
+            })
+
+        elif tab == "tab2": # 부서원 탭 선택한 상태일 시 - 부서원 목록 표시
+            
+
+            context.update({
+            
+            })
+
+    return render(request, 'jobs/JB110.html', context)
 
 
 def main(request):

@@ -10,7 +10,7 @@
     <!-- 회기 및 직무 유형 선택 div -->
     <div id = "bs106_1">
       <!-- 회기 및 직무 유형 선택 form -->
-      <form method="POST" id="prd_select" action="{% url 'BS106' %}">
+      <form method="POST" id="prd_select" action="{% url 'BS106' %}" onkeydown="return event.key !== 'Enter';">
         {% csrf_token %}
         <!-- 회기 표시 박스-->
         <div class="list-box-prd">
@@ -34,7 +34,7 @@
       </form>
 
       <!-- 직무 유형 선택 form -->
-      <form method="POST" id="job_type_select" action="{% url 'BS106_1' %}">
+      <form method="POST" id="job_type_select" action="{% url 'BS106_1' %}" onkeydown="return event.key !== 'Enter';">
         {% csrf_token %}
         <input type="hidden" name="prd_selected" value={{ prd_selected }}>
         <!-- 직무 유형 선택 div : style 포함 -->
@@ -66,7 +66,7 @@
         <span class="label-text6" style="padding-left: 480px;">직무 개요</span>
         
         <!-- 직무 선택 form -->
-        <form method="POST" id="job_management" action="{% url 'BS106_2' %}">
+        <form method="POST" id="job_management" action="{% url 'BS106_2' %}" onkeydown="return event.key !== 'Enter';">
           {% csrf_token %}
           <input type="hidden" name="prd_selected" value={{ prd_selected }}>
           <input type="hidden" name="job_type" value={{ job_type }}>
@@ -100,7 +100,7 @@
         </form>
 
         <!-- 추가 버튼 누르면 직무 기본사항 입력 추가할 수 있는 form -->
-        <form method="POST" id="job_management_new" action="{% url 'BS106_3' %}">
+        <form method="POST" id="job_management_new" action="{% url 'BS106_3' %}" onkeydown="return event.key !== 'Enter';">
           {% csrf_token %}
           <!-- 직무유형 라디오 버튼을 클릭했을 때 -->
           {% if activate == "activate" %}
@@ -125,71 +125,75 @@
         </form>
 
         <!-- 직무 기본사항 추가에 대한 button control - 전체 직무를 제외하면 직무사항 추가 가능 -->
-        {% if job_type == "all" %}
+        {% if job_type_selected == "former" %}
         {% else %}
-        <div style="display: flex; justify-content: center; align-items: center; height: 80px;">
-          <!-- 행 추가 버튼 : job_managament form의 submit 버튼이다. -->
-          <button class="add" form="job_management" type="submit" name="action" value="action3">추가</button>
-            <!-- 행 추가 버튼 누르면 new_key는 activate라는 값을 가져온다. 행 추가 버튼을 누르면 취소 버튼을 activate 시킨다. -->
-            {% if new_key == "activate" %}
-              <button type="submit" class="cancel" form="job_management_new" name="action" value="action2">취소</button>
-            {% else %}
-            <button type="submit" class="cancel" form="job_management" name="action" value="action4">취소</button>
-            {% endif %}
-          <br>
-        </div>
-        {% endif %}
 
-        <!-- 직무 기본사항 수정(저장), 삭제에 대한 button control -->
-        <!-- 직무 유형이 고유일 때 -->
-        {% if job_type == "unique" %}
-        <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
-          <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
-          {% if new_key == "activate" %}
-            <div style="text-align: center; display: flex;">
-              <button type="input" name="action" class="save" form="job_management_new" value="action1" onclick="return submitButton()">저장</button>
-              <!-- <button style="display: inline-block;" type="submit" form="job_management_new" class="save" name="action" value="action1">저장</button> -->
-              <button style="display: inline-block;" class="del_disabled" disabled>삭제</button>
-            </div>
-          <!-- 행 추가 버튼 누르지 않았을 때: 저장버튼 활성화, 삭제버튼 비활성화 시키고 / 라디오 버튼 change되는 것 감지하면 삭제 버튼을 토글시켜서 삭제 버튼 활성화시킴 -->
+          {% if job_type == "all" %}
           {% else %}
-            <div style="text-align: center; display: flex;" >
-              <button style="display: inline;" type="submit" form="job_management" class="save" name="action" value="action1">저장</button>
-              <!-- 삭제 버튼은 직무 코드 선택 라디오 버튼 체크를 해야 활성화됨 -->
-              {% if act_del == "yes" %}
-              <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
-               onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+          <div style="display: flex; justify-content: center; align-items: center; height: 80px;">
+            <!-- 행 추가 버튼 : job_managament form의 submit 버튼이다. -->
+            <button class="add" form="job_management" type="submit" name="action" value="action3">추가</button>
+              <!-- 행 추가 버튼 누르면 new_key는 activate라는 값을 가져온다. 행 추가 버튼을 누르면 취소 버튼을 activate 시킨다. -->
+              {% if new_key == "activate" %}
+                <button type="submit" class="cancel" form="job_management_new" name="action" value="action2">취소</button>
               {% else %}
-              <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
+              <button type="submit" class="cancel" form="job_management" name="action" value="action4">취소</button>
               {% endif %}
-            </div>
+            <br>
+          </div>
           {% endif %}
-        </div>
-        {% endif %}
-        <!-- 직무 유형이 공통일 때 -->
-        {% if job_type == "common" %} 
-        <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
-          <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
-          {% if new_key == "activate" %}
-            <div style="text-align: center; display: flex;">
-              <button type="input" name="action" class="save" form="job_management_new" value="action1" onclick="return submitButton()">저장</button>
-              <!-- <button style="display: inline-block;" type="submit" form="job_management_new" class="save" name="action" value="action1">저장</button> -->
-              <button style="display: inline-block;" class="del_disabled" disabled>삭제</button>
-            </div>
-          <!-- 행 추가 버튼 누르지 않았을 때: 저장버튼 활성화, 삭제버튼 비활성화 시키고 / 라디오 버튼 change되는 것 감지하면 삭제 버튼을 토글시켜서 삭제 버튼 활성화시킴 -->
-          {% else %}
-            <div style="text-align: center; display: flex;" >
-              <button style="display: inline;" type="submit" form="job_management" class="save" name="action" value="action1">저장</button>
-              <!-- 삭제 버튼은 직무 코드 선택 라디오 버튼 체크를 해야 활성화됨 -->
-              {% if act_del == "yes" %}
-              <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
-               onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
-              {% else %}
-              <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
-              {% endif %}
-            </div>
+
+          <!-- 직무 기본사항 수정(저장), 삭제에 대한 button control -->
+          <!-- 직무 유형이 고유일 때 -->
+          {% if job_type == "unique" %}
+          <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
+            <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
+            {% if new_key == "activate" %}
+              <div style="text-align: center; display: flex;">
+                <button type="input" name="action" class="save" form="job_management_new" value="action1" onclick="return submitButton()">저장</button>
+                <!-- <button style="display: inline-block;" type="submit" form="job_management_new" class="save" name="action" value="action1">저장</button> -->
+                <button style="display: inline-block;" class="del_disabled" disabled>삭제</button>
+              </div>
+            <!-- 행 추가 버튼 누르지 않았을 때: 저장버튼 활성화, 삭제버튼 비활성화 시키고 / 라디오 버튼 change되는 것 감지하면 삭제 버튼을 토글시켜서 삭제 버튼 활성화시킴 -->
+            {% else %}
+              <div style="text-align: center; display: flex;" >
+                <button style="display: inline;" type="submit" form="job_management" class="save" name="action" value="action1">저장</button>
+                <!-- 삭제 버튼은 직무 코드 선택 라디오 버튼 체크를 해야 활성화됨 -->
+                {% if act_del == "yes" %}
+                <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
+                onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+                {% else %}
+                <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
           {% endif %}
-        </div>
+          <!-- 직무 유형이 공통일 때 -->
+          {% if job_type == "common" %} 
+          <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
+            <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
+            {% if new_key == "activate" %}
+              <div style="text-align: center; display: flex;">
+                <button type="input" name="action" class="save" form="job_management_new" value="action1" onclick="return submitButton()">저장</button>
+                <!-- <button style="display: inline-block;" type="submit" form="job_management_new" class="save" name="action" value="action1">저장</button> -->
+                <button style="display: inline-block;" class="del_disabled" disabled>삭제</button>
+              </div>
+            <!-- 행 추가 버튼 누르지 않았을 때: 저장버튼 활성화, 삭제버튼 비활성화 시키고 / 라디오 버튼 change되는 것 감지하면 삭제 버튼을 토글시켜서 삭제 버튼 활성화시킴 -->
+            {% else %}
+              <div style="text-align: center; display: flex;" >
+                <button style="display: inline;" type="submit" form="job_management" class="save" name="action" value="action1">저장</button>
+                <!-- 삭제 버튼은 직무 코드 선택 라디오 버튼 체크를 해야 활성화됨 -->
+                {% if act_del == "yes" %}
+                <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
+                onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+                {% else %}
+                <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+          {% endif %}
         {% endif %}
 
       </div>
@@ -201,7 +205,7 @@
           <!-- 직무 성과책임 라벨 -->
           <span class="label-text6" style="padding-left: 65px;">직무 성과책임</span>
           <!-- 직무 성과책임 조회, 편집 form -->
-          <form action = "{% url 'BS106_4' %}" id="job_resp_edit" method="POST">
+          <form action = "{% url 'BS106_4' %}" id="job_resp_edit" method="POST" onkeydown="return event.key !== 'Enter';">
             {% csrf_token %}
 
             <input type="hidden" name="prd_selected" value={{ prd_selected }}>

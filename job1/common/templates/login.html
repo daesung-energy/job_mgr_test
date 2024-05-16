@@ -85,7 +85,7 @@
               <!--button-->
               <!-- <a href="/01_table_main.html" class="login_btn"><p>로그인</p></a> -->
               <!-- <a href="/jobs/BS101" class="login_btn"><p>로그인</p></a>  -->
-              <a href="javascript:login.submit();" class="login_btn"><p>로그인</p></a>
+              <a id="loginBtn" href="javascript:login.submit();" class="login_btn"><p>로그인</p></a>
               <!-- BS101로 이동하도록 해놨음 -->
               <!-- a 태그를 이용하여 눌렀을때 해당 URL로 이동하도록 설정, class지정으로 css 스타일 태그에서 디자인 수정 -->
             </fieldset>
@@ -100,5 +100,15 @@
         </copyright>
       </div>
     </warp>
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault(); // 기본 엔터키 동작을 막음
+            document.getElementById('loginBtn').click(); // 로그인 버튼 클릭
+          }
+        });
+      });
+    </script>
   </body>
 </html>
