@@ -85,7 +85,9 @@ DATABASES = {
         'PASSWORD': 'cdh0706**', #내 계정의 비밀번호
         'HOST': '130.1.112.100', #DB IP주소
         'PORT': '3306' #DB port
-    } #여기 작성한 다음에 migration해주면 바로 연동됨. 그 후에 shell 이용해서 데이터 확인해보기.
+    }
+
+#    여기 작성한 다음에 migration해주면 바로 연동됨. 그 후에 shell 이용해서 데이터 확인해보기.
 #    "default": {
 #        "ENGINE": "django.db.backends.sqlite3",
 #        "NAME": BASE_DIR / "db.sqlite3",

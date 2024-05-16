@@ -780,8 +780,6 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                             'work_grade': rows.work_grade_id, 'work_attrbt': rows.work_attrbt,
                             'prfrm_tm_ann': rows.prfrm_tm_ann, 'job_seq':rows.job_seq, 'duty_seq':rows.duty_seq, 'task_seq':rows.task_seq } for rows in original_rows]
                 df1 = pd.DataFrame(data_list)
-
-                
                 
                 # df_task과 df1의 prfrm_tm_ann은 한번씩 object로 바뀌는 문제가 있음. 이를 해결하기 위해 df_task의 prfrm_tm_ann을 float으로 바꿔줌
                 df1['prfrm_tm_ann'] = df1['prfrm_tm_ann'].astype(float)
@@ -3854,6 +3852,8 @@ def JB102_4(request): # 직무 선택 후 직무 성과책임 조회 / 저장, �
                 radio_value = request.POST['job_radio_102']
 
                 BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd=radio_value).delete()
+                JobActivity.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=radio_value).delete()
+                JobTask.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=radio_value).delete()
 
                 filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected) # 해당 회기, 부서의 BsJobDept object들
                 filtered_value = list(filtered_set.values_list('job_cd', flat=True)) # 위의 object들의 job_cd 리스트. 이를 이용해 BsJob 테이블에 접근.
@@ -3971,6 +3971,23 @@ def JB102_5(request): # 새로운 직무를 선택하고, 직무 수행자를 �
             new_job_by = request.POST['new_job_by'] # 그 직무를 수행할 신규 직무 수행자
 
             BsJobDept.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, job_by=new_job_by, create_dttm=now)
+
+            # 해당 회기의 해당 부서의 직무 개수를 세고 새로운 직무를 JobTask테이블에 추가할 때 job_seq값에는 그 개수 + 1 값을 넣어준다.
+            job_count = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected).count()
+
+            # new_job_cd가 JC001이거나 JC002이거나 JC004이면,
+            if new_job_cd == "JC001" or new_job_cd == "JC002" or new_job_cd == "JC004":
+                JobTask.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm="책무1", task_nm="과업1",
+                                       job_seq=job_count+1, duty_seq=1, task_seq=1)
+                JobActivity.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm_id="책무1", task_nm_id="과업1",
+                                           act_nm="활동1", act_prfrm_cnt=0, job_seq=job_count+1, duty_seq=1, task_seq=1, act_seq=1)
+            else:
+                JobTask.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm="책무1", task_nm="과업1",
+                                       work_lv_imprt=1, work_lv_dfclt=1, work_lv_prfcn=1, work_lv_sum=3, work_grade_id="G5",
+                                         prfrm_tm_ann=0, job_seq=job_count+1, duty_seq=1, task_seq=1)
+                JobActivity.objects.create(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=new_job_cd, duty_nm_id="책무1", task_nm_id="과업1",
+                                           act_nm="활동1", act_prfrm_cnt=0, act_prfrm_cnt_ann=0, act_prfrm_tm_cs=0, act_prfrm_tm_ann=0,
+                                             job_seq=job_count+1, duty_seq=1, task_seq=1, act_seq=1)
 
             filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected) # 해당 회기, 부서의 BsJobDept object들
             filtered_value = list(filtered_set.values_list('job_cd', flat=True)) # 위의 object들의 job_cd 리스트. 이를 이용해 BsJob 테이블에 접근.
@@ -6388,3 +6405,6 @@ def get_dept_code(user_id):
         return account.dept_cd_id
     except:
         return None  # 부서 코드가 없는 경우에 대한 처리
+    
+
+
