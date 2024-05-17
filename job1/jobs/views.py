@@ -14,7 +14,7 @@ import json
 #import numpy as np
 #import mysql.connector
 import pandas as pd
-from django.contrib import messages
+from django.contrib import messages, auth
 from django.db import IntegrityError
 from django.db.models import Case, When, Value, CharField
 from django.http import JsonResponse
@@ -23,6 +23,7 @@ from sqlalchemy import create_engine
 import traceback
 import pymysql
 from decimal import Decimal
+from django.contrib.auth.hashers import check_password
 
 now = dt.datetime.now() #지금 날짜를 가져옴
 
@@ -457,6 +458,37 @@ def CC102(request): ## 공통코드관리 초기화면
     return render(request, 'jobs/CC102.html', context)
 
 
+def CC105(request):
+
+    if request.method == "POST":
+        
+        user = request.user
+        origin_password = request.POST["origin_password"]
+        
+        if check_password(origin_password, user.password):
+        
+            new_password = request.POST["new_password"]
+            confirm_password = request.POST["confirm_password"]
+        
+            if new_password == confirm_password:
+                user.set_password(new_password)
+                user.save()
+                auth.login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                return render(request, 'jobs/CC105.html')
+        
+            else:
+                messages.error(request, '새 비밀번호가 일치하지 않습니다.')
+        
+        else:
+            messages.error(request, '현재 비밀번호가 일치하지 않습니다.')
+    
+        return render(request, 'jobs/CC105.html')
+    
+    else:
+    
+        return render(request, 'jobs/CC105.html')
+
+
 def popup(request):
     return render(request, 'jobs/popup.html')
 
@@ -606,7 +638,7 @@ def JB103(request): # JB103페이지의 초기화면
     return render(request, 'jobs/JB103.html', context)
 
 
-def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화면). 경영기획팀만 해당
+def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화면).
 
     if request.method == 'POST':
 
@@ -1150,15 +1182,92 @@ def JB103_test4_1(request):
         return HttpResponse("Invalid request", status=400)
 
 
-def JB103_grid(request):
+def JB103_grid(request): # 직무정보 조회 초기화면
 
-    context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
-        'prd' : BsPrd.objects.all(),
-        'activate' : 'no', #버튼 컨트롤 off
-        'team_list' : BsDept.objects.filter(prd_cd="2022A"), #나중에 변경해야 함.
+    last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
+
+    dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
+    dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+    # 회기, 부서 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
+    original_rows=JobTask.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
+
+    data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
+                'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
+                'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                'work_grade': rows.work_grade_id, 'work_attrbt': rows.work_attrbt,
+                'prfrm_tm_ann': rows.prfrm_tm_ann } for rows in original_rows]
+
+    df1 = pd.DataFrame(data_list)
+    
+    # job_activity 접근
+    original_rows_2=JobActivity.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
+    data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
+                'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
+                'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
+                'rpt_nm': rows.rpt_nm} for rows in original_rows_2]
+
+    df2 = pd.DataFrame(data_list_2)
+
+    try:
+
+        df3 = pd.merge(df1, df2)
+
+        # dataframe의 index를 열로 만들어줌
+        df3.reset_index(inplace=True)
+
+        # # df3의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
+        # df3['index_pos'] = df3['index']
+
+        # job_nm 열을 추가
+        df3['job_nm'] = df3['job_cd'].apply(lambda x: BsJob.objects.get(prd_cd=last_prd_cd, job_cd=x).job_nm)
+
+        # job_cd 열 삭제
+        df3.drop('job_cd', axis=1, inplace=True)
+
+        # 데이터프레임을 JSON 형식으로 변환하여 전달
+        df_json = df3.to_json(orient='records')
+
+        context = {
+            'prd' : BsPrd.objects.all(),
+            'prd_cd_selected' : last_prd_cd,
+            'data' : df_json,
+            'activate' : 'no', #버튼 컨트롤 off
         }
 
-    return render(request, 'jobs/JB103_grid.html', context)
+        if dept_login == "DD06":
+            context['team_list'] = BsDept.objects.filter(prd_cd=last_prd_cd) #마지막 회기의 부서 띄워주는게 좋을 듯
+            context['dept_login_nm'] = dept_login_nm
+            context['dept_cd_selected'] = dept_login
+        else:
+            context['team_list'] = BsDept.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_login)
+            context['dept_login_nm'] = dept_login_nm
+            context['dept_cd_selected'] = dept_login
+
+        return render(request, 'jobs/JB103_grid.html', context)
+
+    except pd.errors.MergeError as e:
+
+        messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
+
+        context = {
+            'prd' : BsPrd.objects.all(),
+            'prd_cd_selected' : last_prd_cd,
+            'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+            'my_value' : "에러",
+            'activate' : 'no', #버튼 컨트롤 off
+        }
+
+        if dept_login == "DD06":
+            context['team_list'] = BsDept.objects.filter(prd_cd=last_prd_cd) #마지막 회기의 부서 띄워주는게 좋을 듯
+            context['dept_login_nm'] = dept_login_nm
+            context['dept_cd_selected'] = dept_login
+        else:
+            context['team_list'] = BsDept.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_login)
+            context['dept_login_nm'] = dept_login_nm
+            context['dept_cd_selected'] = dept_login
+
+        return render(request, 'jobs/JB103_grid.html', context)
 
 
 def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반응
@@ -5435,16 +5544,129 @@ def jb103_test2_activity(request):
     return render(request, 'jobs/JB103_test2.html', context)
 
 
-def JB103_grid_1(request): #ag_grid_pr 둘째 화면 - 회기와 부서 선택 후 Grid에 띄워주는 화면
+def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
 
     if request.method == 'POST':
 
         # 회기, 부서 데이터를 받아옴
         prd_cd_selected = request.POST['prd_cd']
+
+        dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
+
+        try: 
+            dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+            # 회기, 부서 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
+            original_rows=JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
+
+            data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
+                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
+                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                        'work_grade': rows.work_grade_id, 'work_attrbt': rows.work_attrbt,
+                        'prfrm_tm_ann': rows.prfrm_tm_ann } for rows in original_rows]
+
+            df1 = pd.DataFrame(data_list)
+        
+            # job_activity 접근
+            original_rows_2=JobActivity.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
+            data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
+                        'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
+                        'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
+                        'rpt_nm': rows.rpt_nm} for rows in original_rows_2]
+
+            df2 = pd.DataFrame(data_list_2)
+
+            try:
+
+                df3 = pd.merge(df1, df2)
+
+                # dataframe의 index를 열로 만들어줌
+                df3.reset_index(inplace=True)
+
+                # df3의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
+                df3['index_pos'] = df3['index']
+
+                # job_nm 열을 추가
+                df3['job_nm'] = df3['job_cd'].apply(lambda x: BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm)
+
+                # job_cd 열 삭제
+                df3.drop('job_cd', axis=1, inplace=True)
+
+                # 데이터프레임을 JSON 형식으로 변환하여 전달
+                df_json = df3.to_json(orient='records')
+
+                context = {
+                    'data' : df_json,
+                    'prd_cd_selected' : prd_cd_selected,
+                    'prd' : BsPrd.objects.all(),
+                }
+
+                if dept_login == "DD06":
+                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected) 
+                    context['dept_login_nm'] = dept_login_nm
+                    context['dept_cd_selected'] = dept_login
+                else:
+                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+                    context['dept_login_nm'] = dept_login_nm
+                    context['dept_cd_selected'] = dept_login
+
+                return render(request, 'jobs/JB103_grid.html', context)
+
+            except pd.errors.MergeError as e:
+
+                # error_message = "해당 회기 및 부서에는 데이터가 없습니다."
+                messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
+
+                context = {
+                    'prd' : BsPrd.objects.all(),
+                    'prd_cd_selected' : prd_cd_selected,
+                    'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+                    'my_value' : "에러"
+                }
+
+                if dept_login == "DD06":
+                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
+                    context['dept_login_nm'] = dept_login_nm
+                    context['dept_cd_selected'] = dept_login
+                else:
+                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+                    context['dept_login_nm'] = dept_login_nm
+                    context['dept_cd_selected'] = dept_login
+
+                return render(request, 'jobs/JB103_grid.html', context)
+        
+        except:
+
+            messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
+
+            context = {
+                'prd' : BsPrd.objects.all(),
+                'prd_cd_selected' : prd_cd_selected,
+                'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+                'my_value' : "에러"
+            }
+
+            if dept_login == "DD06":
+                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
+                    context['dept_cd_selected'] = dept_login
+            else:
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+                context['dept_cd_selected'] = dept_login
+
+            return render(request, 'jobs/JB103_grid.html', context)
+
+
+def JB103_grid_2(request): # 부서 선택 후 조회 화면(경영기획팀만 해당)
+
+    if request.method == 'POST':
+
+       # 회기, 부서 데이터를 받아옴
+        prd_cd_selected = request.POST['prd_cd_selected']
+
         dept_cd_selected = request.POST['team_name']
 
         # 회기, 부서 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
+        original_rows=JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
 
         data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
                     'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
@@ -5455,7 +5677,7 @@ def JB103_grid_1(request): #ag_grid_pr 둘째 화면 - 회기와 부서 선택 �
         df1 = pd.DataFrame(data_list)
       
         # job_activity 접근
-        original_rows_2=JobActivity.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
+        original_rows_2=JobActivity.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
         data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
                     'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
                     'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
@@ -5466,7 +5688,6 @@ def JB103_grid_1(request): #ag_grid_pr 둘째 화면 - 회기와 부서 선택 �
         try:
 
             df3 = pd.merge(df1, df2)
-            # print(df3)
 
             # dataframe의 index를 열로 만들어줌
             df3.reset_index(inplace=True)
@@ -5474,16 +5695,21 @@ def JB103_grid_1(request): #ag_grid_pr 둘째 화면 - 회기와 부서 선택 �
             # df3의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
             df3['index_pos'] = df3['index']
 
+            # job_nm 열을 추가
+            df3['job_nm'] = df3['job_cd'].apply(lambda x: BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm)
+
+            # job_cd 열 삭제
+            df3.drop('job_cd', axis=1, inplace=True)
+
             # 데이터프레임을 JSON 형식으로 변환하여 전달
             df_json = df3.to_json(orient='records')
-
 
             context = {
                 'data' : df_json,
                 'prd_cd_selected' : prd_cd_selected,
-                'dept_cd_selected' : dept_cd_selected,
                 'prd' : BsPrd.objects.all(),
-                'team_list' : BsDept.objects.filter(prd_cd="2022A"), #나중에 변경해야 함.
+                'team_list' : BsDept.objects.filter(prd_cd=prd_cd_selected),
+                'dept_cd_selected' : dept_cd_selected,
             }
 
             return render(request, 'jobs/JB103_grid.html', context)
@@ -5495,295 +5721,14 @@ def JB103_grid_1(request): #ag_grid_pr 둘째 화면 - 회기와 부서 선택 �
 
             context = {
                 'prd' : BsPrd.objects.all(),
-                'team_list' : BsDept.objects.filter(prd_cd="2022A"), #나중에 변경해야 함.
+                'prd_cd_selected' : prd_cd_selected,
                 'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+                'my_value' : "에러",
+                'team_list' : BsDept.objects.filter(prd_cd=prd_cd_selected),
                 'dept_cd_selected' : dept_cd_selected,
-                'my_value' : "에러"
             }
 
             return render(request, 'jobs/JB103_grid.html', context)
-
-    # return render(request, 'jobs/AGgrid.html', {'html_table': html_table})
-
-
-def JB103_grid_2(request): #ag_grid_pr 셋째 화면 - 데이터 저장 버튼 누르면 수행하는 것
-
-    if request.method == 'POST':
-
-        # 회기 정보를 받아옴
-        prd_cd_selected = request.POST['prd_cd']
-        dept_cd_selected = request.POST['dept_cd']
-
-        # 전송된 JSON 형태의 데이터를 파싱
-        grid_data_str = request.POST.get('grid_data', '')
-        grid_data = json.loads(grid_data_str)
-
-        # JSON 데이터를 DataFrame df으로 변환. 그리드 그대로 가져옴
-        df = pd.DataFrame(grid_data)
-        # print('초기값', df)
-
-        # df의 번호, 업무수준 열은 object형태이므로, 우리가 비교해야 하는 대상인 db data와 자료형이 같도록 int64로 바꿔준다.
-        # grid에서 소숫점으로 나타나는 부분들은 다 float 형태로 바꿔준다. 그래야만 나중에 DB와 비교를 위한 merge할 때 이상이 없다.
-        df['번호'] = df['번호'].astype('int64')
-        df['번호_위치'] = df['번호_위치'].astype('int64')
-        df['업무수준_중요도'] = df['업무수준_중요도'].astype('int64')
-        df['업무수준_난이도'] = df['업무수준_난이도'].astype('int64')
-        df['업무수준_숙련도'] = df['업무수준_숙련도'].astype('int64')
-        df['업무수준'] = df['업무수준'].astype('int64')
-        df['활동횟수(연간)'] = df['활동횟수(연간)'].astype('int64')
-        df['수행시간(연평균)'] = df['수행시간(연평균)'].astype(float).round(1)
-        df['활동시간(건당)'] = df['활동시간(건당)'].astype(float).round(1)
-        df['활동시간(연간)'] = df['활동시간(연간)'].astype(float).round(1)
-
-        # UI에서 가져온 grid data로 생성된 df의 필요없는 열들을 삭제함.
-        df = df.drop(columns=df.columns[0])
-        df = df.drop(columns=df.columns[0])
-        # df.to_csv('c:\\Users\\user\\Desktop\\save1.csv', encoding='cp949')
-        print(df)
-
-        # try except할까?
-
-        # DB를 가져와서 df3을 만들어준다. 이걸 UI에서 가져온 dataframe df와 비교할 것이다. 만들때는 index도 만들어줄 것이다.
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                      'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
-                      'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                      'work_grade': rows.work_grade.work_grade, 'final_rpt_to': rows.final_rpt_to,
-                      'work_attrbt': rows.work_attrbt, 'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd } for rows in original_rows]
-        df1 = pd.DataFrame(data_list)
-
-        original_rows_2=JobActivity.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-        data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
-                       'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
-                       'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                       'rpt_nm': rows.rpt_nm} for rows in original_rows_2]
-        df2 = pd.DataFrame(data_list_2)
-
-        df3 = pd.merge(df1, df2)
-        df3.reset_index(inplace=True)
-
-        # 그리고 열 이름도 가져온 UI와 같이 만들어줄것이다. 열 이름 매핑을 사용하여 치환
-        column_mapping = {'index': '번호_위치', 'prd_cd': '회기', 'dept_cd':'부서', 'job_cd':'직무코드', 'duty_nm':'책무', 'task_nm':'과업', 'task_prsn_chrg':'담당자',
-                          'work_lv_imprt':'업무수준_중요도', 'work_lv_dfclt':'업무수준_난이도', 'work_lv_prfcn':'업무수준_숙련도', 'work_lv_sum':'업무수준',
-                          'work_grade':'업무등급', 'final_rpt_to':'최종 보고대상', 'work_attrbt':'업무특성', 'prfrm_tm_ann':'수행시간(연평균)',
-                          'dept_rltd':'관련부서', 'act_nm':'활동명', 'act_prsn_chrg':'활동 담당자', 'act_prfrm_freq':'활동빈도', 'act_prfrm_cnt_ann':'활동횟수(연간)',
-                          'act_prfrm_tm_cs':'활동시간(건당)', 'act_prfrm_tm_ann':'활동시간(연간)', 'rpt_nm':'수행 결과물'}
-        df3.rename(columns=column_mapping, inplace=True)
-
-        # 열 이름을 UI에서 가져온 dataframe과 같이 만들어 준 후, DB에서 소숫점이 들어가는 컬럼들은 float형태로 바꿔준다. 그래야 나중에 UI와 비교를 위한 merge시 이상이 없다.
-        df3['수행시간(연평균)'] = df3['수행시간(연평균)'].astype(float).round(1)
-        df3['활동시간(건당)'] = df3['활동시간(건당)'].astype(float).round(1)
-        df3['활동시간(연간)'] = df3['활동시간(연간)'].astype(float).round(1)
-        # df3.to_csv('c:\\Users\\user\\Desktop\\save2.csv', encoding='cp949')
-        # print(df3)
-
-        # 의심되는 것들을 색출해냄.
-        # df.drop(['수행시간(연평균)', '활동시간(건당)', '활동시간(연간)'], axis=1, inplace=True)
-        # df3.drop(['수행시간(연평균)', '활동시간(건당)', '활동시간(연간)'], axis=1, inplace=True)
-
-        # 비교 하는 부분 - merge 기능을 이용해 수정된 행, 추가된 행, 삭제된 행을 추출할 것이다.
-        # df3(DB)에 있고 df(UI)에 없는 것. 즉, 수정되거나 삭제된 것
-        df_left = pd.merge(df3, df, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
-        # df(UI)에 있고 df3(DB)에 없는 것. 즉, 수정되거나 추가된 것
-        df_right = pd.merge(df3, df, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
-        print(df_left)
-        print(df_right)
-
-
-        try:
-
-            # DB에 적용하는 부분 ## index를 활용하고 DB key값은 책무로 할 것이다.
-            # df_left을 다룬다.
-            for i in range(0, len(df_left)):
-                # df_right의 번호 컬럼 내에 df_left의 번호 컬럼이 들어가 있는가? 를 확인하는 logic
-                is_same = df_right['번호_위치'] == df_left.iloc[i, 0]
-
-                # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다. df_left에는 수정하기 전 값이 있을 것이고 df_left에는 수정 후 값이 있을 것이다.
-                if is_same.sum() > 0:
-
-                    # df3을 다룬다(DB쪽)
-                    # df의 번호열 값이 df_left.iloc[i,0](df_left는 수정해야되는 값만 있는 df지)인 행을 찾아서 그 행이 어딘지 행 번호를 알아냄.
-                    n = int(df3[df3['번호_위치'] == df_left.iloc[i,0]].index[0])
-
-                    # 행 번호를 알았으니 df_left에서는 변하는 값이 아니고 기존 값이니, 그 df_left에서 task_nm을 찾아가지고 df_right의 task_nm으로 바꿔줄 것이다.
-                    # index로 접근하려고 하니 안되는거 같아서.
-                    # df_left의 '번호' 열의 값이 n인 행의 '책무' 열 값 가져오기
-                    print(df_left.loc[df_left['번호_위치']==n, '책무'].values[0])
-                    print(df_left.loc[df_left['번호_위치']==n, '과업'].values[0])
-                    print(df_left.loc[df_left['번호_위치']==n, '활동명'].values[0])
-                    print(df_right.loc[df_right['번호_위치']==n, '책무'].values[0])
-
-                    # 위에서 가져온 그 값을 가지고 DB에 접근하여, df_left의 값으로 update하기(책무 이름은 update하고 난 후에 바뀌니까 그것도 적용해주기)
-                    JobTask.objects.filter(prd_cd_id = "2022A", dept_cd=dept_cd_selected, duty_nm=df_left.loc[df_left['번호_위치']==n, '책무'].values[0]).update(
-                        duty_nm = df_right.loc[df_right['번호_위치']==n, '책무'].values[0])
-
-                    print(df_left.loc[df_left['번호_위치']==n, '과업'].values[0])
-                    print(df_right.loc[df_right['번호_위치']==n, '과업'].values[0])
-                    # print(df_right.loc[df_left['번호_위치']==n, '책무'].values[0])
-                    # print(df_right.loc[df_left['번호_위치']==3, '책무'].values[0])
-
-                    # print(JobTask.objects.filter(prd_cd_id = "2022A", dept_cd=dept_cd_selected, duty_nm=df_right.loc[df_left['번호_위치']==n, '책무'].values[0],
-                    #                         ).all())
-
-                    JobTask.objects.filter(prd_cd_id = "2022A", dept_cd=dept_cd_selected, duty_nm=df_right.loc[df_right['번호_위치']==n, '책무'].values[0],
-                                            task_nm = df_left.loc[df_left['번호_위치']==n, '과업'].values[0]).update(task_nm =
-                                                                                                            df_right.loc[df_right['번호_위치']==n, '과업'].values[0])
-
-                    JobTask.objects.filter(prd_cd_id = "2022A", dept_cd=dept_cd_selected, duty_nm=df_right.loc[df_right['번호_위치']==n, '책무'].values[0],
-                                            task_nm = df_right.loc[df_right['번호_위치']==n, '과업'].values[0]).update(
-                                                task_prsn_chrg = df_right.loc[df_right['번호_위치']==n, '담당자'].values[0],
-                                                work_lv_imprt = df_right.loc[df_right['번호_위치']==n, '업무수준_중요도'].values[0],
-                                                work_lv_dfclt = df_right.loc[df_right['번호_위치']==n, '업무수준_난이도'].values[0],
-                                                work_lv_prfcn = df_right.loc[df_right['번호_위치']==n, '업무수준_숙련도'].values[0],
-                                                work_lv_sum = df_right.loc[df_right['번호_위치']==n, '업무수준'].values[0],
-                                                work_grade = df_right.loc[df_right['번호_위치']==n, '업무등급'].values[0],
-                                                final_rpt_to = df_right.loc[df_right['번호_위치']==n, '최종 보고대상'].values[0],
-                                                work_attrbt = df_right.loc[df_right['번호_위치']==n, '업무특성'].values[0],
-                                                prfrm_tm_ann = df_right.loc[df_right['번호_위치']==n, '수행시간(연평균)'].values[0],
-                                                dept_rltd = df_right.loc[df_right['번호_위치']==n, '관련부서'].values[0])
-
-                    JobActivity.objects.filter(prd_cd_id = "2022A", dept_cd=dept_cd_selected, duty_nm_id=df_right.loc[df_right['번호_위치']==n, '책무'].values[0],
-                                               task_nm = df_right.loc[df_right['번호_위치']==n, '과업'].values[0], act_nm = df_left.loc[df_left['번호_위치']==n,
-                                                                                                                                   '활동명'].values[0]).update(act_nm =
-                                                                                                            df_right.loc[df_right['번호_위치']==n, '활동명'].values[0])
-                    # task_nm도 해야 함 위에
-                    JobActivity.objects.filter(prd_cd_id = "2022A", dept_cd=dept_cd_selected, duty_nm_id=df_right.loc[df_right['번호_위치']==n, '책무'].values[0],
-                                            act_nm = df_right.loc[df_right['번호_위치']==n, '활동명'].values[0]).update(
-                                                act_prsn_chrg = df_right.loc[df_right['번호_위치']==n, '활동 담당자'].values[0],
-                                                act_prfrm_cnt_ann = df_right.loc[df_right['번호_위치']==n, '활동횟수(연간)'].values[0],
-                                                act_prfrm_tm_cs = df_right.loc[df_right['번호_위치']==n, '활동시간(건당)'].values[0],
-                                                act_prfrm_tm_ann = df_right.loc[df_right['번호_위치']==n, '활동시간(연간)'].values[0],
-                                                rpt_nm = df_right.loc[df_right['번호_위치']==n, '수행 결과물'].values[0])
-
-                # 삭제했으면 df_left에는 있고 df_right에는 없을 것이다. 삭제보다 추가 먼저 만들어주자.
-                else:
-                    # 여기서 row_to_delete 따로 정의하고 (get으로) row_to_delete.delete()하면 싹 다 지워짐. prd_cd도 잘 지정해줘야 함.
-                    # df3을 다룬다(DB쪽)
-                    # df3의 번호열 값이 df_left.iloc[i,0](df_left는 수정or삭제해야되는 값만 있는 df지)인 행을 찾아서 그 행이 어딘지 행 번호를 알아냄.
-                    # 그 행 번호를 알아내서(열 이름 '번호'), 그 행에 대응하는 과업 이름을 찾고, 그 과업 이름을 가진 DB의 object를 delete할 것임.
-                    # print('난 다른거', df_left.iloc[i, 0])
-                    n = int(df3[df3['번호_위치'] == df_left.iloc[i,0]].index[0])
-                    JobActivity.objects.filter(prd_cd_id = "2022A", dept_cd=dept_cd_selected, task_nm_id = df_left.loc[df_left['번호_위치']==n, '과업'].values[0],
-                                        act_nm = df_left.loc[df_left['번호_위치']==n, '활동명'].values[0]).delete()
-                    # 해당 JobTask의 Activity가 다 지워졌을 때 JobTask의 Table도 지워줘야함.
-                    # JobTask.objects.filter(prd_cd_id="2022A", dept_cd=dept_cd_selected, task_nm=df_left.loc[df_left['번호_위치']==n, '과업'].values[0]).delete()
-
-            # df_right을 다룬다.
-            for i in range(0, len(df_right)):
-                # df_left의 name column 내에 df_right의 i열 값이 들어가 있는가?
-                is_same = df_left['번호_위치'] == df_right.iloc[i, 0]
-
-                # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다.
-                if is_same.sum() == 0: # 추가라면, is_same값은 0일 것이다. df_right 에만 있고 df_left에는 없는 것이다.
-
-                    # 여기서 duplicate entry error를 피하기 위해서, task_nm이 같으면 JobActivity만 만들어줄것임
-                    # task_nm이 해당 부서의 JobTask안에 이미 존재한다면 JobTask는 만들지 않을 것임.
-
-                    task_nm_list = JobTask.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected).values_list('task_nm', flat=True)
-
-                    if df_right.iloc[i, 5] in task_nm_list:
-                        JobActivity.objects.create(prd_cd_id="2022A", dept_cd_id=df_right.iloc[i, 2], job_cd_id=df_right.iloc[i, 3], duty_nm_id=df_right.iloc[i, 4],
-                                        task_nm_id=df_right.iloc[i, 5], act_nm=df_right.iloc[i, 16], act_prsn_chrg=df_right.iloc[i, 17], act_prfrm_freq=df_right.iloc[i, 18],
-                                        act_prfrm_cnt_ann=df_right.iloc[i, 19], act_prfrm_tm_cs=df_right.iloc[i, 20], act_prfrm_tm_ann=df_right.iloc[i, 21],
-                                        rpt_nm=df_right.iloc[i, 22])
-                    else:
-                        JobTask.objects.create(prd_cd_id="2022A", dept_cd_id=df_right.iloc[i, 2], job_cd_id=df_right.iloc[i, 3], duty_nm=df_right.iloc[i, 4],
-                                        task_nm=df_right.iloc[i, 5], task_prsn_chrg=df_right.iloc[i, 6], work_lv_imprt=df_right.iloc[i, 7],
-                                            work_lv_dfclt=df_right.iloc[i, 8], work_lv_prfcn=df_right.iloc[i, 9], work_lv_sum=df_right.iloc[i, 10],
-                                            work_grade_id=df_right.iloc[i, 11], final_rpt_to=df_right.iloc[i, 12], work_attrbt=df_right.iloc[i, 13],
-                                            prfrm_tm_ann=df_right.iloc[i, 14], dept_rltd=df_right.iloc[i, 15])
-
-                        JobActivity.objects.create(prd_cd_id="2022A", dept_cd_id=df_right.iloc[i, 2], job_cd_id=df_right.iloc[i, 3], duty_nm_id=df_right.iloc[i, 4],
-                                        task_nm_id=df_right.iloc[i, 5], act_nm=df_right.iloc[i, 16], act_prsn_chrg=df_right.iloc[i, 17], act_prfrm_freq=df_right.iloc[i, 18],
-                                        act_prfrm_cnt_ann=df_right.iloc[i, 19], act_prfrm_tm_cs=df_right.iloc[i, 20], act_prfrm_tm_ann=df_right.iloc[i, 21],
-                                        rpt_nm=df_right.iloc[i, 22])
-
-                    # 여기서 .save()쓰면 foreign key 때문에 참조무결성 오류 발생하므로 create를 써준다.
-                    # BsDept.objects.create(prd_cd_id = prd_cd_selected, dept_cd = df_right.iloc[i, 0], dept_nm = df_right.iloc[i, 1], dept_to = df_right.iloc[i, 2])
-                else:
-                    is_same = 1
-
-            # 회기 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
-            original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-            data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : dept_cd_selected, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
-                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                        'work_grade': rows.work_grade.work_grade, 'final_rpt_to': rows.final_rpt_to,
-                        'work_attrbt': rows.work_attrbt, 'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd } for rows in original_rows]
-            df4 = pd.DataFrame(data_list)
-
-            # job_activity 접근
-            original_rows_2=JobActivity.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-            data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : dept_cd_selected, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
-                        'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
-                        'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                        'rpt_nm': rows.rpt_nm} for rows in original_rows_2]
-
-            df5 = pd.DataFrame(data_list_2)
-
-            df6 = pd.merge(df4, df5)
-
-            # dataframe의 index를 열로 만들어줌
-            df6.reset_index(inplace=True)
-
-            # df3의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
-            df6['index_pos'] = df6['index']
-
-            # 데이터프레임을 JSON 형식으로 변환하여 전달
-            df_json = df6.to_json(orient='records')
-
-            context = {
-                'data' : df_json,
-                'prd_cd_selected' : prd_cd_selected,
-                'prd' : BsPrd.objects.all(),
-                'team_list' : BsDept.objects.filter(prd_cd="2022A"), #나중에 변경해야 함.
-                'dept_cd_selected' : dept_cd_selected,
-            } #
-
-        except IntegrityError as e:
-
-            # error_message = "해당 회기 및 부서에는 데이터가 없습니다."
-            messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음."}')
-
-            # 회기 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
-            original_rows_a=JobTask.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-            data_list_a = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : dept_cd_selected, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
-                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                        'work_grade': rows.work_grade.work_grade, 'final_rpt_to': rows.final_rpt_to,
-                        'work_attrbt': rows.work_attrbt, 'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd } for rows in original_rows_a]
-            df4 = pd.DataFrame(data_list_a)
-
-            # job_activity 접근
-            original_rows_b=JobActivity.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-            data_list_b = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : dept_cd_selected, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
-                        'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
-                        'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                        'rpt_nm': rows.rpt_nm} for rows in original_rows_b]
-
-            df5 = pd.DataFrame(data_list_b)
-
-            df6 = pd.merge(df4, df5)
-
-            # dataframe의 index를 열로 만들어줌
-            df6.reset_index(inplace=True)
-
-            # df3의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
-            df6['index_pos'] = df6['index']
-
-            # 데이터프레임을 JSON 형식으로 변환하여 전달
-            df_json = df6.to_json(orient='records')
-
-            context = {
-                'data' : df_json,
-                'prd' : BsPrd.objects.all(),
-                'team_list' : BsDept.objects.filter(prd_cd="2022A"), #나중에 변경해야 함.
-                'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
-                'dept_cd_selected' : dept_cd_selected,
-                'my_value' : "에러2"
-            }
-
-    return render(request, 'jobs/JB103_grid.html', context)
 
 
 def JB108_1(request): # 직무현황 제출 - 부서를 선택할 수 있도록 함
@@ -6095,7 +6040,16 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
             data_list = [{'job_nm' : rows.job_nm, 'cnt_task' : rows.cnt_task, 'wrk_tm' : rows.wrk_tm, 'wrk_ratio1' : rows.wrk_ratio1,
                           'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
                             'work_grade' : rows.work_grade  } for rows in analysis_target]
+            
             df1 = pd.DataFrame(data_list)
+
+            # job_cd열 추가. BsJob열 참조
+            job_cd_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_nm=x).job_cd for x in df1['job_nm']]
+            df1['job_cd'] = job_cd_list
+
+            # df1을 job_cd 순으로 정렬
+            df1 = df1.sort_values(by='job_cd')
+
             df1 = df1.fillna('') # NaN값을 ''로 채워줌
 
             sum_1 = df1['cnt_task'].sum() # 과업수 합계
@@ -6161,6 +6115,14 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
                           'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
                             'work_grade' : rows.work_grade  } for rows in analysis_target]
             df1 = pd.DataFrame(data_list)
+
+            # job_cd열 추가. BsJob열 참조
+            job_cd_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_nm=x).job_cd for x in df1['job_nm']]
+            df1['job_cd'] = job_cd_list
+
+            # df1을 job_cd 순으로 정렬
+            df1 = df1.sort_values(by='job_cd')
+            
             df1 = df1.fillna('') # NaN값을 ''로 채워줌
 
             sum_1 = df1['cnt_task'].sum() # 과업수 합계
@@ -6170,7 +6132,6 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
             ratio_list = [(x/sum_2)*100 if x != '' else 0 for x in df1['wrk_tm']]
             # 이 리스트의 합을 구한다.
             sum_3 = round(sum(ratio_list), 1)
-            print(sum_3)
             
             context.update({
                 'analysis' : df1,
@@ -6419,6 +6380,4 @@ def get_dept_code(user_id):
         return account.dept_cd_id
     except:
         return None  # 부서 코드가 없는 경우에 대한 처리
-    
-
 

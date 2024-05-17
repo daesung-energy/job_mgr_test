@@ -30,6 +30,7 @@ urlpatterns = [
     path('CC101_1/', views.CC101_1, name='CC101_1'),
     path('CC102_1/', views.CC102_1, name='CC102_1'),
     path('CC102/', views.CC102, name='CC102'),
+    path('CC105/', views.CC105, name='CC105'),
     path('JB101/', views.JB101, name='JB101'),
     path('JB102/', views.JB102, name='JB102'),
     path('JB102_copy/', views.JB102_copy, name='JB102_copy'),

@@ -303,14 +303,19 @@
                 //     updateDutySequence(selectedJob); // 순서 업데이트
                 // };
                 deleteButton.onclick = function() {
-                    var dutiesInJob = jsonData.filter(item => item.job_cd === selectedJob).map(item => item.duty_nm);
-                    var uniqueDuties = [...new Set(dutiesInJob)]; // 중복 제거하여 unique 리스트 생성
-                    if (uniqueDuties.length <= 1) {
-                        alert("최소 하나의 책무가 있어야 합니다.");
-                    } else {
-                        jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
-                        dutyDiv.removeChild(container); // 해당 책무 컨테이너를 삭제
-                        updateDutySequence(selectedJob); // 순서 업데이트
+
+                    var confirmDelete = confirm("이 버튼을 누르면 하위 데이터가 모두 삭제됩니다. 계속하시겠습니까?");
+                    if (confirmDelete) {
+
+                        var dutiesInJob = jsonData.filter(item => item.job_cd === selectedJob).map(item => item.duty_nm);
+                        var uniqueDuties = [...new Set(dutiesInJob)]; // 중복 제거하여 unique 리스트 생성
+                        if (uniqueDuties.length <= 1) {
+                            alert("최소 하나의 책무가 있어야 합니다.");
+                        } else {
+                            jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
+                            dutyDiv.removeChild(container); // 해당 책무 컨테이너를 삭제
+                            updateDutySequence(selectedJob); // 순서 업데이트
+                        }
                     }
                 };
                 
@@ -409,7 +414,7 @@
                 act_nm: "추가된 활동", // 기본값
                 act_prsn_chrg : '담당자',
                 act_prfrm_cnt : isReadonlyJob? null : 0,
-                act_prfrm_freq: isReadonlyJob ? null : 'WW',
+                act_prfrm_freq: isReadonlyJob ? null : '매일',
                 act_prfrm_cnt_ann: isReadonlyJob ? null : 52,
                 act_prfrm_tm_cs: isReadonlyJob ? null : 0,
                 act_prfrm_tm_ann: isReadonlyJob ? null : 0,
@@ -768,14 +773,18 @@
                 deleteButton.textContent = '-';
                 deleteButton.className = 'del_small_2';
                 deleteButton.onclick = function() {
-                    var tasksInDuty = jsonData.filter(item => item.job_cd === selectedJob && item.duty_nm === selectedDuty).map(item => item.task_nm);
-                    var uniqueTasks = [...new Set(tasksInDuty)]; // 중복 제거하여 unique 리스트 생성
-                    if (uniqueTasks.length <= 1) {
-                        alert("최소 하나의 과업이 남아있어야 합니다.");
-                    } else {
-                        jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === taskName)); // 해당 과업 데이터를 제외하고 새로운 jsonData를 생성
-                        taskDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
-                        updateTaskSequence(selectedJob, selectedDuty); // 순서 업데이트
+
+                    var confirmDelete = confirm("이 버튼을 누르면 하위 데이터가 모두 삭제됩니다. 계속하시겠습니까?");
+                    if (confirmDelete) {
+                        var tasksInDuty = jsonData.filter(item => item.job_cd === selectedJob && item.duty_nm === selectedDuty).map(item => item.task_nm);
+                        var uniqueTasks = [...new Set(tasksInDuty)]; // 중복 제거하여 unique 리스트 생성
+                        if (uniqueTasks.length <= 1) {
+                            alert("최소 하나의 과업이 남아있어야 합니다.");
+                        } else {
+                            jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === taskName)); // 해당 과업 데이터를 제외하고 새로운 jsonData를 생성
+                            taskDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
+                            updateTaskSequence(selectedJob, selectedDuty); // 순서 업데이트
+                        }
                     }
                 };
 
@@ -893,7 +902,7 @@
                     prfrm_tm_ann: isReadonlyTask ? null : 0,
                     act_nm : '추가된 활동',
                     act_prsn_chrg : '담당자',
-                    act_prfrm_freq : isReadonlyTask ? null : 'WW',
+                    act_prfrm_freq : isReadonlyTask ? null : '매일',
                     act_prfrm_cnt : isReadonlyTask ? null : 0,
                     act_prfrm_cnt_ann : isReadonlyTask ? null : 52,
                     act_prfrm_tm_cs: isReadonlyTask ? null : 0,
@@ -1057,35 +1066,71 @@
                 inputSelect.setAttribute('class', 'select-combox4');
 
                 // 옵션 생성 및 추가
+                // const option1 = document.createElement('option');
+                // option1.value = 'YY';
+                // option1.text = 'YY';
+                // inputSelect.appendChild(option1);
+
+                // const option2 = document.createElement('option');
+                // option2.value = 'HH';
+                // option2.text = 'HH';
+                // inputSelect.appendChild(option2);
+
+                // const option3 = document.createElement('option');
+                // option3.value = 'QQ';
+                // option3.text = 'QQ';
+                // inputSelect.appendChild(option3);
+
+                // const option4 = document.createElement('option');
+                // option4.value = 'MM';
+                // option4.text = 'MM';
+                // inputSelect.appendChild(option4);
+
+                // const option5 = document.createElement('option');
+                // option5.value = 'WW';
+                // option5.text = 'WW';
+                // inputSelect.appendChild(option5);
+
+                // const option6 = document.createElement('option');
+                // option6.value = 'DD';
+                // option6.text = 'DD';
+                // inputSelect.appendChild(option6);
+
+                // 옵션 생성 및 추가
                 const option1 = document.createElement('option');
-                option1.value = 'YY';
-                option1.text = 'YY';
+                option1.value = '매년';
+                option1.text = '매년';
                 inputSelect.appendChild(option1);
 
                 const option2 = document.createElement('option');
-                option2.value = 'HH';
-                option2.text = 'HH';
+                option2.value = '반기';
+                option2.text = '반기';
                 inputSelect.appendChild(option2);
 
                 const option3 = document.createElement('option');
-                option3.value = 'QQ';
-                option3.text = 'QQ';
+                option3.value = '분기';
+                option3.text = '분기';
                 inputSelect.appendChild(option3);
 
                 const option4 = document.createElement('option');
-                option4.value = 'MM';
-                option4.text = 'MM';
+                option4.value = '매월';
+                option4.text = '매월';
                 inputSelect.appendChild(option4);
 
                 const option5 = document.createElement('option');
-                option5.value = 'WW';
-                option5.text = 'WW';
+                option5.value = '매주';
+                option5.text = '매주';
                 inputSelect.appendChild(option5);
 
                 const option6 = document.createElement('option');
-                option6.value = 'DD';
-                option6.text = 'DD';
+                option6.value = '매일';
+                option6.text = '매일';
                 inputSelect.appendChild(option6);
+
+                const option7 = document.createElement('option');
+                option7.value = '기타';
+                option7.text = '기타';
+                inputSelect.appendChild(option7);
 
                 // 기존 데이터를 기반으로 수행빈도 초기 설정
                 inputSelect.value = act.act_prfrm_freq;
@@ -1097,23 +1142,47 @@
                     // 각 선택 옵션에 따라, 수행횟수에 빈도를 곱해서 연간 수행 횟수를 계산함.
                     var newActPrfrmCntAnn; // 새로운 연간 업무 수행 빈도를 저장할 변수. 초기값은 0이며, YY이면 1, HH이면 2, QQ이면 4, MM이면 12, WW이면 52로 설정
                     switch (newActPrfrmFreq) {
-                        case 'YY':
+                        // case 'YY':
+                        //     newActPrfrmCntAnn = 1;
+                        //     break;
+                        // case 'HH':
+                        //     newActPrfrmCntAnn = 2;
+                        //     break;
+                        // case 'QQ':
+                        //     newActPrfrmCntAnn = 4;
+                        //     break;
+                        // case 'MM':
+                        //     newActPrfrmCntAnn = 12;
+                        //     break;
+                        // case 'WW':
+                        //     newActPrfrmCntAnn = 52;
+                        //     break;
+                        // case 'DD':
+                        //     newActPrfrmCntAnn = 226;
+                        //     break;
+                        // default:
+                        //     newActPrfrmCntAnn = 0;
+                        //     break;
+                        case '매년':
                             newActPrfrmCntAnn = 1;
                             break;
-                        case 'HH':
+                        case '반기':
                             newActPrfrmCntAnn = 2;
                             break;
-                        case 'QQ':
+                        case '분기':
                             newActPrfrmCntAnn = 4;
                             break;
-                        case 'MM':
+                        case '매월':
                             newActPrfrmCntAnn = 12;
                             break;
-                        case 'WW':
+                        case '매주':
                             newActPrfrmCntAnn = 52;
                             break;
-                        case 'DD':
+                        case '매일':
                             newActPrfrmCntAnn = 226;
+                            break;
+                        case '기타':
+                            newActPrfrmCntAnn = 0;
                             break;
                         default:
                             newActPrfrmCntAnn = 0;
@@ -1221,12 +1290,19 @@
 
                     // 연간 수행 횟수 계산
                     const frequencyMap = {
-                        'YY': 1,
-                        'HH': 2,
-                        'QQ': 4,
-                        'MM': 12,
-                        'WW': 52,
-                        'DD': 226
+                        // 'YY': 1,
+                        // 'HH': 2,
+                        // 'QQ': 4,
+                        // 'MM': 12,
+                        // 'WW': 52,
+                        // 'DD': 226
+                        '매년': 1,
+                        '반기': 2,
+                        '분기': 4,
+                        '매월': 12,
+                        '매주': 52,
+                        '매일': 226,
+                        '기타': 0
                     };
 
                     var newActPrfrmCntAnn = frequencyMap[newActPrfrmFreq] * newActPrfrmCnt;
@@ -1237,7 +1313,7 @@
                     act.act_prfrm_tm_ann = newActPrfrmTmAnn;
 
                     // 입력 필드 업데이트
-                    inputText4.value = newActPrfrmCntAnn;
+                    inputText4.value = newActPrfrmCntAnn; 
                     inputText6.value = newActPrfrmTmAnn;
 
 
@@ -1486,7 +1562,7 @@
                 act_nm: newActNm,
                 act_prsn_chrg : '담당자',
                 act_prsn_chrg: isReadonlyJob ? null : '담당자',
-                act_prfrm_freq: isReadonlyJob ? null : 'WW',
+                act_prfrm_freq: isReadonlyJob ? null : '매일',
                 act_prfrm_cnt: 0,
                 act_prfrm_cnt_ann: isReadonlyJob ? null : 52,
                 act_prfrm_tm_cs: isReadonlyJob ? null : 0,
@@ -1545,10 +1621,51 @@
         document.getElementById('dataForm').onsubmit = function() { // 폼 제출 시 실행되는 함수
             // jsonData 변수는 서버로 전송하기 전에 설정한 JSON 데이터를 담고 있는 변수
             document.getElementById('jsonData').value = JSON.stringify(jsonData);
+
+            // 선택된 직무, 책무, 과업을 로컬 스토리지에 저장
+            var selectedJobRadio = document.querySelector('input[name="job"]:checked');
+            var selectedDutyRadio = document.querySelector('input[name="duty"]:checked');
+            var selectedTaskRadio = document.querySelector('input[name="task"]:checked');
+            if (selectedJobRadio) { // 선택된 직무가 있으면
+                localStorage.setItem('selectedJob', selectedJobRadio.value); // 로컬 스토리지에 저장
+            }
+            if (selectedDutyRadio) { // 선택된 책무가 있으면
+                localStorage.setItem('selectedDuty', selectedDutyRadio.value); // 로컬 스토리지에 저장
+            }
+            if (selectedTaskRadio) { // 선택된 과업이 있으면
+                localStorage.setItem('selectedTask', selectedTaskRadio.value); // 로컬 스토리지에 저장
+            }
         };
 
         // 초기 직무 목록 생성
         createJobList();
+
+        var selectedJob = localStorage.getItem('selectedJob');
+        var selectedDuty = localStorage.getItem('selectedDuty');
+        var selectedTask = localStorage.getItem('selectedTask');
+
+        if (selectedJob) {
+            var selectedJobRadio = document.querySelector(`input[name="job"][value="${selectedJob}"]`);
+            if (selectedJobRadio) {
+                selectedJobRadio.checked = true;
+                updateDutyList(selectedJob);
+            }
+        }
+        if (selectedDuty) {
+            var selectedDutyRadio = document.querySelector(`input[name="duty"][value="${selectedDuty}"]`);
+            if (selectedDutyRadio) {
+                selectedDutyRadio.checked = true;
+                updateTaskList(selectedJob, selectedDuty);
+            }
+        }
+        if (selectedTask) {
+            var selectedTaskRadio = document.querySelector(`input[name="task"][value="${selectedTask}"]`);
+            if (selectedTaskRadio) {
+                selectedTaskRadio.checked = true;
+                updateActivityList(selectedJob, selectedDuty, selectedTask);
+            }
+        }
+
         // document.querySelector('input[name="job"]:first-of-type').click();
         // document.querySelector('input[name="duty"]:first-of-type').click();
         // document.querySelector('input[name="task"]:first-of-type').click();

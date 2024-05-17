@@ -1,0 +1,42 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+    <wrap>
+        <div id = "cc105" style="padding-left: 50px; margin-top:50px;">
+            <div style="padding-top:20px; padding-left:20px;">
+                <form id="pwd_change" method="POST" action="{% url 'CC105' %}">
+                    {% csrf_token %}
+                        <p style="font-family: Seed-Regular;">현재 비밀번호 <span style="padding-left:20px;"><input name="origin_password" type="password"></span></p>
+                        <p style="font-family: Seed-Regular;">변경할 비밀번호 <span style="padding-left:4px;"><input name="new_password" type="password"></span></p>
+                        <p style="font-family: Seed-Regular;">비밀번호 확인 <span style="padding-left:20px;"><input name="confirm_password" type="password"></span></p>
+                        <br>
+                        
+                </form>
+            </div>
+            <button form="pwd_change" class="save" type="submit">저장</button> 
+        </div>
+        {% if messages %}
+        <div id="messages" style="display: none;">
+            {% for message in messages %}
+            <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </wrap>
+
+    <script>
+        var messagesContainer = document.getElementById('messages');
+        if (messagesContainer) {
+            var messages = messagesContainer.getElementsByTagName('span');
+            for (var i = 0; i < messages.length; i++) {
+            alert(messages[i].textContent);
+            }
+        }
+
+    </script>
+</body>
+
+{% endblock %}

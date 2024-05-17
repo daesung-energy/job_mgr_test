@@ -20,7 +20,7 @@
                                 <p>회 기</p>
                                 </th>
                                 <th>
-                                <select name="prd_cd" class="select-combox3" id="selectOptions">
+                                <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
                                 {% for item in prd %}
                                 <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
                                 {% endfor %}
@@ -30,7 +30,11 @@
                         </thead> 
                     </table>
                 </div>
+            </form>
 
+            <form id="JB103_2" action = "{% url 'JB103_grid_2' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
                 <!-- 부서 정보 선택 -->
                 <p class="label-text2"> 부서
                     <!-- 테이블 bs_org에 있는 팀명 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
@@ -40,8 +44,7 @@
                         {% endfor %}
                     </select>
                 </p>
-
-            </form>
+            </form>            
 
         </div>
 
@@ -123,19 +126,19 @@
                 cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
                 headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
             },
-            { 
-                headerName: '번호_위치',
-                field: 'index_pos',
-                type: 'numeric', // 컬럼의 데이터 타입 (여기서는 텍스트)
-                filter: false, // 필터 사용 X
-                width: 0,
-                minWidth: 0,
-                maxWidth: 0,
-                headerClass: 'numeric', // 타입에 따라 헤더에 클래스 추가
-                pinned: 'left', // 그리드에서 왼쪽에 고정
-                cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
-                headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
-            },
+            // { 
+            //     headerName: '번호_위치',
+            //     field: 'index_pos',
+            //     type: 'numeric', // 컬럼의 데이터 타입 (여기서는 텍스트)
+            //     filter: false, // 필터 사용 X
+            //     width: 0,
+            //     minWidth: 0,
+            //     maxWidth: 0,
+            //     headerClass: 'numeric', // 타입에 따라 헤더에 클래스 추가
+            //     pinned: 'left', // 그리드에서 왼쪽에 고정
+            //     cellClass: 'hidden-column', // 그리드에서 셀 부분을 숨긴다
+            //     headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
+            // },
             { 
                 headerName: '회기',
                 field: 'prd_cd',
@@ -164,8 +167,8 @@
                 headerClass: "hidden-column" // 그리드에서 헤더 부분을 숨긴다
             },
             {
-                headerName: '직무코드',
-                field: 'job_cd',
+                headerName: '직무',
+                field: 'job_nm',
                 type: 'text',
                 filter: 'agTextColumnFilter',
                 headerClass: 'text',

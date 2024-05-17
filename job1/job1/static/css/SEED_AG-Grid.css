@@ -317,7 +317,7 @@
   }
   
   .side {
-    flex-basis: 300px;
+    flex-basis: 230px;
     flex-shrink: 0;
     /* width: 300px; sdie 넓이를 250px로 고정 */
     background-color: lightgray;
@@ -351,7 +351,7 @@
   .fakeimg a {
     color: black;
     padding: 5px;
-    padding-left: 60px;
+    padding-left: 40px;
     text-decoration: none;
     text-align: left;
     font-size: 16px;
@@ -362,7 +362,7 @@
     padding: 10px;
     font-size: 20px;
     font-family: "Seed-bold";
-    padding-left: 40px;
+    padding-left: 20px;
   }
   
   .fakeimg a:hover {
