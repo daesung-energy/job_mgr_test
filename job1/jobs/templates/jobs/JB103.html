@@ -39,7 +39,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
                 <p class="label-text2"> 부서
-                    <select name="dept_cd_selected" class="select-combox" onchange="this.form.submit()" style="margin-left:62px;">
+                    <select name="dept_cd_selected" class="select-combox" onchange="clearLocalStorage(); this.form.submit()" style="margin-left:62px;">
                         {% for item in dept_list %}
                             <option value={{ item.dept_cd }} {%if dept_cd_selected == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
                         {% endfor %}
@@ -190,27 +190,34 @@
                     
                     updateDutyList(this.value); // 선택된 직무에 따라 책무 목록을 업데이트하는 함수 호출
 
-                    // 직무를 변경하면 과업과 활동 div 숨기기(초기화) - 여기 나중에 편집할 것
-                    var taskDiv = document.getElementById('taskDiv');
-                    var activityDiv = document.getElementById('activityDiv');
-                    taskDiv.innerHTML = ''; // 과업 목록 초기화
-                    activityDiv.innerHTML = ''; // 활동 목록 초기화
-                    taskDiv.style.display = 'none'; // 과업 Div 숨김
-                    activityDiv.style.display = 'none'; // 활동 Div 숨김
+                    // // 직무를 변경하면 과업과 활동 div 숨기기(초기화) - 여기 나중에 편집할 것
+                    // var taskDiv = document.getElementById('taskDiv');
+                    // var activityDiv = document.getElementById('activityDiv');
+                    // taskDiv.innerHTML = ''; // 과업 목록 초기화
+                    // activityDiv.innerHTML = ''; // 활동 목록 초기화
+                    // taskDiv.style.display = 'none'; // 과업 Div 숨김
+                    // activityDiv.style.display = 'none'; // 활동 Div 숨김
+
+                    // 직무를 변경하면 첫 번째 책무 선택 및 첫 번째 과업 선택
+                    var firstDutyRadio = document.querySelector('input[name="duty"]');
+                    if (firstDutyRadio) {
+                        firstDutyRadio.checked = true;
+                        var selectedDuty = firstDutyRadio.value;
+                        updateTaskList(this.value, selectedDuty);
+                        var firstTaskRadio = document.querySelector('input[name="task"]');
+                        if (firstTaskRadio) {
+                            firstTaskRadio.checked = true;
+                            updateActivityList(this.value, selectedDuty, firstTaskRadio.value);
+                        }
+                    }
 
                     
                 });
-                // if (jobs.indexOf(jobCd) === 0) { // 첫 번째 직무를 기본 선택
-                //         radioInput.checked = true;
-                //         updateDutyList(jobCd);
-                //     }
+                
                 
             });
 
-            // // 첫 번째 직무에 대한 책무 목록을 업데이트
-            // if (jobs.length > 0) {
-            //     updateDutyList(jobs[0]);
-            // }
+            
         }
 
 /////////////////////////////////////////////////////// 책무 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,6 +271,18 @@
                         });
 
                     updateDutyList(selectedJob); // 책무 목록을 다시 생성하여 변경사항을 반영
+
+                    var updatedRadio = document.querySelector(`input[name="duty"][value="${newDutyName}"]`);
+                    // 변경된 책무명을 다시 선택
+                    if (updatedRadio) {
+                        updatedRadio.checked = true;
+                        updateTaskList(selectedJob, newDutyName);
+                        var firstTaskRadio = document.querySelector('input[name="task"]');
+                        if (firstTaskRadio) {
+                            firstTaskRadio.checked = true;
+                            updateActivityList(selectedJob, newDutyName, firstTaskRadio.value);
+                        }
+                    }
                     }
                 });
 
@@ -329,20 +348,18 @@
                 radioInput.addEventListener('change', function() { // 책무 라디오 선택 시 과업 목록 띄움
                     updateTaskList(selectedJob, this.value); // 선택된 책무에 따라 과업 목록을 업데이트하는 함수 호출
                     // 활동 Div 초기화
-                    var activityDiv = document.getElementById('activityDiv');
-                    activityDiv.innerHTML = ''; // 활동 목록 초기화
-                    activityDiv.style.display = 'none'; // 활동 Div 숨김
+                    // var activityDiv = document.getElementById('activityDiv');
+                    // activityDiv.innerHTML = ''; // 활동 목록 초기화
+                    // activityDiv.style.display = 'none'; // 활동 Div 숨김
+                    // 책무를 변경하면 첫 번째 과업 선택 및 활동 목록 업데이트
+                    var firstTaskRadio = document.querySelector('input[name="task"]');
+                    if (firstTaskRadio) {
+                        firstTaskRadio.checked = true;
+                        updateActivityList(selectedJob, duty, firstTaskRadio.value);
+                    }
                 });
-                // if (duties.indexOf(duty) === 0) { // 첫 번째 책무를 기본 선택
-                //     radioInput.checked = true;
-                //     updateTaskList(selectedJob, duty);
-                // }
+                
             });
-
-            // // 첫 번째 책무에 대한 과업 목록을 업데이트
-            // if (duties.length > 0) {
-            //     updateTaskList(selectedJob, duties[0]);
-            // }
 
             dutyDiv.style.display = 'block'; // 책무 div의 display 속성을 block으로 변경하여 표시
         } // 책무 목록 업데이트 함수 끝
@@ -554,6 +571,12 @@
                         });
                         // 과업 목록을 다시 생성하여 변경사항을 반영
                         updateTaskList(selectedJob, selectedDuty);
+                        // 변경된 과업명을 다시 선택
+                        var updatedRadio = document.querySelector(`input[name="task"][value="${newTaskName}"]`);
+                        if (updatedRadio) {
+                            updatedRadio.checked = true;
+                            updateActivityList(selectedJob, selectedDuty, newTaskName);
+                        }
                     }
                 });
 
@@ -1066,37 +1089,6 @@
                 inputSelect.setAttribute('class', 'select-combox4');
 
                 // 옵션 생성 및 추가
-                // const option1 = document.createElement('option');
-                // option1.value = 'YY';
-                // option1.text = 'YY';
-                // inputSelect.appendChild(option1);
-
-                // const option2 = document.createElement('option');
-                // option2.value = 'HH';
-                // option2.text = 'HH';
-                // inputSelect.appendChild(option2);
-
-                // const option3 = document.createElement('option');
-                // option3.value = 'QQ';
-                // option3.text = 'QQ';
-                // inputSelect.appendChild(option3);
-
-                // const option4 = document.createElement('option');
-                // option4.value = 'MM';
-                // option4.text = 'MM';
-                // inputSelect.appendChild(option4);
-
-                // const option5 = document.createElement('option');
-                // option5.value = 'WW';
-                // option5.text = 'WW';
-                // inputSelect.appendChild(option5);
-
-                // const option6 = document.createElement('option');
-                // option6.value = 'DD';
-                // option6.text = 'DD';
-                // inputSelect.appendChild(option6);
-
-                // 옵션 생성 및 추가
                 const option1 = document.createElement('option');
                 option1.value = '매일';
                 option1.text = '매일';
@@ -1138,33 +1130,16 @@
                 // 수행빈도 변경 시 jsonData 업데이트
                 inputSelect.addEventListener('change', function(event) {
                     var newActPrfrmFreq = event.target.value; // 새로운 수행빈도 입력값을 저장
+                    var previousActPrfrmTmAnn = act.act_prfrm_tm_ann; // 이전 연간 소요시간 값 저장
 
                     // 각 선택 옵션에 따라, 수행횟수에 빈도를 곱해서 연간 수행 횟수를 계산함.
                     var newActPrfrmCntAnn; // 새로운 연간 업무 수행 빈도를 저장할 변수. 초기값은 0이며, YY이면 1, HH이면 2, QQ이면 4, MM이면 12, WW이면 52로 설정
                     switch (newActPrfrmFreq) {
-                        // case 'YY':
-                        //     newActPrfrmCntAnn = 1;
-                        //     break;
-                        // case 'HH':
-                        //     newActPrfrmCntAnn = 2;
-                        //     break;
-                        // case 'QQ':
-                        //     newActPrfrmCntAnn = 4;
-                        //     break;
-                        // case 'MM':
-                        //     newActPrfrmCntAnn = 12;
-                        //     break;
-                        // case 'WW':
-                        //     newActPrfrmCntAnn = 52;
-                        //     break;
-                        // case 'DD':
-                        //     newActPrfrmCntAnn = 226;
-                        //     break;
-                        // default:
-                        //     newActPrfrmCntAnn = 0;
-                        //     break;
                         case '매년':
                             newActPrfrmCntAnn = 1;
+                            inputText3.setAttribute('readonly', false);
+                            inputText4.setAttribute('readonly', false);
+                            inputText5.setAttribute('readonly', false);
                             break;
                         case '반기':
                             newActPrfrmCntAnn = 2;
@@ -1183,10 +1158,27 @@
                             break;
                         case '기타':
                             newActPrfrmCntAnn = 0;
+                            act.act_prfrm_cnt = 0;
+                            act.act_prfrm_tm_cs = 0;
+                            inputText3.value = '';
+                            inputText4.value = '';
+                            inputText5.value = '';
+                            inputText3.setAttribute('readonly', true);
+                            inputText4.setAttribute('readonly', true);
+                            inputText5.setAttribute('readonly', true);
+                            inputText6.removeAttribute('readonly');
                             break;
                         default:
                             newActPrfrmCntAnn = 0;
                             break;
+                    }
+
+                    // 기타가 아닌 다른 옵션으로 변경되면 readOnly 해제
+                    if (newActPrfrmFreq !== '기타') {
+                        inputText3.removeAttribute('readonly');
+                        inputText4.removeAttribute('readonly');
+                        inputText5.removeAttribute('readonly');
+                        inputText6.setAttribute('readonly', true);
                     }
 
                     jsonData.forEach(activity => { // jsonData 내의 모든 task에 대해서, task의 value는 taskData
@@ -1225,13 +1217,13 @@
                 });
                 // act_prfrm_cnt의 경우 일부 공통코드일때 작성 못하도록 하고 0이 왔다가 null값이 가지만, view.py에서 0을 넣어줌.
 
-                const inputText4 = document.createElement('input'); // 업무량 입력 필드 생성
+                const inputText4 = document.createElement('input'); // 연간 수행횟수 필드. 이 필드는 화면에 표시하지 않음
                 inputText4.setAttribute('type', 'text'); 
-                inputText4.setAttribute('name', 'act_prfrm_cnt_ann'); // inputText3 name을 'act_prfrm_cnt_ann'로 설정
+                inputText4.setAttribute('name', 'act_prfrm_cnt_ann'); // inputText4 name을 'act_prfrm_cnt_ann'로 설정
                 inputText4.setAttribute('class', 'input_text_num');
                 inputText4.setAttribute('value', act.act_prfrm_cnt_ann); // 연간 업무량 value로 설정
                 inputText4.setAttribute('readonly', true); // 읽기 전용 속성 설정
-                inputText4.style.display = 'none';
+                inputText4.style.display = 'none'; // 화면에 표시하지 않음
                 // 이 값은 바뀌지 않는다. 앞에서 수행빈도와 연간 수행횟수를 곱해서 계산한 값이다. 그 두 값이 바뀌면 이 값도 바뀌며 그 때 jsonData에 반영된다.
 
                 const inputText5 = document.createElement('input'); // 건당 소요시간
@@ -1290,12 +1282,6 @@
 
                     // 연간 수행 횟수 계산
                     const frequencyMap = {
-                        // 'YY': 1,
-                        // 'HH': 2,
-                        // 'QQ': 4,
-                        // 'MM': 12,
-                        // 'WW': 52,
-                        // 'DD': 226
                         '매년': 1,
                         '반기': 2,
                         '분기': 4,
@@ -1451,7 +1437,6 @@
                     }
                 };
 
-
                 // 담당자, 연간 수행횟수, 건당 소요시간, 연간 소요시간 등을 업데이트하는 코드 부분(? 뒤의 부분은 null일 때 필요함)
                 // 0은 빈칸으로 해줌.
                 inputText2.value = act.act_prsn_chrg ? act.act_prsn_chrg : '';
@@ -1462,6 +1447,17 @@
                 inputText7.value = act.dept_rltd ? act.dept_rltd : '';
                 inputText8.value = act.final_rpt_to ? act.final_rpt_to : '';
                 inputText9.value = act.rpt_nm ? act.rpt_nm : '';
+
+                // act_prfrm_freq가 '기타'일 경우 해당 입력 필드 값을 0으로 설정하고 읽기 전용으로 설정
+                if (act.act_prfrm_freq === '기타') {
+
+                    inputText3.setAttribute('readonly', true);
+                    inputText4.setAttribute('readonly', true);
+                    inputText5.setAttribute('readonly', true);
+                    
+                } else {
+                    inputText6.setAttribute('readonly', true);
+                }
 
                 // 직무코드가 JC001, JC002, JC004인 경우 연간 수행횟수, 건당 소요시간, 연간 소요시간, 수행빈도 입력 필드를 읽기 전용으로 설정
                 if (act.job_cd === 'JC001' || act.job_cd === 'JC002' || act.job_cd === 'JC004') {
@@ -1650,27 +1646,60 @@
                 selectedJobRadio.checked = true;
                 updateDutyList(selectedJob);
             }
+        } else {
+            var firstJobRadio = document.querySelector('input[name="job"]');
+            if (firstJobRadio) {
+                firstJobRadio.checked = true;
+                selectedJob = firstJobRadio.value;
+                updateDutyList(selectedJob);
+            }
         }
+
         if (selectedDuty) {
             var selectedDutyRadio = document.querySelector(`input[name="duty"][value="${selectedDuty}"]`);
             if (selectedDutyRadio) {
                 selectedDutyRadio.checked = true;
                 updateTaskList(selectedJob, selectedDuty);
             }
+        } else {
+            var firstDutyRadio = document.querySelector('input[name="duty"]');
+            if (firstDutyRadio) {
+                firstDutyRadio.checked = true;
+                selectedDuty = firstDutyRadio.value;
+                updateTaskList(selectedJob, selectedDuty);
+            }
         }
+
         if (selectedTask) {
             var selectedTaskRadio = document.querySelector(`input[name="task"][value="${selectedTask}"]`);
             if (selectedTaskRadio) {
                 selectedTaskRadio.checked = true;
                 updateActivityList(selectedJob, selectedDuty, selectedTask);
             }
+        } else {
+            var firstTaskRadio = document.querySelector('input[name="task"]');
+            if (firstTaskRadio) {
+                firstTaskRadio.checked = true;
+                selectedTask = firstTaskRadio.value;
+                updateActivityList(selectedJob, selectedDuty, selectedTask);
+            }
         }
 
-        // document.querySelector('input[name="job"]:first-of-type').click();
-        // document.querySelector('input[name="duty"]:first-of-type').click();
-        // document.querySelector('input[name="task"]:first-of-type').click();
-        // document.querySelector('input[name="activity"]:first-of-type').click();
+
+        // 로그아웃 버튼 클릭 시 로컬 스토리지 지우기
+        document.getElementById('logoutLink').addEventListener('click', function() {
+            localStorage.removeItem('selectedJob');
+            localStorage.removeItem('selectedDuty');
+            localStorage.removeItem('selectedTask');
+        });        
+
         });
+
+        function clearLocalStorage() {
+            localStorage.removeItem('selectedJob');
+            localStorage.removeItem('selectedDuty');
+            localStorage.removeItem('selectedTask');
+        }
 
     </script>
 
