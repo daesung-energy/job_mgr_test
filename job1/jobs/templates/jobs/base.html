@@ -47,6 +47,20 @@
 
 <!-- ================================= -->
 
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const links = document.querySelectorAll(".fakeimg a");
+
+        links.forEach(link => {
+          link.addEventListener("click", function() {
+            // 모든 링크에서 selected 클래스를 제거
+            links.forEach(link => link.classList.remove("selected_menu"));
+            // 클릭한 링크에 selected 클래스 추가
+            this.classList.add("selected_menu");
+          });
+        });
+      });
+    </script>
 
 
     <title>대성에너지::직무관리프로그램</title>
@@ -63,7 +77,7 @@
             alt="대성에너지(주)"
         /></a>
       </dl>
-      <h1 class="main-title"> {{ title }} </h1>
+      <h1 class="main-title" style="padding-top:10px;"> {{ title }} </h1>
       <!-- 중간에 메인 직무가 표시될 위치 -->
       <dl class="top-menu">
         <!-- <dd><a href="#">경영정보팀</a></dd> -->
@@ -89,41 +103,41 @@
       <div class="side">
         <div class="aside">
           <div class="management">
-            <div class="fakeimg" style="height: 300px">
+            <div class="fakeimg" style="height: 270px">
               <p>직무 관리</p>
-              <a href="{% url 'JB101' %}">부서 기본정보</a>
-              <a href="{% url 'JB102' %}">직무 기본정보</a>
-              <a href="{% url 'JB103' %}">직무 상세정보</a>
-              <a href="{% url 'JB103_grid' %}">직무정보 조회</a>
-              <a href="{% url 'JB110' %}">부서 업무량 분석</a>
-              <a href="{% url 'JB108' %}">직무현황 제출</a>
+              <a href="{% url 'JB101' %}" {% if title == "부서 기본정보" %} class = "selected_menu" {% endif %}>부서 기본정보</a>
+              <a href="{% url 'JB102' %}" {% if title == "직무 기본정보" %} class = "selected_menu" {% endif %}>직무 기본정보</a>
+              <a href="{% url 'JB103' %}" {% if title == "직무 상세정보" %} class = "selected_menu" {% endif %}>직무 상세정보</a>
+              <a href="{% url 'JB103_grid' %}" {% if title == "직무정보 조회" %} class = "selected_menu" {% endif %}>직무정보 조회</a>
+              <a href="{% url 'JB110' %}" {% if title == "부서 업무량 분석" %} class = "selected_menu" {% endif %}>부서 업무량 분석</a>
+              <a href="{% url 'JB108' %}" {% if title == "직무 현황제출" %} class = "selected_menu" {% endif %}>직무 현황제출</a>
             </div>
           </div>
           <div class="management">
-            <div class="fakeimg" style="height: 220px">
+            <div class="fakeimg" style="height: 170px">
               <p>직무 분석</p>
               <a href="#">직무 분류 체계</a>
               <a href="#">업무 분장표</a>
-              <a href="{% url 'JB109' %}">업무량 분석</a>
+              <a href="{% url 'JB109' %}" {% if title == "업무량 분석" %} class = "selected_menu" {% endif %}>업무량 분석</a>
             </div>
           </div>
           <div class="management">
-            <div class="fakeimg" style="height: 260px">
+            <div class="fakeimg" style="height: 240px">
               <p>기준 정보</p>
-              <a href="{% url 'BS101' %}">회기 관리</a>
-              <a href="{% url 'BS105' %}">표준 정보</a>
-              <a href="{% url 'BS300' %}">조직 정보</a>
-              <a href="{% url 'BS106' %}">직무 관리</a>
-              <a href="{% url 'BS200' %}">직무 조사</a>
+              <a href="{% url 'BS101' %}" {% if title == "회기 관리" %} class = "selected_menu" {% endif %}>회기 관리</a>
+              <a href="{% url 'BS105' %}" {% if title == "표준 정보" %} class = "selected_menu" {% endif %}>표준 정보</a>
+              <a href="{% url 'BS300' %}" {% if title == "조직 정보" %} class = "selected_menu" {% endif %}>조직 정보</a>
+              <a href="{% url 'BS106' %}" {% if title == "직무 관리" %} class = "selected_menu" {% endif %}>직무 관리</a>
+              <a href="{% url 'BS200' %}" {% if title == "직무 조사" %} class = "selected_menu" {% endif %}>직무 조사</a>
             </div>
           </div>
           <div class="management">
             <div class="fakeimg" style="height: 200px">
               <p>시스템 관리</p>
-              <a href="{% url 'CC102' %}">공통 코드</a>
+              <a href="{% url 'CC102' %}" {% if title == "공통 코드" %} class = "selected_menu" {% endif %}>공통 코드</a>
               <a href="#">계정 관리</a>
               <a href="#">접속 이력</a>
-              <a href="{% url 'CC105' %}">비밀번호 변경</a>
+              <a href="{% url 'CC105' %}" {% if title == "비밀번호 변경" %} class = "selected_menu" {% endif %}>비밀번호 변경</a>
             </div>
           </div>
         </div>

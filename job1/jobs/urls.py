@@ -39,6 +39,7 @@ urlpatterns = [
     path('JB103_1/', views.JB103_1, name='JB103_1'),
     path('JB103_2/', views.JB103_2, name='JB103_2'),
     path('JB103_3/', views.JB103_3, name='JB103_3'),
+    path('JB103_4/', views.JB103_4, name='JB103_4'),
     path('JB103_test4/', views.JB103_test4, name='JB103_test4'),
     path('JB103_test4_1/', views.JB103_test4_1, name='JB103_test4_1'),
     path('JB103_grid/', views.JB103_grid, name='JB103_grid'),

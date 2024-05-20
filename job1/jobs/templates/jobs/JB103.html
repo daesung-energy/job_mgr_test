@@ -48,6 +48,12 @@
             </form>
             </div>
 
+            <!-- <form action = {% url 'JB103_4' %} method="POST" id="JB103_4">
+                {% csrf_token %}
+
+                <button type="submit" class="save">직무기술서</button>
+            </form> -->
+
             <div style="padding-top: 20px; padding-left: 20px;">
 
                 <div style="display: flex;">
@@ -420,7 +426,7 @@
                 job_cd: selectedJobCd, // 선택된 직무 코드  
                 duty_nm: newDutyNm, // 새로운 책무명
                 task_nm: "추가된 과업", // 기본값
-                task_prsn_chrg: "담당자", // 기본값
+                task_prsn_chrg: null, // 기본값
                 work_lv_imprt: isReadonlyJob ? null : 1,
                 work_lv_dfclt: isReadonlyJob ? null : 1,
                 work_lv_prfcn: isReadonlyJob ? null : 1,
@@ -429,15 +435,15 @@
                 work_attrbt: isReadonlyJob ? null : '정형',
                 prfrm_tm_ann: isReadonlyJob ? null : 0,
                 act_nm: "추가된 활동", // 기본값
-                act_prsn_chrg : '담당자',
+                act_prsn_chrg : null,
                 act_prfrm_cnt : isReadonlyJob? null : 0,
                 act_prfrm_freq: isReadonlyJob ? null : '매일',
                 act_prfrm_cnt_ann: isReadonlyJob ? null : 52,
                 act_prfrm_tm_cs: isReadonlyJob ? null : 0,
                 act_prfrm_tm_ann: isReadonlyJob ? null : 0,
-                dept_rltd: isReadonlyJob ? null : '관련 부서',
-                final_rpt_to: isReadonlyJob ? null : '최종 보고 대상',
-                rpt_nm: isReadonlyJob ? null : '보고서명',
+                dept_rltd: isReadonlyJob ? null : null,
+                final_rpt_to: isReadonlyJob ? null : null,
+                rpt_nm: isReadonlyJob ? null : null,
                 job_seq: jsonData.find(item => item.job_cd === selectedJobCd)?.job_seq || 0, // 선택된 직무의 job_seq
                 duty_seq: newDutySeq, // 새로운 책무의 순서
                 task_seq: 1, // 기본값
@@ -812,6 +818,7 @@
                 };
 
                 // 중요도, 난이도, 숙련도, 연간 수행시간 등을 업데이트하는 코드 부분(? 뒤는 일부 공통 코드일 때 필요함. 나머지 직무코드들은 validation check해서 괜찮음)
+                inputText2.value = taskData.task_prsn_chrg ? taskData.task_prsn_chrg : ''; // 담당자 입력값이 없으면 빈 문자열로 설정
                 inputText3.value = taskData.work_lv_imprt ? taskData.work_lv_imprt.toString() : ''; // 중요도 입력값이 없으면 빈 문자열로 설정(blank로 나타냄)
                 inputText4.value = taskData.work_lv_dfclt ? taskData.work_lv_dfclt.toString() : ''; // 난이도 입력값이 없으면 빈 문자열로 설정
                 inputText5.value = taskData.work_lv_prfcn ? taskData.work_lv_prfcn.toString() : ''; // 숙련도 입력값이 없으면 빈 문자열로 설정
@@ -915,7 +922,7 @@
                     job_cd: selectedJob,
                     duty_nm: selectedDutyNm,
                     task_nm: newTaskNm,
-                    task_prsn_chrg: "담당자",
+                    task_prsn_chrg: null,
                     work_lv_imprt: isReadonlyTask ? null : 1,
                     work_lv_dfclt: isReadonlyTask ? null : 1,
                     work_lv_prfcn: isReadonlyTask ? null : 1,
@@ -924,15 +931,15 @@
                     work_attrbt: isReadonlyTask ? null : '정형',
                     prfrm_tm_ann: isReadonlyTask ? null : 0,
                     act_nm : '추가된 활동',
-                    act_prsn_chrg : '담당자',
+                    act_prsn_chrg : null,
                     act_prfrm_freq : isReadonlyTask ? null : '매일',
                     act_prfrm_cnt : isReadonlyTask ? null : 0,
                     act_prfrm_cnt_ann : isReadonlyTask ? null : 52,
                     act_prfrm_tm_cs: isReadonlyTask ? null : 0,
                     act_prfrm_tm_ann: isReadonlyTask ? null : 0,
-                    dept_rltd : isReadonlyTask ? null : '관련 부서',
-                    final_rpt_to : isReadonlyTask ? null : '최종 보고 대상',
-                    rpt_nm : isReadonlyTask ? null : '보고서명',
+                    dept_rltd : isReadonlyTask ? null : null,
+                    final_rpt_to : isReadonlyTask ? null : null,
+                    rpt_nm : isReadonlyTask ? null : null,
                     task_seq: newTask_seq,
                     job_seq: dutyData.job_seq,
                     duty_seq: dutyData.duty_seq,
@@ -1547,7 +1554,7 @@
                 job_cd: taskData.job_cd,
                 duty_nm: taskData.duty_nm,
                 task_nm: selectedTaskNm,
-                task_prsn_chrg: "담당자",
+                task_prsn_chrg: null,
                 work_lv_imprt: taskData.work_lv_imprt,
                 work_lv_dfclt: taskData.work_lv_dfclt,
                 work_lv_prfcn: taskData.work_lv_prfcn,
@@ -1556,16 +1563,15 @@
                 work_attrbt: taskData.work_attrbt,
                 prfrm_tm_ann: 0,
                 act_nm: newActNm,
-                act_prsn_chrg : '담당자',
-                act_prsn_chrg: isReadonlyJob ? null : '담당자',
+                act_prsn_chrg: isReadonlyJob ? null : null,
                 act_prfrm_freq: isReadonlyJob ? null : '매일',
                 act_prfrm_cnt: 0,
                 act_prfrm_cnt_ann: isReadonlyJob ? null : 52,
                 act_prfrm_tm_cs: isReadonlyJob ? null : 0,
                 act_prfrm_tm_ann: isReadonlyJob ? null : 0,
-                dept_rltd: isReadonlyJob ? null : '관련 부서',
-                final_rpt_to: isReadonlyJob ? null : '최종 보고 대상',
-                rpt_nm: isReadonlyJob ? null : '보고서명',
+                dept_rltd: isReadonlyJob ? null : null,
+                final_rpt_to: isReadonlyJob ? null : null,
+                rpt_nm: isReadonlyJob ? null : null,
                 job_seq: taskData.job_seq,
                 duty_seq: taskData.duty_seq,
                 task_seq: taskData.task_seq,
