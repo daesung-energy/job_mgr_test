@@ -33,26 +33,33 @@
                 </form>
             </div>
             
-            <div id="JB103_2">
-            <!-- 팀 선택하는 폼, 이 값에 따라서 직무 목록이 바뀐다. -->
-            <form action = "{% url 'JB103_2' %}" method="POST" id="jb103_test3">
-                {% csrf_token %}
-                <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
-                <p class="label-text2"> 부서
-                    <select name="dept_cd_selected" class="select-combox" onchange="clearLocalStorage(); this.form.submit()" style="margin-left:62px;">
-                        {% for item in dept_list %}
-                            <option value={{ item.dept_cd }} {%if dept_cd_selected == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
-                        {% endfor %}
-                    </select>
-                </p>
-            </form>
+            <div id="JB103_2" style="display: flex;">
+                <div>
+                <!-- 팀 선택하는 폼, 이 값에 따라서 직무 목록이 바뀐다. -->
+                <form action = "{% url 'JB103_2' %}" method="POST" id="jb103_test3">
+                    {% csrf_token %}
+                    <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
+                    <p class="label-text2"> 부서
+                        <select name="dept_cd_selected" class="select-combox" onchange="clearLocalStorage(); this.form.submit()" style="margin-left:62px;">
+                            {% for item in dept_list %}
+                                <option value={{ item.dept_cd }} {%if dept_cd_selected == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
+                            {% endfor %}
+                        </select>
+                    </p>
+                </form>
+                </div>
+                <div style="padding-left:920px">
+                <form action = {% url 'JB103_4' %} method="POST" id="JB103_4">
+                    {% csrf_token %}
+                    <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
+                    <input type="hidden" name="dept_cd_selected" value="{{ dept_cd_selected }}">
+                    <button type="submit" class="save" name="action" value="action1">직무현황표</button>
+                    <button type="submit" class="save" name="action" value="action2">직무기술서</button>
+                </form>
+                </div>
             </div>
 
-            <!-- <form action = {% url 'JB103_4' %} method="POST" id="JB103_4">
-                {% csrf_token %}
-
-                <button type="submit" class="save">직무기술서</button>
-            </form> -->
+            
 
             <div style="padding-top: 20px; padding-left: 20px;">
 
@@ -337,10 +344,17 @@
                         if (uniqueDuties.length <= 1) {
                             alert("최소 하나의 책무가 있어야 합니다.");
                         } else {
+                            // var isSelectedDuty = document.querySelector('input[name="duty"]:checked')?.value === duty;
                             jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
                             dutyDiv.removeChild(container); // 해당 책무 컨테이너를 삭제
                             updateDutySequence(selectedJob); // 순서 업데이트
-                        }
+
+                            // if (isSelectedDuty) {
+                            //     taskDiv.innerHTML = ''; // 과업 목록 초기화
+                            //     activityDiv.innerHTML = ''; // 활동 목록 초기화
+                            // }
+                        
+                        }                        
                     }
                 };
                 

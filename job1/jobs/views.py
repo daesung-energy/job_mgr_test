@@ -885,7 +885,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                 # print('df2_act', df2)
                 # df_activity와 df2의 자료형 정리
                 # print('df2', df2.dtypes)
-                print('df_activity', df_activity.dtypes)
+                # print('df_activity', df_activity.dtypes)
                 
                 if df2.empty == False: # df2가 비어있지 않다면 즉, UI에서 수정을 할 때 한 줄이라도 그대로 둔 상태라면 merge이용해 비교를 해서 삭제할 거 삭제하고 추가할 거 추가한다.
                     # print('df2가 비어있지 않다면')
@@ -1081,18 +1081,18 @@ from openpyxl.styles import Font, Border, Side, PatternFill, Alignment
 from openpyxl.worksheet.properties import PageSetupProperties
 from string import ascii_uppercase
 
-def JB103_4(request): # 직무 기술서 print
+def JB103_4(request): # 직무 현황표, 기술서 print
 
     if request.method == 'POST':
 
-        prd_cd = '2022A'
-        dept_cd = 'DD01'
+        action = request.POST["action"]
 
-        # 'prd_list' : BsPrd.objects.all(),
-        # 'title' : '직무 상세정보', # 제목
-        # 'prd_selected' : last_prd_cd,
-        # 'prd_done' : BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn,
+        prd_selected = request.POST["prd_selected"]
+        dept_cd_selected = request.POST["dept_cd_selected"]
+        dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
+        dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
+        # if action == "action1": # 엑셀 다운로드 버튼을 눌렀을 때
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
@@ -1112,7 +1112,7 @@ def JB103_4(request): # 직무 기술서 print
             return pd.DataFrame(result)
 
         # 직무코드 데이터 가져오기
-        query = f"SELECT * FROM bs_job WHERE prd_cd = '{prd_cd}'"
+        query = f"SELECT * FROM bs_job WHERE prd_cd = '{prd_selected}'"
         df_job_code = get_data(conn, query)
 
         # 수행빈도 데이터 가져오기
@@ -1120,20 +1120,31 @@ def JB103_4(request): # 직무 기술서 print
         df_frq_code = get_data(conn, query)
 
         # 직무-책무-과업-활동 데이터 가져오기
-        query = f"SELECT * FROM job_task WHERE prd_cd = '{prd_cd}' AND dept_cd = '{dept_cd}'"
+        query = f"SELECT * FROM job_task WHERE prd_cd = '{prd_selected}' AND dept_cd = '{dept_cd_selected}'"
         df1 = get_data(conn, query)
 
-        query = f"SELECT * FROM job_activity WHERE prd_cd = '{prd_cd}' AND dept_cd = '{dept_cd}'"
+        query = f"SELECT * FROM job_activity WHERE prd_cd = '{prd_selected}' AND dept_cd = '{dept_cd_selected}'"
         df2 = get_data(conn, query)
 
         # 부서 데이터 가져오기
-        query = f"SELECT * FROM bs_dept WHERE prd_cd = '{prd_cd}' AND dept_cd = '{dept_cd}'"
+        query = f"SELECT * FROM bs_dept WHERE prd_cd = '{prd_selected}' AND dept_cd = '{dept_cd_selected}'"
         df_dept = get_data(conn, query)
 
         # 부서 성과책임 데이터 가져오기
-        query = f"SELECT * FROM bs_dept_resp WHERE prd_cd = '{prd_cd}' AND dept_cd = '{dept_cd}'"
+        query = f"SELECT * FROM bs_dept_resp WHERE prd_cd = '{prd_selected}' AND dept_cd = '{dept_cd_selected}'"
         df_resp = get_data(conn, query)
 
+        # 부서 직무 데이터 가져오기
+        query = f"SELECT * FROM bs_job_dept WHERE prd_cd = '{prd_selected}' AND dept_cd = '{dept_cd_selected}'"
+        df_dept_job = get_data(conn, query)
+
+        # 직무 정보 데이터 가져오기
+        query = f"SELECT * FROM bs_job WHERE prd_cd = '{prd_selected}'"
+        df_job_info = get_data(conn, query)
+
+        query = f"SELECT * FROM bs_job_resp WHERE prd_cd = '{prd_selected}'"
+        df_job_resp = get_data(conn, query)
+       
         # 데이터베이스 연결 닫기
         conn.close()
 
@@ -1156,303 +1167,673 @@ def JB103_4(request): # 직무 기술서 print
         dept_nm = df_dept.loc[0].dept_nm
         dept_po = df_dept.loc[0].dept_po
 
-        wb = Workbook()
+        if action == "action1": # 엑셀 다운로드 버튼을 눌렀을 때
 
-        # 테두리 적용
-        BORDER_THIN_UP = Border(top=Side(style='thin'))
-        BORDER_THIN_ALL = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-        # border_medium = Border(left=Side(style='medium'), right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
-        # border_thick = Border(left=Side(style='thick'), right=Side(style='thick'), top=Side(style='thick'), bottom=Side(style='thick'))
+            wb = Workbook()
 
-        """
-        첫번째 Sheet : 표지
-        """
-        ws = wb.active  # 현재 활성화된 sheet 가져옴
-        ws.title = "부서"
+            # 테두리 적용
+            BORDER_THIN_UP = Border(top=Side(style='thin'))
+            BORDER_THIN_ALL = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            # border_medium = Border(left=Side(style='medium'), right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
+            # border_thick = Border(left=Side(style='thick'), right=Side(style='thick'), top=Side(style='thick'), bottom=Side(style='thick'))
 
-        ws.column_dimensions["A"].width = 15
-        ws.column_dimensions["B"].width = 15
-        ws.column_dimensions["C"].width = 85
+            """
+            첫번째 Sheet : 표지
+            """
+            ws = wb.active  # 현재 활성화된 sheet 가져옴
+            ws.title = "부서"
 
-        # 회기
-        subject1 = ws.cell(row=4, column=1)    
-        subject1.value = "■ 회기"
-        subject1.font = Font(bold=True)
-        prd = ws.cell(row=4, column=2)    
-        prd.value = prd_cd
+            ws.column_dimensions["A"].width = 15
+            ws.column_dimensions["B"].width = 15
+            ws.column_dimensions["C"].width = 85
 
-        # 부서
-        subject2 = ws.cell(row=6, column=1)    
-        subject2.value = "■ 부서"
-        subject2.font = Font(bold=True)
-        dept = ws.cell(row=6, column=2)    
-        # dept.value = dept_cd
-        dept.value = dept_nm    # 부서명
+            # 회기
+            subject1 = ws.cell(row=4, column=1)    
+            subject1.value = "■ 회기"
+            subject1.font = Font(bold=True)
+            prd = ws.cell(row=4, column=2)    
+            prd.value = prd_selected
 
-        # 총 인원(PO)
-        subject3 = ws.cell(row=8, column=1)    
-        subject3.value = "■ 총 인원(PO)"
-        subject3.font = Font(bold=True)
-        po = ws.cell(row=8, column=2)    
-        po.value = dept_po
-        po.alignment = Alignment(horizontal="left", vertical="center")  
-        note = ws.cell(row=8, column=3)    
-        note.value = "(직책자포함)"
-        note.font = Font(color="0000FF", size=9)
+            # 부서
+            subject2 = ws.cell(row=6, column=1)    
+            subject2.value = "■ 부서"
+            subject2.font = Font(bold=True)
+            dept = ws.cell(row=6, column=2)    
+            # dept.value = dept_cd
+            dept.value = dept_nm    # 부서명
 
-        # 성과책임
-        subject4 = ws.cell(row=10, column=1)    
-        subject4.value = "■ 성과책임"
-        subject4.font = Font(bold=True)
-        RESP_START_ROW = 11
-        for i, r in df_resp.iterrows():
-            row_no = RESP_START_ROW+i
-            ws.row_dimensions[row_no].height = 20
-            resp_no = ws.cell(row=row_no, column=2)    
-            resp_no.value = "핵심목표 " + str(r['dept_resp_ordr'])
-            resp_no.border = BORDER_THIN_ALL
-            resp_no.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)  
-            resp_nm = ws.cell(row=row_no, column=3)    
-            resp_nm.value = r['dept_resp']
-            resp_nm.border = BORDER_THIN_ALL
-            resp_nm.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)  
+            # 총 인원(PO)
+            subject3 = ws.cell(row=8, column=1)    
+            subject3.value = "■ 총 인원(PO)"
+            subject3.font = Font(bold=True)
+            po = ws.cell(row=8, column=2)    
+            po.value = dept_po
+            po.alignment = Alignment(horizontal="left", vertical="center")  
+            note = ws.cell(row=8, column=3)    
+            note.value = "(직책자포함)"
+            note.font = Font(color="0000FF", size=9)
 
-        # 제목
-        title = ws.cell(row=1, column=1)  
-        title.value = "직무표"
-        title.font = Font(color="0000FF", size=25, bold=True)
-        title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True) 
-        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
-        ws.row_dimensions[1].height = 50
+            # 성과책임
+            subject4 = ws.cell(row=10, column=1)    
+            subject4.value = "■ 성과책임"
+            subject4.font = Font(bold=True)
+            RESP_START_ROW = 11
+            for i, r in df_resp.iterrows():
+                row_no = RESP_START_ROW+i
+                ws.row_dimensions[row_no].height = 20
+                resp_no = ws.cell(row=row_no, column=2)    
+                resp_no.value = "핵심목표 " + str(r['dept_resp_ordr'])
+                resp_no.border = BORDER_THIN_ALL
+                resp_no.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)  
+                resp_nm = ws.cell(row=row_no, column=3)    
+                resp_nm.value = r['dept_resp']
+                resp_nm.border = BORDER_THIN_ALL
+                resp_nm.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)  
 
-        # Page Setup
-        ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
-        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-        ws.page_setup.paperSize = ws.PAPERSIZE_A4
-        ws.page_setup.fitToHeight = 0
-        ws.page_setup.fitToWidth = 1
-        ws.print_options.horizontalCentered = True
+            # 제목
+            title = ws.cell(row=1, column=1)  
+            title.value = "직무표"
+            title.font = Font(color="0000FF", size=25, bold=True)
+            title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True) 
+            ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
+            ws.row_dimensions[1].height = 50
 
-        """
-        두번째 Sheet : 직무 데이터
-        """
-        ws_data = wb.create_sheet("직무표", 2)        # 2번째 index에 sheet 생성
+            # Page Setup
+            ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
+            ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+            ws.page_setup.paperSize = ws.PAPERSIZE_A4
+            ws.page_setup.fitToHeight = 0
+            ws.page_setup.fitToWidth = 1
+            ws.print_options.horizontalCentered = True
 
-        HEADER_1 = 1     # 항목명 첫째줄
-        HEADER_2 = 2     # 항목명 둘째줄
+            """
+            두번째 Sheet : 직무 데이터
+            """
+            ws_data = wb.create_sheet("직무표", 2)        # 2번째 index에 sheet 생성
 
-        # TITLE_ROW = 1   # 첫번째 행 "제목"
+            HEADER_1 = 1     # 항목명 첫째줄
+            HEADER_2 = 2     # 항목명 둘째줄
 
-        DATA_START_ROW = 3
-        TASK_START_COL = 3
+            # TITLE_ROW = 1   # 첫번째 행 "제목"
 
-        COL_WIDTH_1 = 7      # 컬럼 크기
-        COL_WIDTH_2 = 10      # 컬럼 크기
-        COL_WIDTH_3 = 12      # 컬럼 크기
-        COL_WIDTH_4 = 15      # 컬럼 크기
-        COL_WIDTH_5 = 25      # 컬럼 크기
-        COL_WIDTH_6 = 40      # 컬럼 크기
+            DATA_START_ROW = 3
+            TASK_START_COL = 3
 
-        # 열 너비 지정(A~Z열)
-        alphabet_list = list(ascii_uppercase)
-        for c in alphabet_list:
-            if c in ["F", "G", "H", "J", "P"]:    
-                ws_data.column_dimensions[c].width = COL_WIDTH_1
-            elif c in ["I", "K", "N", "Q", "R", "S"]: 
-                ws_data.column_dimensions[c].width = COL_WIDTH_2
-            elif c in ["E"]: 
-                ws_data.column_dimensions[c].width = COL_WIDTH_3
-            elif c in ["A", "D", "O"]: 
-                ws_data.column_dimensions[c].width = COL_WIDTH_4
-            elif c in ["B", "C", "M", "T"]: 
-                ws_data.column_dimensions[c].width = COL_WIDTH_5
-            else:
-                ws_data.column_dimensions[c].width = COL_WIDTH_6
+            COL_WIDTH_1 = 7      # 컬럼 크기
+            COL_WIDTH_2 = 10      # 컬럼 크기
+            COL_WIDTH_3 = 12      # 컬럼 크기
+            COL_WIDTH_4 = 15      # 컬럼 크기
+            COL_WIDTH_5 = 25      # 컬럼 크기
+            COL_WIDTH_6 = 40      # 컬럼 크기
+
+            # 열 너비 지정(A~Z열)
+            alphabet_list = list(ascii_uppercase)
+            for c in alphabet_list:
+                if c in ["F", "G", "H", "J", "P"]:    
+                    ws_data.column_dimensions[c].width = COL_WIDTH_1
+                elif c in ["I", "K", "N", "Q", "R", "S"]: 
+                    ws_data.column_dimensions[c].width = COL_WIDTH_2
+                elif c in ["E"]: 
+                    ws_data.column_dimensions[c].width = COL_WIDTH_3
+                elif c in ["A", "D", "O"]: 
+                    ws_data.column_dimensions[c].width = COL_WIDTH_4
+                elif c in ["B", "C", "M", "T"]: 
+                    ws_data.column_dimensions[c].width = COL_WIDTH_5
+                else:
+                    ws_data.column_dimensions[c].width = COL_WIDTH_6
+                    
+            # 데이터 항목 개수
+            DATA_COLS = 20
+
+            # 헤더: 행 높이 지정
+            ws_data.row_dimensions[1].height = 20
+
+            # 헤더: 항목 명칭
+            header1 = ["직무\n(Job)", "책무\n(Duty)", "과업\n(Task)", "과업 담당자", "업무 특성", \
+                    "업무 수준 및 등급", "", "", "", "", "과업\n수행시간\n(연간)", \
+                    "활동\n(Activity)", "수행 결과물", "최종 보고대상", "관련 부서", \
+                    "수행\n빈도", "수행시간", "", "", "활동 담당자"]
+            header2 = ["", "", "", "", "정형/비정형", \
+                    "중요도\n(1~5)", "난이도\n(1~5)", "숙련도\n(1~5)", "업무수준\n(계)", "등급", "", \
+                    "", "", "", "", \
+                    "", "수행건수\n(연간)", "건당\n소요시간", "소요시간\n(연간)", ""]
+            ws_data.append(header1)
+            ws_data.append(header2)
+
+            # 헤더 속성
+            for col in range(1, DATA_COLS+1):
+                header1 = ws_data.cell(row=HEADER_1, column=col) 
+                header1.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
+                header2 = ws_data.cell(row=HEADER_2, column=col) 
+                header2.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
+                # 직무 및 책무
+                if col >= 1 and col <= 2:
+                    header1.fill = PatternFill(fgColor="D0FA58", fill_type="solid")     
+                    header2.fill = PatternFill(fgColor="D0FA58", fill_type="solid")            
+                # 과업 관련 데이터 항목
+                if col >= 3 and col <= 11:
+                    header1.fill = PatternFill(fgColor="2ECCFA", fill_type="solid")     
+                    header2.fill = PatternFill(fgColor="81DAF5", fill_type="solid")            
+                # 활동 관련 데이터 항목
+                if col >= 12 and col <= 20:
+                    header1.fill = PatternFill(fgColor="2EFEC8", fill_type="solid")     
+                    header2.fill = PatternFill(fgColor="81F7D8", fill_type="solid")            
+
+            # 1줄씩 데이터 추가
+            prev_job_nm = prev_duty_nm = prev_task_nm = None
+            for i, r in data.iterrows():
+                row_no = DATA_START_ROW+i
+                # 직무명
+                job_nm = ws_data.cell(row=row_no, column=1)    
+                if r['job_nm'] == prev_job_nm:  # 동일 데이터 반복 제거
+                    job_nm.value = ""
+                else: 
+                    job_nm.value = prev_job_nm = r['job_nm']
+                    job_nm.border = BORDER_THIN_UP
+                    job_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)  
+                # 책무
+                duty_nm = ws_data.cell(row=row_no, column=2)
+                if r['duty_nm'] == prev_duty_nm:  # 동일 데이터 반복 제거 
+                    duty_nm.value = ""
+                else: 
+                    duty_nm.value = prev_duty_nm = r['duty_nm']   
+                    duty_nm.border = BORDER_THIN_UP
+                    duty_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)  
+                """ 과업 데이터 """          
+                # 과업, 과업 담당자, 과업 업무특성
+                task_nm = ws_data.cell(row=row_no, column=3)
+                task_prsn_chrg = ws_data.cell(row=row_no, column=4)
+                work_attrbt = ws_data.cell(row=row_no, column=5)
+                work_lv_imprt = ws_data.cell(row=row_no, column=6)
+                work_lv_dfclt = ws_data.cell(row=row_no, column=7)
+                work_lv_prfcn = ws_data.cell(row=row_no, column=8)
+                work_lv_sum = ws_data.cell(row=row_no, column=9)
+                work_grade = ws_data.cell(row=row_no, column=10)
+                prfrm_tm_ann = ws_data.cell(row=row_no, column=11)
+                if r['task_nm'] == prev_task_nm:  # 동일 데이터 반복 제거 
+                    task_nm.value = ""
+                    task_prsn_chrg.value = work_attrbt = ""
+                    work_lv_imprt.value = work_lv_dfclt = work_lv_prfcn = work_lv_sum = work_grade = ""  
+                    prfrm_tm_ann.value = ""      
+                else: 
+                    task_nm.value = prev_task_nm = r['task_nm']
+                    task_prsn_chrg.value = r['task_prsn_chrg']     
+                    work_attrbt.value = r['work_attrbt']
+                    work_lv_imprt.value = r['work_lv_imprt']
+                    work_lv_dfclt.value = r['work_lv_dfclt']
+                    work_lv_prfcn.value = r['work_lv_prfcn']
+                    work_lv_sum.value = r['work_lv_sum']
+                    work_grade.value = r['work_grade']
+                    prfrm_tm_ann.value = r['prfrm_tm_ann']
+                    task_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                    task_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                    work_attrbt.alignment = Alignment(horizontal="center", vertical="top")
+                    work_lv_imprt.alignment = Alignment(horizontal="center", vertical="top")
+                    work_lv_dfclt.alignment = Alignment(horizontal="center", vertical="top")
+                    work_lv_prfcn.alignment = Alignment(horizontal="center", vertical="top")
+                    work_lv_sum.alignment = Alignment(horizontal="center", vertical="top")
+                    work_grade.alignment = Alignment(horizontal="center", vertical="top")
+                    prfrm_tm_ann.alignment = Alignment(horizontal="center", vertical="top")
+                    for c in range(TASK_START_COL, DATA_COLS+1):
+                        task_related_cell = ws_data.cell(row=row_no, column=c)
+                        task_related_cell.border = BORDER_THIN_UP
+                    
+                """ 활동 데이터 """            
+                act_nm = ws_data.cell(row=row_no, column=12)
+                rpt_nm = ws_data.cell(row=row_no, column=13)
+                final_rpt_to = ws_data.cell(row=row_no, column=14)
+                dept_rltd = ws_data.cell(row=row_no, column=15)
+                act_prfrm_freq = ws_data.cell(row=row_no, column=16)
+                act_prfrm_cnt_ann = ws_data.cell(row=row_no, column=17)
+                act_prfrm_tm_cs = ws_data.cell(row=row_no, column=18)
+                act_prfrm_tm_ann = ws_data.cell(row=row_no, column=19)
+                act_prsn_chrg = ws_data.cell(row=row_no, column=20)
+                act_nm.value = r['act_nm']
+                rpt_nm.value = r['rpt_nm']
+                final_rpt_to.value = r['final_rpt_to'] 
+                dept_rltd.value = r['dept_rltd']
+                # act_prfrm_freq.value = r['act_prfrm_freq']
+                act_prfrm_freq.value = r['cc_code_nm']
+                act_prfrm_cnt_ann.value = r['act_prfrm_cnt_ann']
+                act_prfrm_tm_cs.value = r['act_prfrm_tm_cs']
+                act_prfrm_tm_ann.value = r['act_prfrm_tm_ann']
+                act_prsn_chrg.value = r['act_prsn_chrg']
+                act_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                rpt_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                final_rpt_to.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                dept_rltd.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                act_prfrm_freq.alignment = Alignment(horizontal="center", vertical="top")
+                act_prfrm_cnt_ann.alignment = Alignment(horizontal="center", vertical="top")
+                act_prfrm_tm_cs.alignment = Alignment(horizontal="center", vertical="top")
+                act_prfrm_tm_ann.alignment = Alignment(horizontal="center", vertical="top")
+                act_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
                 
-        # 데이터 항목 개수
-        DATA_COLS = 20
+            """ 열 병합은 데이터 처리 후에 마지막에 진행 """
+            # 열 병합
+            ws_data.merge_cells(start_row=HEADER_1, start_column=6, end_row=HEADER_1, end_column=10)   # 업무 수준 및 등급
+            ws_data.merge_cells(start_row=HEADER_1, start_column=17, end_row=HEADER_1, end_column=19)  # 수행시간
+            # 행 병합: 헤더 1 & 2
+            ws_data.merge_cells(start_row=HEADER_1, start_column=1, end_row=HEADER_2, end_column=1)   # 직무
+            ws_data.merge_cells(start_row=HEADER_1, start_column=2, end_row=HEADER_2, end_column=2)   # 책무
+            ws_data.merge_cells(start_row=HEADER_1, start_column=3, end_row=HEADER_2, end_column=3)   # 과업
+            ws_data.merge_cells(start_row=HEADER_1, start_column=4, end_row=HEADER_2, end_column=4)   # 과업 담당자
+            ws_data.merge_cells(start_row=HEADER_1, start_column=11, end_row=HEADER_2, end_column=11)   # 과업 수행시간(연간)
+            ws_data.merge_cells(start_row=HEADER_1, start_column=12, end_row=HEADER_2, end_column=12)   # 활동
+            ws_data.merge_cells(start_row=HEADER_1, start_column=13, end_row=HEADER_2, end_column=13)   # 수행 결과물
+            ws_data.merge_cells(start_row=HEADER_1, start_column=14, end_row=HEADER_2, end_column=14)   # 최종 보고대상
+            ws_data.merge_cells(start_row=HEADER_1, start_column=15, end_row=HEADER_2, end_column=15)   # 관련 부서
+            ws_data.merge_cells(start_row=HEADER_1, start_column=16, end_row=HEADER_2, end_column=16)   # 수행빈도
+            ws_data.merge_cells(start_row=HEADER_1, start_column=20, end_row=HEADER_2, end_column=20)   # 활동 담당자
 
-        # 헤더: 행 높이 지정
-        ws_data.row_dimensions[1].height = 20
+            # 행 고정
+            ws_data.freeze_panes = "A3"
 
-        # 헤더: 항목 명칭
-        header1 = ["직무\n(Job)", "책무\n(Duty)", "과업\n(Task)", "과업 담당자", "업무 특성", \
-                "업무 수준 및 등급", "", "", "", "", "과업\n수행시간\n(연간)", \
-                "활동\n(Activity)", "수행 결과물", "최종 보고대상", "관련 부서", \
-                "수행\n빈도", "수행시간", "", "", "활동 담당자"]
-        header2 = ["", "", "", "", "정형/비정형", \
-                "중요도\n(1~5)", "난이도\n(1~5)", "숙련도\n(1~5)", "업무수준\n(계)", "등급", "", \
-                "", "", "", "", \
-                "", "수행건수\n(연간)", "건당\n소요시간", "소요시간\n(연간)", ""]
-        ws_data.append(header1)
-        ws_data.append(header2)
+            """
+            페이지 설정 및 인쇄 옵션
+            """
+            ws_data.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
+            ws_data.page_setup.orientation = ws_data.ORIENTATION_LANDSCAPE
+            ws_data.page_setup.paperSize = ws_data.PAPERSIZE_A3
+            ws_data.page_setup.fitToHeight = 0
+            ws_data.page_setup.fitToWidth = 1
+            ws_data.print_options.horizontalCentered = True
+            # ws_data.print_options.verticalCentered = False
+            ws_data.print_title_rows = '1:2'  # 헤더 1~2행을 반복해서 인쇄 타이틀로 설정
 
-        # 헤더 속성
-        for col in range(1, DATA_COLS+1):
-            header1 = ws_data.cell(row=HEADER_1, column=col) 
-            header1.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-            header2 = ws_data.cell(row=HEADER_2, column=col) 
-            header2.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-            # 직무 및 책무
-            if col >= 1 and col <= 2:
-                header1.fill = PatternFill(fgColor="D0FA58", fill_type="solid")     
-                header2.fill = PatternFill(fgColor="D0FA58", fill_type="solid")            
-            # 과업 관련 데이터 항목
-            if col >= 3 and col <= 11:
-                header1.fill = PatternFill(fgColor="2ECCFA", fill_type="solid")     
-                header2.fill = PatternFill(fgColor="81DAF5", fill_type="solid")            
-            # 활동 관련 데이터 항목
-            if col >= 12 and col <= 20:
-                header1.fill = PatternFill(fgColor="2EFEC8", fill_type="solid")     
-                header2.fill = PatternFill(fgColor="81F7D8", fill_type="solid")            
+            # 년월일시분초
+            def nowstr():
+                now = dt.datetime.now()
+                nowstr = now.strftime("%Y%m%d%H%M%S")
+                return nowstr
 
-        # 1줄씩 데이터 추가
-        prev_job_nm = prev_duty_nm = prev_task_nm = None
-        for i, r in data.iterrows():
-            row_no = DATA_START_ROW+i
-            # 직무명
-            job_nm = ws_data.cell(row=row_no, column=1)    
-            if r['job_nm'] == prev_job_nm:  # 동일 데이터 반복 제거
-                job_nm.value = ""
-            else: 
-                job_nm.value = prev_job_nm = r['job_nm']
-                job_nm.border = BORDER_THIN_UP
-                job_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)  
-            # 책무
-            duty_nm = ws_data.cell(row=row_no, column=2)
-            if r['duty_nm'] == prev_duty_nm:  # 동일 데이터 반복 제거 
-                duty_nm.value = ""
-            else: 
-                duty_nm.value = prev_duty_nm = r['duty_nm']   
-                duty_nm.border = BORDER_THIN_UP
-                duty_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)  
-            """ 과업 데이터 """          
-            # 과업, 과업 담당자, 과업 업무특성
-            task_nm = ws_data.cell(row=row_no, column=3)
-            task_prsn_chrg = ws_data.cell(row=row_no, column=4)
-            work_attrbt = ws_data.cell(row=row_no, column=5)
-            work_lv_imprt = ws_data.cell(row=row_no, column=6)
-            work_lv_dfclt = ws_data.cell(row=row_no, column=7)
-            work_lv_prfcn = ws_data.cell(row=row_no, column=8)
-            work_lv_sum = ws_data.cell(row=row_no, column=9)
-            work_grade = ws_data.cell(row=row_no, column=10)
-            prfrm_tm_ann = ws_data.cell(row=row_no, column=11)
-            if r['task_nm'] == prev_task_nm:  # 동일 데이터 반복 제거 
-                task_nm.value = ""
-                task_prsn_chrg.value = work_attrbt = ""
-                work_lv_imprt.value = work_lv_dfclt = work_lv_prfcn = work_lv_sum = work_grade = ""  
-                prfrm_tm_ann.value = ""      
-            else: 
-                task_nm.value = prev_task_nm = r['task_nm']
-                task_prsn_chrg.value = r['task_prsn_chrg']     
-                work_attrbt.value = r['work_attrbt']
-                work_lv_imprt.value = r['work_lv_imprt']
-                work_lv_dfclt.value = r['work_lv_dfclt']
-                work_lv_prfcn.value = r['work_lv_prfcn']
-                work_lv_sum.value = r['work_lv_sum']
-                work_grade.value = r['work_grade']
-                prfrm_tm_ann.value = r['prfrm_tm_ann']
-                task_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                task_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                work_attrbt.alignment = Alignment(horizontal="center", vertical="top")
-                work_lv_imprt.alignment = Alignment(horizontal="center", vertical="top")
-                work_lv_dfclt.alignment = Alignment(horizontal="center", vertical="top")
-                work_lv_prfcn.alignment = Alignment(horizontal="center", vertical="top")
-                work_lv_sum.alignment = Alignment(horizontal="center", vertical="top")
-                work_grade.alignment = Alignment(horizontal="center", vertical="top")
-                prfrm_tm_ann.alignment = Alignment(horizontal="center", vertical="top")
-                for c in range(TASK_START_COL, DATA_COLS+1):
-                    task_related_cell = ws_data.cell(row=row_no, column=c)
-                    task_related_cell.border = BORDER_THIN_UP
-                
-            """ 활동 데이터 """            
-            act_nm = ws_data.cell(row=row_no, column=12)
-            rpt_nm = ws_data.cell(row=row_no, column=13)
-            final_rpt_to = ws_data.cell(row=row_no, column=14)
-            dept_rltd = ws_data.cell(row=row_no, column=15)
-            act_prfrm_freq = ws_data.cell(row=row_no, column=16)
-            act_prfrm_cnt_ann = ws_data.cell(row=row_no, column=17)
-            act_prfrm_tm_cs = ws_data.cell(row=row_no, column=18)
-            act_prfrm_tm_ann = ws_data.cell(row=row_no, column=19)
-            act_prsn_chrg = ws_data.cell(row=row_no, column=20)
-            act_nm.value = r['act_nm']
-            rpt_nm.value = r['rpt_nm']
-            final_rpt_to.value = r['final_rpt_to'] 
-            dept_rltd.value = r['dept_rltd']
-            # act_prfrm_freq.value = r['act_prfrm_freq']
-            act_prfrm_freq.value = r['cc_code_nm']
-            act_prfrm_cnt_ann.value = r['act_prfrm_cnt_ann']
-            act_prfrm_tm_cs.value = r['act_prfrm_tm_cs']
-            act_prfrm_tm_ann.value = r['act_prfrm_tm_ann']
-            act_prsn_chrg.value = r['act_prsn_chrg']
-            act_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-            rpt_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-            final_rpt_to.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-            dept_rltd.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-            act_prfrm_freq.alignment = Alignment(horizontal="center", vertical="top")
-            act_prfrm_cnt_ann.alignment = Alignment(horizontal="center", vertical="top")
-            act_prfrm_tm_cs.alignment = Alignment(horizontal="center", vertical="top")
-            act_prfrm_tm_ann.alignment = Alignment(horizontal="center", vertical="top")
-            act_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-            
-        """ 열 병합은 데이터 처리 후에 마지막에 진행 """
-        # 열 병합
-        ws_data.merge_cells(start_row=HEADER_1, start_column=6, end_row=HEADER_1, end_column=10)   # 업무 수준 및 등급
-        ws_data.merge_cells(start_row=HEADER_1, start_column=17, end_row=HEADER_1, end_column=19)  # 수행시간
-        # 행 병합: 헤더 1 & 2
-        ws_data.merge_cells(start_row=HEADER_1, start_column=1, end_row=HEADER_2, end_column=1)   # 직무
-        ws_data.merge_cells(start_row=HEADER_1, start_column=2, end_row=HEADER_2, end_column=2)   # 책무
-        ws_data.merge_cells(start_row=HEADER_1, start_column=3, end_row=HEADER_2, end_column=3)   # 과업
-        ws_data.merge_cells(start_row=HEADER_1, start_column=4, end_row=HEADER_2, end_column=4)   # 과업 담당자
-        ws_data.merge_cells(start_row=HEADER_1, start_column=11, end_row=HEADER_2, end_column=11)   # 과업 수행시간(연간)
-        ws_data.merge_cells(start_row=HEADER_1, start_column=12, end_row=HEADER_2, end_column=12)   # 활동
-        ws_data.merge_cells(start_row=HEADER_1, start_column=13, end_row=HEADER_2, end_column=13)   # 수행 결과물
-        ws_data.merge_cells(start_row=HEADER_1, start_column=14, end_row=HEADER_2, end_column=14)   # 최종 보고대상
-        ws_data.merge_cells(start_row=HEADER_1, start_column=15, end_row=HEADER_2, end_column=15)   # 관련 부서
-        ws_data.merge_cells(start_row=HEADER_1, start_column=16, end_row=HEADER_2, end_column=16)   # 수행빈도
-        ws_data.merge_cells(start_row=HEADER_1, start_column=20, end_row=HEADER_2, end_column=20)   # 활동 담당자
+            # 엑셀 파일이 저장될 위치
+            # file_root = "D:/PythonProject/job-mgr/output/"
 
-        # 행 고정
-        ws_data.freeze_panes = "A3"
+            """
+            엑셀 파일 저장
+            """
+            # 파일명은 full path로 지정
+            # excel_file = "dept_job_" + nowstr() + ".xlsx"
+            # excel_file_path = os.path.join(file_root, excel_file)
+            # wb.save(excel_file_path)
 
-        """
-        페이지 설정 및 인쇄 옵션
-        """
-        ws_data.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
-        ws_data.page_setup.orientation = ws_data.ORIENTATION_LANDSCAPE
-        ws_data.page_setup.paperSize = ws_data.PAPERSIZE_A3
-        ws_data.page_setup.fitToHeight = 0
-        ws_data.page_setup.fitToWidth = 1
-        ws_data.print_options.horizontalCentered = True
-        # ws_data.print_options.verticalCentered = False
-        ws_data.print_title_rows = '1:2'  # 헤더 1~2행을 반복해서 인쇄 타이틀로 설정
-
-        # 년월일시분초
-        def nowstr():
-            now = dt.datetime.now()
-            nowstr = now.strftime("%Y%m%d%H%M%S")
-            return nowstr
-
-        # 엑셀 파일이 저장될 위치
-        # file_root = "D:/PythonProject/job-mgr/output/"
-
-        """
-        엑셀 파일 저장
-        """
-        # 파일명은 full path로 지정
-        # excel_file = "dept_job_" + nowstr() + ".xlsx"
-        # excel_file_path = os.path.join(file_root, excel_file)
-        # wb.save(excel_file_path)
-
-        download_folder = str(Path.home() / "Downloads")
-        excel_file = "직무기술서_" + nowstr() + ".xlsx"
-        excel_file_path = os.path.join(download_folder, excel_file)
-        wb.save(excel_file_path)
-        wb.close() # 엑셀 파일 닫기    
+            download_folder = str(Path.home() / "Downloads")
+            excel_file = "직무현황표_" + nowstr() + ".xlsx"
+            excel_file_path = os.path.join(download_folder, excel_file)
+            wb.save(excel_file_path)
+            wb.close() # 엑셀 파일 닫기    
 
         # wb.save('직무기술서.xlsx')
-    
-    return render(request, 'jobs/JB103.html')
+
+        if action == "action2": # 엑셀 다운로드 버튼을 눌렀을 때
+
+            wb = Workbook()
+
+            # 테두리 적용
+            BORDER_THIN_UP = Border(top=Side(style='thin'))
+            BORDER_THIN_BOTTOM = Border(bottom=Side(style='thin'))
+            BORDER_THIN_ALL = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            BORDER_THIN_TOP_BOTTOM = Border(top=Side(style='thin'), bottom=Side(style='thin'))
+            # border_medium = Border(left=Side(style='medium'), right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
+            # border_thick = Border(left=Side(style='thick'), right=Side(style='thick'), top=Side(style='thick'), bottom=Side(style='thick'))
+
+            """
+            첫번째 Sheet : 표지
+            """
+            ws = wb.active  # 현재 활성화된 sheet 가져옴
+            ws.title = "부서"
+
+            ws.column_dimensions["A"].width = 15
+            ws.column_dimensions["B"].width = 15
+            ws.column_dimensions["C"].width = 60
+
+            # 회기
+            subject1 = ws.cell(row=4, column=1)    
+            subject1.value = "■ 회기"
+            subject1.font = Font(bold=True)
+            prd = ws.cell(row=4, column=2)    
+            prd.value = prd_selected
+
+            # 부서
+            subject2 = ws.cell(row=6, column=1)    
+            subject2.value = "■ 부서"
+            subject2.font = Font(bold=True)
+            dept = ws.cell(row=6, column=2)    
+            # dept.value = dept_cd
+            dept.value = dept_nm    # 부서명
+
+            # 총 인원(PO)
+            subject3 = ws.cell(row=8, column=1)    
+            subject3.value = "■ 총 인원(PO)"
+            subject3.font = Font(bold=True)
+            po = ws.cell(row=8, column=2)    
+            po.value = dept_po
+            po.alignment = Alignment(horizontal="left", vertical="center")  
+            note = ws.cell(row=8, column=3)    
+            note.value = "(직책자포함)"
+            note.font = Font(color="0000FF", size=9)
+
+            # 성과책임
+            subject4 = ws.cell(row=10, column=1)    
+            subject4.value = "■ 성과책임"
+            subject4.font = Font(bold=True)
+            RESP_START_ROW = 11
+            for i, r in df_resp.iterrows():
+                row_no = RESP_START_ROW+i
+                ws.row_dimensions[row_no].height = 40
+                resp_no = ws.cell(row=row_no, column=2)    
+                resp_no.value = "핵심목표 " + str(r['dept_resp_ordr'])
+                resp_no.border = BORDER_THIN_ALL
+                resp_no.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)  
+                resp_nm = ws.cell(row=row_no, column=3)    
+                resp_nm.value = r['dept_resp']
+                resp_nm.border = BORDER_THIN_ALL
+                resp_nm.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)  
+
+            # 제목
+            title = ws.cell(row=1, column=1)  
+            title.value = "직무기술서"
+            title.font = Font(color="0000FF", size=25, bold=True)
+            title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True) 
+            ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
+            ws.row_dimensions[1].height = 50
+
+            # Page Setup
+            ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
+            ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
+            ws.page_setup.paperSize = ws.PAPERSIZE_A4
+            ws.page_setup.fitToHeight = 0
+            ws.page_setup.fitToWidth = 1
+            ws.print_options.horizontalCentered = True
+
+            """
+            두번째 Sheet 부터 : 직무기술서 데이터 - 각 직무별로 시트 생성
+            """
+            SUBTITLE_ROW = 2
+            DATA_START_ROW = 5
+
+            df_dept_job.reset_index(inplace=True)
+
+            for i, r in df_dept_job.iterrows():
+                ws_data = wb.create_sheet(str(i), i+1)
+                
+                # 컬럼 너비 지정
+                ws_data.column_dimensions["A"].width = 20 
+                ws_data.column_dimensions["B"].width = 30 
+                ws_data.column_dimensions["C"].width = 40              
+                
+                # 서식 번호
+                tag = ws_data.cell(row=1, column=1)  
+                tag.value = "[별표 5]"        
+                tag.alignment = Alignment(horizontal="left", vertical="center") 
+                
+                # 서브제목
+                title = ws_data.cell(row=SUBTITLE_ROW, column=1)  
+                title.value = "직무기술서"
+                title.font = Font(size=20, bold=True)
+                title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True) 
+                ws_data.merge_cells(start_row=SUBTITLE_ROW, start_column=1, end_row=SUBTITLE_ROW, end_column=3)
+                ws_data.row_dimensions[SUBTITLE_ROW].height = 30
+                # 서브제목_Job Description
+                title_e = ws_data.cell(row=SUBTITLE_ROW+1, column=1)  
+                title_e.value = "Job Description"
+                title_e.alignment = Alignment(horizontal="center", vertical="center", wrapText=True) 
+                ws_data.merge_cells(start_row=SUBTITLE_ROW+1, start_column=1, end_row=SUBTITLE_ROW+1, end_column=3)
+                ws_data.row_dimensions[SUBTITLE_ROW+1].height = 15
+                
+                job_cd = r['job_cd']
+                
+                """ Section 1. 직무 기본 정보 """
+                section1_row = DATA_START_ROW
+                s1_title = ws_data.cell(row=section1_row, column=1)  
+                s1_title.value = "1. 직무 기본 정보"
+                s1_title.font = Font(color="0000FF", size=13, bold=True)
+                s1_title.alignment = Alignment(horizontal="left", vertical="center", wrapText=True) 
+                ws_data.row_dimensions[section1_row].height = 20
+
+                # 직무명, 직무 개요
+                idx = df_job_info[df_job_info.job_cd == job_cd].index[0]
+                job_nm, job_descrp = df_job_info.loc[idx][['job_nm', 'job_descrp']]
+                # 직무 수행자
+                idx = df_dept_job[df_dept_job.job_cd == job_cd].index[0]
+                job_by = df_dept_job.loc[idx]['job_by']
+
+                item1 = ws_data.cell(row=section1_row+1, column=1)
+                item1.value = "직무명(Job)"
+                item1.border = BORDER_THIN_ALL
+                item1.alignment = Alignment(horizontal="center", vertical="center")
+                item1.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
+
+                item1_d = ws_data.cell(row=section1_row+1, column=2)
+                item1_d.value = job_nm
+                item1_d.border = BORDER_THIN_ALL
+                item1_d.alignment = Alignment(horizontal="center", vertical="center")
+                ws_data.merge_cells(start_row=section1_row+1, start_column=2, end_row=section1_row+1, end_column=3)
+                    
+                item2 = ws_data.cell(row=section1_row+2, column=1)
+                item2.value = "조직"
+                item2.border = BORDER_THIN_ALL
+                item2.alignment = Alignment(horizontal="center", vertical="center")
+                item2.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
+                
+                item2_d = ws_data.cell(row=section1_row+2, column=2)
+                item2_d.value = dept_nm
+                item2_d.border = BORDER_THIN_ALL
+                item2_d.alignment = Alignment(horizontal="center", vertical="center")    
+                ws_data.merge_cells(start_row=section1_row+2, start_column=2, end_row=section1_row+2, end_column=3)
+
+                item3 = ws_data.cell(row=section1_row+3, column=1)
+                item3.value = "직무 수행자"
+                item3.border = BORDER_THIN_ALL
+                item3.alignment = Alignment(horizontal="center", vertical="center")
+                item3.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
+                
+                item3_d = ws_data.cell(row=section1_row+3, column=2)
+                item3_d.value = job_by
+                item3_d.border = BORDER_THIN_ALL
+                item3_d.alignment = Alignment(horizontal="center", vertical="center")    
+                ws_data.merge_cells(start_row=section1_row+3, start_column=2, end_row=section1_row+3, end_column=3)
+                
+                """ Section 2. 직무 개요 """
+                section2_row = section1_row + 5
+                s2_title = ws_data.cell(row=section2_row, column=1)  
+                s2_title.value = "2. 직무 개요"
+                s2_title.font = Font(color="0000FF", size=13, bold=True)
+                s2_title.alignment = Alignment(horizontal="left", vertical="center", wrapText=True) 
+                ws_data.row_dimensions[section2_row].height = 20
+
+                # 직무 개요
+                job_desc = ws_data.cell(row=section2_row+1, column=1)
+                job_desc.value = job_descrp
+                job_desc.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
+                job_desc.border = BORDER_THIN_ALL
+                ws_data.row_dimensions[section2_row+1].height = 40
+                ws_data.merge_cells(start_row=section2_row+1, start_column=1, end_row=section2_row+1, end_column=3)
+                    
+                """ Section 3. 직무 성과책임 """
+                section3_row = section2_row + 3
+                s3_title = ws_data.cell(row=section3_row, column=1)  
+                s3_title.value = "3. 직무 성과책임"
+                s3_title.font = Font(color="0000FF", size=13, bold=True)
+                s3_title.alignment = Alignment(horizontal="left", vertical="center", wrapText=True) 
+                ws_data.row_dimensions[section3_row].height = 20      
+                
+                # 직무 성과책임
+                df_job_resp_job_by = df_job_resp[df_job_resp.job_cd == job_cd].sort_values(by='job_resp_ordr')
+                cnt_job_resp = df_job_resp_job_by.shape[0]     # 직무 성과책임 개수
+                
+                if not df_job_resp_job_by.empty:
+                    df_job_resp_job_by.reset_index(inplace=True)
+                    for i, r in df_job_resp_job_by.iterrows():
+                        row_no = section3_row+i+1
+                        resp = ws_data.cell(row=row_no, column=1)
+                        resp.value = str(r['job_resp_ordr']) + ". " + r['job_resp']
+                        resp.alignment = Alignment(horizontal="left", vertical="center")
+                        resp.border = BORDER_THIN_ALL
+                        ws_data.merge_cells(start_row=row_no, start_column=1, end_row=row_no, end_column=3)
+                else:
+                    # NO DATA
+                    no_data = ws_data.cell(row=section3_row+1, column=1)
+                    no_data.value = "NO DATA"
+                    no_data.alignment = Alignment(horizontal="center", vertical="center")
+                    ws_data.merge_cells(start_row=section3_row+1, start_column=1, end_row=section3_row+1, end_column=3)
+                    cnt_job_resp = 1
+                
+                    
+                """ Section 4. 직무 내용 """
+                section4_row = section3_row + cnt_job_resp + 2  # 행 위치 가변적
+                s4_title = ws_data.cell(row=section4_row, column=1)  
+                s4_title.value = "4. 직무 내용"
+                s4_title.font = Font(color="0000FF", size=13, bold=True)
+                s4_title.alignment = Alignment(horizontal="left", vertical="center", wrapText=True) 
+                ws_data.row_dimensions[section4_row].height = 20    
+                            
+                # 직무-책무-과업-활동 Data
+                df_job_data = data[data.job_cd == job_cd]
+                cnt_job_data = df_job_data.shape[0]     # 활동 Data 개수
+
+                # 해당 직무의 세부 데이터: 1줄씩 데이터 추가
+                if not df_job_data.empty:
+                    # 데이터 표 헤더(컬럼명)
+                    header1 = ws_data.cell(row=section4_row+1, column=1)
+                    header1.value = "책무(Duty)"
+                    header1.border = BORDER_THIN_TOP_BOTTOM
+                    header1.alignment = Alignment(horizontal="center", vertical="center")
+                    header1.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
+                    header2 = ws_data.cell(row=section4_row+1, column=2)
+                    header2.value = "과업(Task)"
+                    header2.border = BORDER_THIN_TOP_BOTTOM
+                    header2.alignment = Alignment(horizontal="center", vertical="center")
+                    header2.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
+                    header3 = ws_data.cell(row=section4_row+1, column=3)
+                    header3.value = "활동(Activity)"
+                    header3.border = BORDER_THIN_TOP_BOTTOM
+                    header3.alignment = Alignment(horizontal="center", vertical="center")
+                    header3.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")        
+                    
+                    df_job_data.reset_index(inplace=True)
+                    prev_duty_nm = prev_task_nm = None
+                    for i, r in df_job_data.iterrows():
+                        row_no = section4_row+2+i
+                        # 책무
+                        duty_nm = ws_data.cell(row=row_no, column=1)
+                        if r['duty_nm'] == prev_duty_nm:  # 동일 데이터 반복 제거 
+                            duty_nm.value = ""
+                        else: 
+                            duty_nm.value = prev_duty_nm = r['duty_nm']   
+                            duty_nm.border = BORDER_THIN_UP
+                            duty_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)  
+                        # 과업
+                        task_nm = ws_data.cell(row=row_no, column=2)
+                        if r['task_nm'] == prev_task_nm:  # 동일 데이터 반복 제거 
+                            task_nm.value = ""
+                        else: 
+                            task_nm.value = prev_task_nm = r['task_nm']
+                            task_nm.border = BORDER_THIN_UP
+                            task_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                        # 활동
+                        act_nm = ws_data.cell(row=row_no, column=3)
+                        act_nm.value = r['act_nm']
+                        act_nm.border = BORDER_THIN_UP
+                        act_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
+                    # 마지막 Line
+                    ws_data.cell(row=section4_row+cnt_job_data+1, column=1).border = BORDER_THIN_BOTTOM
+                    ws_data.cell(row=section4_row+cnt_job_data+1, column=2).border = BORDER_THIN_BOTTOM
+                    ws_data.cell(row=section4_row+cnt_job_data+1, column=3).border = BORDER_THIN_BOTTOM        
+                else:
+                    # NO DATA
+                    no_data = ws_data.cell(row=section4_row+1, column=1)
+                    no_data.value = "NO DATA"
+                    no_data.alignment = Alignment(horizontal="center", vertical="center")
+                    ws_data.merge_cells(start_row=section4_row+1, start_column=1, end_row=section4_row+1, end_column=3)
+                    
+                """ 열 병합은 데이터 처리 후에 마지막에 진행 """
+                
+                # Page Setup
+                ws_data.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
+                ws_data.page_setup.orientation = ws.ORIENTATION_PORTRAIT
+                ws_data.page_setup.paperSize = ws.PAPERSIZE_A4
+                ws_data.page_setup.fitToHeight = 0
+                ws_data.page_setup.fitToWidth = 1
+                ws_data.print_options.horizontalCentered = True
+
+                # 년월일시분초
+                def nowstr():
+                    now = dt.datetime.now()
+                    nowstr = now.strftime("%Y%m%d%H%M%S")
+                    return nowstr
+
+                # 엑셀 파일이 저장될 위치
+                # file_root = "D:/PythonProject/job-mgr/output/"
+
+                """
+                엑셀 파일 저장
+                """
+                # 파일명은 full path로 지정
+                # excel_file = "dept_job_" + nowstr() + ".xlsx"
+                # excel_file_path = os.path.join(file_root, excel_file)
+                # wb.save(excel_file_path)
+
+                download_folder = str(Path.home() / "Downloads")
+                excel_file = "직무기술서_" + nowstr() + ".xlsx"
+                excel_file_path = os.path.join(download_folder, excel_file)
+                wb.save(excel_file_path)
+                wb.close() # 엑셀 파일 닫기    
+
+
+        # DB 다시 접근해서 json 생성
+        original_rows_show=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
+
+        data_list_show = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
+                    'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
+                    'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                    'work_grade': rows.work_grade_id, 'work_attrbt': rows.work_attrbt,
+                    'prfrm_tm_ann': rows.prfrm_tm_ann } for rows in original_rows_show]
+
+        df_show = pd.DataFrame(data_list_show)
+
+        # job_activity 접근
+        original_rows_show_2=JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
+        data_list_show_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
+                    'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq, 'act_prfrm_cnt' : rows.act_prfrm_cnt,
+                    'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
+                    'dept_rltd': rows.dept_rltd, 'final_rpt_to' : rows.final_rpt_to, 'rpt_nm': rows.rpt_nm,
+                    'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq} for rows in original_rows_show_2]
+
+        df_show_2 = pd.DataFrame(data_list_show_2)
+
+        df_show_3 = pd.merge(df_show, df_show_2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge
+
+        # job_nm 찾기
+        original_rows_show_2 = BsJob.objects.filter(prd_cd=prd_selected)
+        data_list_show_4 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_show_2]
+        df_show_4 = pd.DataFrame(data_list_show_4)
+
+        df_show_3 = pd.merge(df_show_3, df_show_4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+
+        # df3.to_excel('df3.xlsx')
+        df_json = df_show_3.to_json(orient='records')
+
+
+        context = {
+            'prd_selected' : prd_selected,
+            'title' : "직무 상세정보",
+            'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+            'dept_selected_key' : "former", # 부서 선택 후
+            'data' : df_json, # 데이터프레임을 JSON 형식으로 변환하여 전달
+        }
+
+        if dept_login == "DD06":
+            context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
+            context['dept_login_nm'] = dept_login_nm
+            context['dept_cd_selected'] = dept_cd_selected
+        else:
+            context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
+            context['dept_login_nm'] = dept_login_nm
+            context['dept_cd_selected'] = dept_login
+
+    return render(request, 'jobs/JB103.html', context)
 
 
 def JB103_test(request):
@@ -4398,10 +4779,10 @@ def JB102_4(request): # 직무 선택 후 직무 성과책임 조회 / 저장, �
 
             elif action == 'action3': #action이 추가버튼 눌렀을 때(추가) - 직무 선택란 보여주기
 
-                if job_type == "unique":
-                    job_new_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유")
+                if job_type == "unique": # 고유 직무 선택, 직무명 순으로 나열
+                    job_new_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유").order_by('job_nm')
                 elif job_type == "common":
-                    job_new_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통")
+                    job_new_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통").order_by('job_nm')
 
                 context = {
                     'title' : '직무 기본정보', # 제목
@@ -6626,7 +7007,7 @@ def copy_period_data(period_old, period_new):
     pwd='cdh0706**' #비밀번호
     db_host='130.1.112.100' #호스트명/IP
     db_port=3306 #포트번호 (고정값)
-    db_name="betadb" #사용할 데이터베이스 testdb
+    db_name="testdb" #사용할 데이터베이스 testdb
 
     dict_table = { # 테이블 목록
         'bs_prd' : '회기',
@@ -6702,7 +7083,7 @@ def delete_period_data(period):
     pwd='cdh0706**' #비밀번호
     db_host='130.1.112.100' #호스트명/IP
     db_port=3306 #포트번호 (고정값)
-    db_name="betadb" #사용할 데이터베이스 testdb
+    db_name="testdb" #사용할 데이터베이스 testdb
 
     dict_table = { # 테이블 목록
         'job_spcfc' : '직무명세서',
@@ -6763,7 +7144,7 @@ def delete_period_data(period):
 
 
 def get_dept_code(user_id):
-    prd_cd_id = "2023A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
+    prd_cd_id = "2022A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
     try:
         account = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id)
         return account.dept_cd_id
