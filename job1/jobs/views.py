@@ -1099,7 +1099,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             host='130.1.112.100',
             user='cdh',
             password='cdh0706**',
-            db='testdb',
+            db='betadb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )

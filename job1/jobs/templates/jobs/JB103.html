@@ -48,7 +48,7 @@
                     </p>
                 </form>
                 </div>
-                <div style="padding-left:920px">
+                <div style="padding-left:900px">
                 <form action = {% url 'JB103_4' %} method="POST" id="JB103_4">
                     {% csrf_token %}
                     <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
@@ -344,17 +344,10 @@
                         if (uniqueDuties.length <= 1) {
                             alert("최소 하나의 책무가 있어야 합니다.");
                         } else {
-                            // var isSelectedDuty = document.querySelector('input[name="duty"]:checked')?.value === duty;
                             jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
                             dutyDiv.removeChild(container); // 해당 책무 컨테이너를 삭제
                             updateDutySequence(selectedJob); // 순서 업데이트
-
-                            // if (isSelectedDuty) {
-                            //     taskDiv.innerHTML = ''; // 과업 목록 초기화
-                            //     activityDiv.innerHTML = ''; // 활동 목록 초기화
-                            // }
-                        
-                        }                        
+                        }
                     }
                 };
                 
