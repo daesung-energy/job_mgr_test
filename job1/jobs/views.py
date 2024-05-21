@@ -7176,68 +7176,129 @@ def copy_period_data(period_old, period_new):
 
 
 
+# def delete_period_data(period):
+
+#     # 데이터베이스 연결 파라미터
+#     user_id='cdh' #사용자 이름
+#     pwd='cdh0706**' #비밀번호
+#     db_host='130.1.112.100' #호스트명/IP
+#     db_port=3306 #포트번호 (고정값)
+#     db_name="betadb" #사용할 데이터베이스 betadb
+
+#     dict_table = { # 테이블 목록
+#         'job_spcfc' : '직무명세서',
+#         'job_activity' : '직무 상세_활동',
+#         'job_task' : '직무 상세_과업',
+#         'bs_job_dept' : '부서별 직무',
+#         'bs_job_resp' : '직무 성과책임',
+#         'bs_job' : '직무 리스트',
+#         'bs_acnt' : '계정',
+#         'bs_mbr_grp' : '부서원 그룹',
+#         'bs_mbr_grp_nm' : '부서원 그룹명',
+#         'bs_ttl_cnt' : '직책별 부서원수',
+#         'bs_mbr' : '부서원',
+#         'bs_dept_grp' : '부서 그룹',
+#         'bs_dept_grp_domain' : '부서 그룹 도메인',
+#         'bs_dept_resp' : '부서 성과책임',
+#         'bs_dept' : '부서',
+#         'bs_pos_grade' : '업무 등급별 직위',
+#         'bs_pos_list' : '직위 리스트',
+#         'bs_ttl_list' : '직책 리스트',
+#         'bs_work_grade' : '업무 등급',
+#         'bs_wl_ov_sht' : '업무량과부족 산정 기준',
+#         'bs_std_wrk_tm' : '표준근무시간',
+#         'bs_prd' : '회기'
+#     }
+
+#     messages = []  # 메시지를 수집할 리스트
+
+#     conn = pymysql.connect(host=db_host, user=user_id, password=pwd, db=db_name, charset='utf8')
+#     cursor = conn.cursor() #커서 생성
+#     messages.append(f"{period} 회기 정보를 삭제합니다\n")
+#     result = None
+#     for key, value in dict_table.items():
+#         try:
+#             # key : table name
+#             sql_str = "delete from "+ key + " where prd_cd = '" + period + "'"
+#             cursor.execute(sql_str)
+#             conn.commit()
+#             result = True
+#             # print("{!r:20s} : [{}] 정보가 삭제되었습니다.".format(key, value))
+#             string = value + " 정보가 삭제되었습니다"
+#             messages.append(string)
+
+#         except Exception:
+#             result = False
+#             messages.append("... 삭제 오류. 삭제를 중단합니다.")
+#             err_msg = traceback.format_exc()
+#             messages.append(err_msg)
+#             break
+
+#     conn.close()
+    
+#     if result == True:
+
+#         messages.append(f"\n{period} 회기 정보 삭제가 완료되었습니다.")
+
+#     return messages
 def delete_period_data(period):
-
     # 데이터베이스 연결 파라미터
-    user_id='cdh' #사용자 이름
-    pwd='cdh0706**' #비밀번호
-    db_host='130.1.112.100' #호스트명/IP
-    db_port=3306 #포트번호 (고정값)
-    db_name="betadb" #사용할 데이터베이스 betadb
+    user_id = 'cdh'  # 사용자 이름
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
+    db_port = 3306  # 포트번호 (고정값)
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
-    dict_table = { # 테이블 목록
-        'job_spcfc' : '직무명세서',
-        'job_activity' : '직무 상세_활동',
-        'job_task' : '직무 상세_과업',
-        'bs_job_dept' : '부서별 직무',
-        'bs_job_resp' : '직무 성과책임',
-        'bs_job' : '직무 리스트',
-        'bs_acnt' : '계정',
-        'bs_mbr_grp' : '부서원 그룹',
-        'bs_mbr_grp_nm' : '부서원 그룹명',
-        'bs_ttl_cnt' : '직책별 부서원수',
-        'bs_mbr' : '부서원',
-        'bs_dept_grp' : '부서 그룹',
-        'bs_dept_grp_domain' : '부서 그룹 도메인',
-        'bs_dept_resp' : '부서 성과책임',
-        'bs_dept' : '부서',
-        'bs_pos_grade' : '업무 등급별 직위',
-        'bs_pos_list' : '직위 리스트',
-        'bs_ttl_list' : '직책 리스트',
-        'bs_work_grade' : '업무 등급',
-        'bs_wl_ov_sht' : '업무량과부족 산정 기준',
-        'bs_std_wrk_tm' : '표준근무시간',
-        'bs_prd' : '회기'
+    dict_table = {  # 테이블 목록
+        'job_spcfc': '직무명세서',
+        'job_activity': '직무 상세_활동',
+        'job_task': '직무 상세_과업',
+        'bs_job_dept': '부서별 직무',
+        'bs_job_resp': '직무 성과책임',
+        'bs_job': '직무 리스트',
+        'bs_acnt': '계정',
+        'bs_mbr_grp': '부서원 그룹',
+        'bs_mbr_grp_nm': '부서원 그룹명',
+        'bs_ttl_cnt': '직책별 부서원수',
+        'bs_mbr': '부서원',
+        'bs_dept_grp': '부서 그룹',
+        'bs_dept_grp_domain': '부서 그룹 도메인',
+        'bs_dept_resp': '부서 성과책임',
+        'bs_dept': '부서',
+        'bs_pos_grade': '업무 등급별 직위',
+        'bs_pos_list': '직위 리스트',
+        'bs_ttl_list': '직책 리스트',
+        'bs_work_grade': '업무 등급',
+        'bs_wl_ov_sht': '업무량과부족 산정 기준',
+        'bs_std_wrk_tm': '표준근무시간',
+        'bs_prd': '회기'
     }
 
-    messages = []  # 메시지를 수집할 리스트
+    conn = pymysql.connect(host=db_host, user=user_id, password=pwd, db=db_name, charset='utf8mb4')
+    cursor = conn.cursor()
 
-    conn = pymysql.connect(host=db_host, user=user_id, password=pwd, db=db_name, charset='utf8')
-    cursor = conn.cursor() #커서 생성
+    messages = []  # 메시지를 수집할 리스트
     messages.append(f"{period} 회기 정보를 삭제합니다\n")
     result = None
     for key, value in dict_table.items():
         try:
-            # key : table name
-            sql_str = "delete from "+ key + " where prd_cd = '" + period + "'"
-            cursor.execute(sql_str)
+            sql_str = f"DELETE FROM {key} WHERE prd_cd = %s"
+            cursor.execute(sql_str, (period,))
             conn.commit()
             result = True
-            # print("{!r:20s} : [{}] 정보가 삭제되었습니다.".format(key, value))
-            string = value + " 정보가 삭제되었습니다"
-            messages.append(string)
+            messages.append(f"{value} 정보가 삭제되었습니다")
 
-        except Exception:
+        except Exception as e:
+            conn.rollback()
             result = False
             messages.append("... 삭제 오류. 삭제를 중단합니다.")
-            err_msg = traceback.format_exc()
-            messages.append(err_msg)
+            messages.append(traceback.format_exc())
             break
 
+    cursor.close()
     conn.close()
-    
-    if result == True:
 
+    if result:
         messages.append(f"\n{period} 회기 정보 삭제가 완료되었습니다.")
 
     return messages
