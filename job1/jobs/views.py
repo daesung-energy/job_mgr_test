@@ -7305,7 +7305,7 @@ def delete_period_data(period):
 
 
 def get_dept_code(user_id):
-    prd_cd_id = "2022A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
+    prd_cd_id = "2023A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
     try:
         account = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id)
         return account.dept_cd_id
