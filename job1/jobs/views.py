@@ -7026,80 +7026,154 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
     return result
 
 
+# def copy_period_data(period_old, period_new):
+
+#     # 데이터베이스 연결 파라미터
+#     user_id='cdh' #사용자 이름
+#     pwd='cdh0706**' #비밀번호
+#     db_host='130.1.112.100' #호스트명/IP
+#     db_port=3306 #포트번호 (고정값)
+#     db_name="betadb" #사용할 데이터베이스 betadb
+
+#     dict_table = { # 테이블 목록
+#         'bs_prd' : '회기',
+#         'bs_std_wrk_tm' : '표준근무시간',
+#         'bs_wl_ov_sht' : '업무량과부족 산정 기준',
+#         'bs_work_grade' : '업무 등급',
+#         'bs_ttl_list' : '직책 리스트',
+#         'bs_pos_list' : '직위 리스트',
+#         'bs_pos_grade' : '업무 등급별 직위',
+#         'bs_dept' : '부서',
+#         'bs_dept_resp' : '부서 성과책임',
+#         'bs_dept_grp_domain' : '부서 그룹 도메인',
+#         'bs_dept_grp' : '부서 그룹',
+#         'bs_mbr' : '부서원',
+#         'bs_ttl_cnt' : '직책별 부서원수',
+#         'bs_mbr_grp_nm' : '부서원 그룹명',
+#         'bs_mbr_grp' : '부서원 그룹',
+#         'bs_acnt' : '계정',
+#         'bs_job' : '직무 리스트',
+#         'bs_job_resp' : '직무 성과책임',
+#         'bs_job_dept' : '부서별 직무',
+#         'job_task' : '직무 상세_과업',
+#         'job_activity' : '직무 상세_활동',
+#         'job_spcfc' : '직무명세서'
+#     }
+
+#     engine = create_engine("mysql://{user}:{pw}@{host}/{db}".format(user=user_id, pw=pwd, host=db_host, db=db_name)) #엔진 생성
+
+#     messages = []  # 메시지를 수집할 리스트
+#     # print(f"{period_old} 회기 정보를 {period_new} 회기 정보로 복제를 시작합니다\n")
+#     messages.append(f"{period_old} 회기 정보를 {period_new} 회기 정보로 복제합니다\n")
+
+#     result = None
+#     for key, value in dict_table.items():
+#         # key : table name
+#         # print("{!r:20s} : [{}] 정보를 복제합니다.".format(key, value), end="\t")
+#         sql_str = "select * from "+ key + " where prd_cd = '" + period_old + "'"
+#         df_data = pd.read_sql(sql=sql_str, con=engine)
+#         df_data['prd_cd'] = period_new
+#         try:
+#             # if_exists = 'append' : 테이블이 존재하면 데이터만을 추가한다.
+#             # index = False : 데이터프레임의 인덱스를 데이터로 생성하지 않는다.
+#             df_data.to_sql(name=key, con=engine, schema=None, if_exists='append', index=False, index_label=None, chunksize=None, dtype=None)
+#             result = True
+#             # print("... 복제 완료")
+#             string = value + " 정보 복제 완료"
+#             messages.append(string)
+#             # messages.append("... 복제 완료")
+
+#         except Exception:
+#             result = False
+#             string = value + " 정보 복제 오류"
+#             messages.append(string)
+#             # print("... 복제 오류. 복제를 중단합니다.")
+#             err_msg = traceback.format_exc()
+#             messages.append(err_msg)
+#             # print(err_msg)
+#             break
+
+#     # conn.close() #콘솔 종료
+
+#     if result == True:
+#         # print(f"\n{period_new} 회기 정보가 생성 완료되었습니다.")
+#         messages.append(f"\n{period_new} 회기 정보가 생성 완료되었습니다.")
+    
+#     return messages
 def copy_period_data(period_old, period_new):
-
     # 데이터베이스 연결 파라미터
-    user_id='cdh' #사용자 이름
-    pwd='cdh0706**' #비밀번호
-    db_host='130.1.112.100' #호스트명/IP
-    db_port=3306 #포트번호 (고정값)
-    db_name="betadb" #사용할 데이터베이스 betadb
+    user_id = 'cdh'  # 사용자 이름
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
+    db_port = 3306  # 포트번호 (고정값)
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
-    dict_table = { # 테이블 목록
-        'bs_prd' : '회기',
-        'bs_std_wrk_tm' : '표준근무시간',
-        'bs_wl_ov_sht' : '업무량과부족 산정 기준',
-        'bs_work_grade' : '업무 등급',
-        'bs_ttl_list' : '직책 리스트',
-        'bs_pos_list' : '직위 리스트',
-        'bs_pos_grade' : '업무 등급별 직위',
-        'bs_dept' : '부서',
-        'bs_dept_resp' : '부서 성과책임',
-        'bs_dept_grp_domain' : '부서 그룹 도메인',
-        'bs_dept_grp' : '부서 그룹',
-        'bs_mbr' : '부서원',
-        'bs_ttl_cnt' : '직책별 부서원수',
-        'bs_mbr_grp_nm' : '부서원 그룹명',
-        'bs_mbr_grp' : '부서원 그룹',
-        'bs_acnt' : '계정',
-        'bs_job' : '직무 리스트',
-        'bs_job_resp' : '직무 성과책임',
-        'bs_job_dept' : '부서별 직무',
-        'job_task' : '직무 상세_과업',
-        'job_activity' : '직무 상세_활동',
-        'job_spcfc' : '직무명세서'
+    dict_table = {  # 테이블 목록
+        'bs_prd': '회기',
+        'bs_std_wrk_tm': '표준근무시간',
+        'bs_wl_ov_sht': '업무량과부족 산정 기준',
+        'bs_work_grade': '업무 등급',
+        'bs_ttl_list': '직책 리스트',
+        'bs_pos_list': '직위 리스트',
+        'bs_pos_grade': '업무 등급별 직위',
+        'bs_dept': '부서',
+        'bs_dept_resp': '부서 성과책임',
+        'bs_dept_grp_domain': '부서 그룹 도메인',
+        'bs_dept_grp': '부서 그룹',
+        'bs_mbr': '부서원',
+        'bs_ttl_cnt': '직책별 부서원수',
+        'bs_mbr_grp_nm': '부서원 그룹명',
+        'bs_mbr_grp': '부서원 그룹',
+        'bs_acnt': '계정',
+        'bs_job': '직무 리스트',
+        'bs_job_resp': '직무 성과책임',
+        'bs_job_dept': '부서별 직무',
+        'job_task': '직무 상세_과업',
+        'job_activity': '직무 상세_활동',
+        'job_spcfc': '직무명세서'
     }
 
-    engine = create_engine("mysql://{user}:{pw}@{host}/{db}".format(user=user_id, pw=pwd, host=db_host, db=db_name)) #엔진 생성
+    conn = pymysql.connect(host=db_host, user=user_id, password=pwd, db=db_name, charset='utf8mb4')
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     messages = []  # 메시지를 수집할 리스트
-    # print(f"{period_old} 회기 정보를 {period_new} 회기 정보로 복제를 시작합니다\n")
     messages.append(f"{period_old} 회기 정보를 {period_new} 회기 정보로 복제합니다\n")
 
     result = None
     for key, value in dict_table.items():
-        # key : table name
-        # print("{!r:20s} : [{}] 정보를 복제합니다.".format(key, value), end="\t")
-        sql_str = "select * from "+ key + " where prd_cd = '" + period_old + "'"
-        df_data = pd.read_sql(sql=sql_str, con=engine)
-        df_data['prd_cd'] = period_new
         try:
-            # if_exists = 'append' : 테이블이 존재하면 데이터만을 추가한다.
-            # index = False : 데이터프레임의 인덱스를 데이터로 생성하지 않는다.
-            df_data.to_sql(name=key, con=engine, schema=None, if_exists='append', index=False, index_label=None, chunksize=None, dtype=None)
-            result = True
-            # print("... 복제 완료")
-            string = value + " 정보 복제 완료"
-            messages.append(string)
-            # messages.append("... 복제 완료")
+            # 데이터 선택
+            sql_str = f"SELECT * FROM {key} WHERE prd_cd = %s"
+            cursor.execute(sql_str, (period_old,))
+            rows = cursor.fetchall()
 
-        except Exception:
+            # 데이터 삽입
+            for row in rows:
+                row['prd_cd'] = period_new
+                columns = ', '.join(row.keys())
+                placeholders = ', '.join(['%s'] * len(row))
+                insert_sql = f"INSERT INTO {key} ({columns}) VALUES ({placeholders})"
+                cursor.execute(insert_sql, tuple(row.values()))
+            
+            conn.commit()
+            result = True
+            messages.append(f"{value} 정보 복제 완료")
+
+        except Exception as e:
+            conn.rollback()
             result = False
-            string = value + " 정보 복제 오류"
-            messages.append(string)
-            # print("... 복제 오류. 복제를 중단합니다.")
-            err_msg = traceback.format_exc()
-            messages.append(err_msg)
-            # print(err_msg)
+            messages.append(f"{value} 정보 복제 오류")
+            messages.append(traceback.format_exc())
             break
 
-    # conn.close() #콘솔 종료
+    cursor.close()
+    conn.close()
 
-    if result == True:
-        # print(f"\n{period_new} 회기 정보가 생성 완료되었습니다.")
+    if result:
         messages.append(f"\n{period_new} 회기 정보가 생성 완료되었습니다.")
-    
+
     return messages
+
 
 
 def delete_period_data(period):
