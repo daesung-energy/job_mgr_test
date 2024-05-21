@@ -1161,7 +1161,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
         # 데이터 순서대로 정렬: 직무-책무-과업-활동
         data.sort_values(by=['job_seq_right', 'duty_seq_right', 'task_seq_right', 'act_seq'], inplace=True)
         # NaN을 None으로 변환
-        data = data.replace({np.nan: None}) 
+        data = data.replace({np.nan: None})
         # 인덱스 초기화
         data.reset_index(inplace=True)
         assert df2.shape[0] == data.shape[0]    # 전체 데이터 건수가 df2 데이터 건수와 같아야 정상
@@ -1323,6 +1323,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
             # 1줄씩 데이터 추가
             prev_job_nm = prev_duty_nm = prev_task_nm = None
+
             for i, r in data.iterrows():
                 row_no = DATA_START_ROW+i
                 # 직무명
@@ -1445,29 +1446,15 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             # 년월일시분초
             def nowstr():
                 now = dt.datetime.now()
-                nowstr = now.strftime("%Y%m%d%H%M%S")
+                nowstr = now.strftime("%Y%m%d")
                 return nowstr
-
-            # 엑셀 파일이 저장될 위치
-            # file_root = "D:/PythonProject/job-mgr/output/"
 
             """
             엑셀 파일 저장
             """
-            # 파일명은 full path로 지정
-            # excel_file = "dept_job_" + nowstr() + ".xlsx"
-            # excel_file_path = os.path.join(file_root, excel_file)
-            # wb.save(excel_file_path)
-
-            # download_folder = str(Path.home() / "Downloads")
-            # excel_file = "직무현황표_" + nowstr() + ".xlsx"
-            # excel_file_path = os.path.join(download_folder, excel_file)
-            # wb.save(excel_file_path)
-            # wb.close() # 엑셀 파일 닫기
-
             # 엑셀 파일을 BytesIO 객체에 저장
             excel_buffer = BytesIO()
-            excel_file = "직무현황표_" + nowstr() + ".xlsx"
+            excel_file = f"직무현황표_{nowstr()}_{prd_selected}_{dept_nm}.xlsx"
             wb.save(excel_buffer)
             wb.close()
             excel_buffer.seek(0)
@@ -1476,13 +1463,6 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
             # HttpResponse로 파일 전송
             response = HttpResponse(excel_buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            # response['Content-Disposition'] = f'attachment; filename={excel_file}'
-            
-            # filename_header = f"filename*=UTF-8''{excel_file}"
-            # response['Content-Disposition'] = f'attachment; {filename_header}'
-
-            # response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{excel_file.encode("utf-8").decode("latin1")}'
-
             response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
             
             return response
@@ -1577,8 +1557,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             DATA_START_ROW = 5
 
             df_dept_job.reset_index(inplace=True)
+            # print(df_dept_job)
 
             for i, r in df_dept_job.iterrows():
+                # print(i)
                 ws_data = wb.create_sheet(str(i), i+1)
                 
                 # 컬럼 너비 지정
@@ -1773,56 +1755,56 @@ def JB103_4(request): # 직무 현황표, 기술서 print
                     
                 """ 열 병합은 데이터 처리 후에 마지막에 진행 """
                 
-                # Page Setup
-                ws_data.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
-                ws_data.page_setup.orientation = ws.ORIENTATION_PORTRAIT
-                ws_data.page_setup.paperSize = ws.PAPERSIZE_A4
-                ws_data.page_setup.fitToHeight = 0
-                ws_data.page_setup.fitToWidth = 1
-                ws_data.print_options.horizontalCentered = True
+            # Page Setup
+            ws_data.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
+            ws_data.page_setup.orientation = ws.ORIENTATION_PORTRAIT
+            ws_data.page_setup.paperSize = ws.PAPERSIZE_A4
+            ws_data.page_setup.fitToHeight = 0
+            ws_data.page_setup.fitToWidth = 1
+            ws_data.print_options.horizontalCentered = True
 
-                # 년월일시분초
-                def nowstr():
-                    now = dt.datetime.now()
-                    nowstr = now.strftime("%Y%m%d%H%M%S")
-                    return nowstr
+            # 년월일시분초
+            def nowstr():
+                now = dt.datetime.now()
+                nowstr = now.strftime("%Y%m%d")
+                return nowstr
 
-                # 엑셀 파일이 저장될 위치
-                # file_root = "D:/PythonProject/job-mgr/output/"
+            # 엑셀 파일이 저장될 위치
+            # file_root = "D:/PythonProject/job-mgr/output/"
 
-                """
-                엑셀 파일 저장
-                """
-                # 파일명은 full path로 지정
-                # excel_file = "dept_job_" + nowstr() + ".xlsx"
-                # excel_file_path = os.path.join(file_root, excel_file)
-                # wb.save(excel_file_path)
+            """
+            엑셀 파일 저장
+            """
+            # 파일명은 full path로 지정
+            # excel_file = "dept_job_" + nowstr() + ".xlsx"
+            # excel_file_path = os.path.join(file_root, excel_file)
+            # wb.save(excel_file_path)
 
-                # download_folder = str(Path.home() / "Downloads")
-                # excel_file = "직무기술서_" + nowstr() + ".xlsx"
-                # excel_file_path = os.path.join(download_folder, excel_file)
-                # wb.save(excel_file_path)
-                # wb.close() # 엑셀 파일 닫기
+            # download_folder = str(Path.home() / "Downloads")
+            # excel_file = "직무기술서_" + nowstr() + ".xlsx"
+            # excel_file_path = os.path.join(download_folder, excel_file)
+            # wb.save(excel_file_path)
+            # wb.close() # 엑셀 파일 닫기
 
-                # 엑셀 파일을 BytesIO 객체에 저장
-                excel_buffer = BytesIO()
-                excel_file = "직무기술서_" + nowstr() + ".xlsx"
-                wb.save(excel_buffer)
-                wb.close()
-                excel_buffer.seek(0)
+            # 엑셀 파일을 BytesIO 객체에 저장
+            excel_buffer = BytesIO()
+            excel_file = f"직무기술서_{nowstr()}_{prd_selected}_{dept_nm}.xlsx"
+            wb.save(excel_buffer)
+            wb.close()
+            excel_buffer.seek(0)
 
-                encoded_filename = urllib.parse.quote(excel_file)
+            encoded_filename = urllib.parse.quote(excel_file)
 
-                # HttpResponse로 파일 전송
-                response = HttpResponse(excel_buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                # response['Content-Disposition'] = f'attachment; filename={excel_file}'
+            # HttpResponse로 파일 전송
+            response = HttpResponse(excel_buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            # response['Content-Disposition'] = f'attachment; filename={excel_file}'
 
-                # filename_header = f"filename*=UTF-8''{excel_file}"
-                # response['Content-Disposition'] = f'attachment; {filename_header}'
-                # response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{excel_file.encode("utf-8").decode("latin1")}'
-                response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-                
-                return response
+            # filename_header = f"filename*=UTF-8''{excel_file}"
+            # response['Content-Disposition'] = f'attachment; {filename_header}'
+            # response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{excel_file.encode("utf-8").decode("latin1")}'
+            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
+            
+            return response
 
 
         # DB 다시 접근해서 json 생성
@@ -2090,7 +2072,7 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
 
         action = request.POST['action']
 
-        if action == 'action1':
+        if action == 'action1': # 회기 생성
             period_old = request.POST['prd_cd'] # 복사 대상 회기
 
             # 마지막 회기만 복사할 수 있음
@@ -2138,7 +2120,7 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
                 'modified' : 'y' # 회기 복사나 삭제 작업을 했다는 키값(메시지용) 
             }
 
-        elif action == 'action2':
+        elif action == 'action2': # 회기 삭제
 
             period_del = request.POST['prd_cd'] # 삭제 대상 회기
 
