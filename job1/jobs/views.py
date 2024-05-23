@@ -629,7 +629,7 @@ def JB103(request): # JB103페이지의 초기화면
 
     df2 = pd.DataFrame(data_list_2)
 
-    df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge
+    df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge, 순서는 job_seq, duty_seq, task_seq, act_seq 순
 
     # job_nm 찾기
     original_rows_3 = BsJob.objects.filter(prd_cd=last_prd_cd)
@@ -1074,8 +1074,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
         return HttpResponse("Invalid request", status=400)
 
 
-
-# 추가한 부분################################################################################################################################
+# 직무기술서, 현황표를 위해 추가한 부분###################################################################
 from openpyxl import Workbook
 from openpyxl.styles import Font, Border, Side, PatternFill, Alignment
 from openpyxl.worksheet.properties import PageSetupProperties
@@ -1146,6 +1145,11 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         query = f"SELECT * FROM bs_job_resp WHERE prd_cd = '{prd_selected}'"
         df_job_resp = get_data(conn, query)
+
+        # JobTask 테이블을 참고하여 df_dept_job의 순서를 JobTask테이블의 job_seq에 맞춤
+        # 해당 회기의 해당 부서의 JobTask테이블 가져옴
+        query = f"SELECT * FROM job_task WHERE prd_cd = '{prd_selected}' AND dept_cd = '{dept_cd_selected}'"
+        df_job_task = get_data(conn, query)
        
         # 데이터베이스 연결 닫기
         conn.close()
@@ -1169,8 +1173,8 @@ def JB103_4(request): # 직무 현황표, 기술서 print
         dept_nm = df_dept.loc[0].dept_nm
         dept_po = df_dept.loc[0].dept_po
 
-        if action == "action1": # 엑셀 다운로드 버튼을 눌렀을 때
-
+        if action == "action1": # 직무 현황표 버튼 눌렀을 때
+            
             wb = Workbook()
 
             # 테두리 적용
@@ -1469,7 +1473,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # wb.save('직무기술서.xlsx')
 
-        if action == "action2": # 엑셀 다운로드 버튼을 눌렀을 때
+        if action == "action2": # 직무 기술서 버튼 눌렀을 때
 
             wb = Workbook()
 
@@ -1556,8 +1560,18 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             SUBTITLE_ROW = 2
             DATA_START_ROW = 5
 
-            df_dept_job.reset_index(inplace=True)
-            # print(df_dept_job)
+            # job_cd 중복되는 줄 지움
+            df_job_task.drop_duplicates(subset=['job_cd'], keep='first', inplace=True)
+
+            # df_dept_job의 순서를 df_job_task의 job_seq에 맞춤
+            for i, r in df_job_task.iterrows():
+                job_cd = r['job_cd']
+                idx = df_dept_job[df_dept_job.job_cd == job_cd].index[0]
+                df_dept_job.loc[idx, 'job_seq'] = r['job_seq']
+
+            df_dept_job.sort_values(by=['job_seq'], inplace=True)
+            
+            df_dept_job.reset_index(inplace=True) # 인덱스 초기화
 
             for i, r in df_dept_job.iterrows():
                 # print(i)
@@ -1570,7 +1584,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
                 
                 # 서식 번호
                 tag = ws_data.cell(row=1, column=1)  
-                tag.value = "[별표 5]"        
+                tag.value = "[별표 5]"
                 tag.alignment = Alignment(horizontal="left", vertical="center") 
                 
                 # 서브제목
@@ -1591,7 +1605,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
                 
                 """ Section 1. 직무 기본 정보 """
                 section1_row = DATA_START_ROW
-                s1_title = ws_data.cell(row=section1_row, column=1)  
+                s1_title = ws_data.cell(row=section1_row, column=1)
                 s1_title.value = "1. 직무 기본 정보"
                 s1_title.font = Font(color="0000FF", size=13, bold=True)
                 s1_title.alignment = Alignment(horizontal="left", vertical="center", wrapText=True) 
@@ -2001,7 +2015,7 @@ def JB103_grid(request): # 직무정보 조회 초기화면
     data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
                 'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
                 'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                'rpt_nm': rows.rpt_nm} for rows in original_rows_2]
+                'rpt_nm': rows.rpt_nm, 'job_seq':rows.job_seq, 'duty_seq':rows.duty_seq, 'task_seq':rows.task_seq, 'act_seq':rows.act_seq } for rows in original_rows_2]
 
     df2 = pd.DataFrame(data_list_2)
 
@@ -2020,6 +2034,9 @@ def JB103_grid(request): # 직무정보 조회 초기화면
 
         # job_cd 열 삭제
         df3.drop('job_cd', axis=1, inplace=True)
+        
+        # job_seq, duty_seq, task_seq, act_seq 순으로 정렬
+        df3 = df3.sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq'])
 
         # 데이터프레임을 JSON 형식으로 변환하여 전달
         df_json = df3.to_json(orient='records')
@@ -3899,7 +3916,7 @@ def CC102_c(request): ## 공통코드 관리 수정
     return render(request, 'jobs/CC102.html', context)
 
 
-def jb101_1(request): #JB101에서 회기를 선택한 후 탭을 선택했을 때.
+def jb101_1(request): #JB101에서 회기를 선택한 후 탭을 선택했을 때. 바로 탭 선택에 대한 결과를 띄워줌
 
     context = {}
     
@@ -3937,14 +3954,11 @@ def jb101_1(request): #JB101에서 회기를 선택한 후 탭을 선택했을 �
         if span_name == 'span1':
             context['tab'] = "tab1"
 
+            # 부서 성과책임 리스트를 가져옴
             rows = BsDeptResp.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=dept_login)
-            # 세 개의 입력란을 유지하기 위한 추가 입력란 계산
-            extra_inputs = 3 - len(rows) if len(rows) < 3 else 0
-            range_extra_inputs = range(extra_inputs)  # 템플릿에서 순회하기 위한 range 객체
 
             context.update({
                 'dept_resp_list' : rows,
-                'range' : range_extra_inputs,
                 'dept_selected': dept_login,
                 'activate': 'yes', # 버튼 컨트롤 on
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn
@@ -4047,8 +4061,6 @@ def jb101_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
         
         tab = request.POST['tab']  # 탭 정보
 
-        # if dept_selected == dept_login:
-        #     dept_selected = dept_login
 
         # 공통 context 설정
         context = {
@@ -4068,12 +4080,8 @@ def jb101_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
 
             rows = BsDeptResp.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=dept_selected)
 
-            # 세 개의 입력란을 유지하기 위한 추가 입력란 계산
-            extra_inputs = 3 - len(rows) if len(rows) < 3 else 0
-            range_extra_inputs = range(extra_inputs)  # 템플릿에서 순회하기 위한 range 객체
             context.update({
                 'dept_resp_list' : rows,
-                'range' : range_extra_inputs
             })
 
         elif tab == "tab2": # 부서원 탭 선택한 상태일 시 - 부서원 목록 표시
@@ -6368,7 +6376,7 @@ def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
             data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
                         'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
                         'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                        'rpt_nm': rows.rpt_nm} for rows in original_rows_2]
+                        'rpt_nm': rows.rpt_nm, 'job_seq':rows.job_seq, 'duty_seq':rows.duty_seq, 'task_seq':rows.task_seq, 'act_seq':rows.act_seq } for rows in original_rows_2]
 
             df2 = pd.DataFrame(data_list_2)
 
@@ -6387,6 +6395,9 @@ def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
 
                 # job_cd 열 삭제
                 df3.drop('job_cd', axis=1, inplace=True)
+
+                # job_seq, duty_seq, task_seq, act_seq 순으로 정렬
+                df3 = df3.sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq'])
 
                 # 데이터프레임을 JSON 형식으로 변환하여 전달
                 df_json = df3.to_json(orient='records')
@@ -6477,7 +6488,7 @@ def JB103_grid_2(request): # 부서 선택 후 조회 화면(경영기획팀만 
         data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
                     'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
                     'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                    'rpt_nm': rows.rpt_nm} for rows in original_rows_2]
+                    'rpt_nm': rows.rpt_nm, 'job_seq':rows.job_seq, 'duty_seq':rows.duty_seq, 'task_seq':rows.task_seq, 'act_seq':rows.act_seq } for rows in original_rows_2]
 
         df2 = pd.DataFrame(data_list_2)
 
@@ -6496,6 +6507,9 @@ def JB103_grid_2(request): # 부서 선택 후 조회 화면(경영기획팀만 
 
             # job_cd 열 삭제
             df3.drop('job_cd', axis=1, inplace=True)
+
+            # job_seq, duty_seq, task_seq, act_seq 순으로 정렬
+            df3 = df3.sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq'])
 
             # 데이터프레임을 JSON 형식으로 변환하여 전달
             df_json = df3.to_json(orient='records')
@@ -7026,80 +7040,6 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
     return result
 
 
-# def copy_period_data(period_old, period_new):
-
-#     # 데이터베이스 연결 파라미터
-#     user_id='cdh' #사용자 이름
-#     pwd='cdh0706**' #비밀번호
-#     db_host='130.1.112.100' #호스트명/IP
-#     db_port=3306 #포트번호 (고정값)
-#     db_name="betadb" #사용할 데이터베이스 betadb
-
-#     dict_table = { # 테이블 목록
-#         'bs_prd' : '회기',
-#         'bs_std_wrk_tm' : '표준근무시간',
-#         'bs_wl_ov_sht' : '업무량과부족 산정 기준',
-#         'bs_work_grade' : '업무 등급',
-#         'bs_ttl_list' : '직책 리스트',
-#         'bs_pos_list' : '직위 리스트',
-#         'bs_pos_grade' : '업무 등급별 직위',
-#         'bs_dept' : '부서',
-#         'bs_dept_resp' : '부서 성과책임',
-#         'bs_dept_grp_domain' : '부서 그룹 도메인',
-#         'bs_dept_grp' : '부서 그룹',
-#         'bs_mbr' : '부서원',
-#         'bs_ttl_cnt' : '직책별 부서원수',
-#         'bs_mbr_grp_nm' : '부서원 그룹명',
-#         'bs_mbr_grp' : '부서원 그룹',
-#         'bs_acnt' : '계정',
-#         'bs_job' : '직무 리스트',
-#         'bs_job_resp' : '직무 성과책임',
-#         'bs_job_dept' : '부서별 직무',
-#         'job_task' : '직무 상세_과업',
-#         'job_activity' : '직무 상세_활동',
-#         'job_spcfc' : '직무명세서'
-#     }
-
-#     engine = create_engine("mysql://{user}:{pw}@{host}/{db}".format(user=user_id, pw=pwd, host=db_host, db=db_name)) #엔진 생성
-
-#     messages = []  # 메시지를 수집할 리스트
-#     # print(f"{period_old} 회기 정보를 {period_new} 회기 정보로 복제를 시작합니다\n")
-#     messages.append(f"{period_old} 회기 정보를 {period_new} 회기 정보로 복제합니다\n")
-
-#     result = None
-#     for key, value in dict_table.items():
-#         # key : table name
-#         # print("{!r:20s} : [{}] 정보를 복제합니다.".format(key, value), end="\t")
-#         sql_str = "select * from "+ key + " where prd_cd = '" + period_old + "'"
-#         df_data = pd.read_sql(sql=sql_str, con=engine)
-#         df_data['prd_cd'] = period_new
-#         try:
-#             # if_exists = 'append' : 테이블이 존재하면 데이터만을 추가한다.
-#             # index = False : 데이터프레임의 인덱스를 데이터로 생성하지 않는다.
-#             df_data.to_sql(name=key, con=engine, schema=None, if_exists='append', index=False, index_label=None, chunksize=None, dtype=None)
-#             result = True
-#             # print("... 복제 완료")
-#             string = value + " 정보 복제 완료"
-#             messages.append(string)
-#             # messages.append("... 복제 완료")
-
-#         except Exception:
-#             result = False
-#             string = value + " 정보 복제 오류"
-#             messages.append(string)
-#             # print("... 복제 오류. 복제를 중단합니다.")
-#             err_msg = traceback.format_exc()
-#             messages.append(err_msg)
-#             # print(err_msg)
-#             break
-
-#     # conn.close() #콘솔 종료
-
-#     if result == True:
-#         # print(f"\n{period_new} 회기 정보가 생성 완료되었습니다.")
-#         messages.append(f"\n{period_new} 회기 정보가 생성 완료되었습니다.")
-    
-#     return messages
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
@@ -7175,72 +7115,6 @@ def copy_period_data(period_old, period_new):
     return messages
 
 
-
-# def delete_period_data(period):
-
-#     # 데이터베이스 연결 파라미터
-#     user_id='cdh' #사용자 이름
-#     pwd='cdh0706**' #비밀번호
-#     db_host='130.1.112.100' #호스트명/IP
-#     db_port=3306 #포트번호 (고정값)
-#     db_name="betadb" #사용할 데이터베이스 betadb
-
-#     dict_table = { # 테이블 목록
-#         'job_spcfc' : '직무명세서',
-#         'job_activity' : '직무 상세_활동',
-#         'job_task' : '직무 상세_과업',
-#         'bs_job_dept' : '부서별 직무',
-#         'bs_job_resp' : '직무 성과책임',
-#         'bs_job' : '직무 리스트',
-#         'bs_acnt' : '계정',
-#         'bs_mbr_grp' : '부서원 그룹',
-#         'bs_mbr_grp_nm' : '부서원 그룹명',
-#         'bs_ttl_cnt' : '직책별 부서원수',
-#         'bs_mbr' : '부서원',
-#         'bs_dept_grp' : '부서 그룹',
-#         'bs_dept_grp_domain' : '부서 그룹 도메인',
-#         'bs_dept_resp' : '부서 성과책임',
-#         'bs_dept' : '부서',
-#         'bs_pos_grade' : '업무 등급별 직위',
-#         'bs_pos_list' : '직위 리스트',
-#         'bs_ttl_list' : '직책 리스트',
-#         'bs_work_grade' : '업무 등급',
-#         'bs_wl_ov_sht' : '업무량과부족 산정 기준',
-#         'bs_std_wrk_tm' : '표준근무시간',
-#         'bs_prd' : '회기'
-#     }
-
-#     messages = []  # 메시지를 수집할 리스트
-
-#     conn = pymysql.connect(host=db_host, user=user_id, password=pwd, db=db_name, charset='utf8')
-#     cursor = conn.cursor() #커서 생성
-#     messages.append(f"{period} 회기 정보를 삭제합니다\n")
-#     result = None
-#     for key, value in dict_table.items():
-#         try:
-#             # key : table name
-#             sql_str = "delete from "+ key + " where prd_cd = '" + period + "'"
-#             cursor.execute(sql_str)
-#             conn.commit()
-#             result = True
-#             # print("{!r:20s} : [{}] 정보가 삭제되었습니다.".format(key, value))
-#             string = value + " 정보가 삭제되었습니다"
-#             messages.append(string)
-
-#         except Exception:
-#             result = False
-#             messages.append("... 삭제 오류. 삭제를 중단합니다.")
-#             err_msg = traceback.format_exc()
-#             messages.append(err_msg)
-#             break
-
-#     conn.close()
-    
-#     if result == True:
-
-#         messages.append(f"\n{period} 회기 정보 삭제가 완료되었습니다.")
-
-#     return messages
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름

@@ -125,6 +125,15 @@
     /* 방문한 적이 있는 링크 사이트를 스타일링 */
     color: #000;
   }
+
+  .selected_menu {
+    /* 선택된 메뉴의 스타일을 지정 */
+    background-color: red;
+    color: white; /* 텍스트 색상을 흰색으로 설정하여 가독성을 높임 */
+  }
+
+
+
   ul,
   li {
     list-style: none;

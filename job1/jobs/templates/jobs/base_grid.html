@@ -35,6 +35,26 @@
     <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
 
+
+<!-- ================================= -->
+
+<script>
+
+  // 매뉴얼
+  function openPDF() {
+    // A4 용지 비율에 맞게 창의 크기를 설정
+    var width = 800; // 폭
+    var height = (width * 297) / 210; // 높이를 A4 비율에 맞게 계산
+
+    // PDF 파일의 URL을 설정
+    var pdfUrl = "{% static 'doc/부서 기본정보_매뉴얼.pdf' %}";
+    // var pdfUrl = "{% static 'doc/' %}" + encodeURIComponent("{{ title }}") + "_매뉴얼" + ".pdf";
+
+    // 새 창을 열고 PDF 파일을 표시
+    window.open(pdfUrl, '_blank', 'noopener,noreferrer, width='+width+',height='+height);
+  }
+</script>
+
     <title>대성에너지::직무관리프로그램</title>
 
     
@@ -51,8 +71,17 @@
             alt="대성에너지(주)"
         /></a>
       </dl>
-      <h1 class="main-title" style="padding-top:10px;"> 직무정보 조회 </h1>
+
       <!-- 중간에 메인 직무가 표시될 위치 -->
+      <h1 class="main-title" style="padding-top:10px; padding-left:550px;"> 직무정보 조회 </h1>
+      
+      <!-- 매뉴얼 표시 버튼 -->
+      <dl style="padding-left:400px;">
+        <dd>
+          <button id="pdfButton" onclick="openPDF()" class="save">매뉴얼</button>
+        </dd>
+      </dl>
+
       <dl class="top-menu">
         <!-- <dd><a href="#">경영정보팀</a></dd> -->
         <dd>
@@ -82,7 +111,7 @@
               <a href="{% url 'JB101' %}">부서 기본정보</a>
               <a href="{% url 'JB102' %}">직무 기본정보</a>
               <a href="{% url 'JB103' %}">직무 상세정보</a>
-              <a href="{% url 'JB103_grid' %}">직무정보 조회</a>
+              <a href="{% url 'JB103_grid' %}" style="background-color: red; color: white;">직무정보 조회</a>
               <a href="{% url 'JB110' %}">부서 업무량 분석</a>
               <a href="{% url 'JB108' %}">직무 현황제출</a>
             </div>

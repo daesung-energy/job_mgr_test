@@ -48,6 +48,8 @@
 <!-- ================================= -->
 
     <script>
+
+      // 좌측 메뉴 선택 시 색깔 표시
       document.addEventListener("DOMContentLoaded", function() {
         const links = document.querySelectorAll(".fakeimg a");
 
@@ -60,8 +62,21 @@
           });
         });
       });
-    </script>
 
+      // 매뉴얼
+      function openPDF() {
+        // A4 용지 비율에 맞게 창의 크기를 설정
+        var width = 800; // 폭
+        var height = (width * 297) / 210; // 높이를 A4 비율에 맞게 계산
+
+        // PDF 파일의 URL을 설정
+        // var pdfUrl = "{% static 'doc/manual.pdf' %}";
+        var pdfUrl = "{% static 'doc/' %}" + encodeURIComponent("{{ title }}") + "_매뉴얼" + ".pdf";
+
+        // 새 창을 열고 PDF 파일을 표시
+        window.open(pdfUrl, '_blank', 'noopener,noreferrer, width='+width+',height='+height);
+      }
+    </script>
 
     <title>대성에너지::직무관리프로그램</title>
 </head>
@@ -77,12 +92,21 @@
             alt="대성에너지(주)"
         /></a>
       </dl>
-      <h1 class="main-title" style="padding-top:10px;"> {{ title }} </h1>
+
       <!-- 중간에 메인 직무가 표시될 위치 -->
-      <dl class="top-menu">
-        <!-- <dd><a href="#">경영정보팀</a></dd> -->
+      <h1 class="main-title" style="padding-top:10px; padding-left:550px;"> {{ title }} </h1>
+      
+      <!-- 매뉴얼 표시 버튼 -->
+      <dl style="padding-left:400px;">
         <dd>
-          <!-- 바꿔야함 -->
+          <button id="pdfButton" onclick="openPDF()" class="save">매뉴얼</button>
+        </dd>
+      </dl>
+
+
+      <!-- 로그아웃 -->
+      <dl class="top-menu">
+        <dd>
           {% if user.is_authenticated %}
           <a href="{% url 'common:logout' %}" id="logoutLink"
             ><img src="{% static 'img/logout.jpg' %}" alt="로그아웃이미지"
@@ -90,13 +114,11 @@
           {% else %}
           <a href="{% url 'common:login' %}">로그인</a>
           {% endif %}
-          <!-- {% if user.username == "dd10" %}
-          ㅋㅋ
-          {% endif %} -->
         </dd>
       </dl>
     </div>
   </header>
+
   <!-- contents 영역 -->
   <contents>
     <div class="row">
