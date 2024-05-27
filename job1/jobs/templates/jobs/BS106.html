@@ -74,7 +74,7 @@
           <!-- 박스1 : 직무코드, 직무명, 직무개요 표시 -->
           <div>
             <div id="bs106_2_2" data-index="0" style="display: block; overflow-y: scroll; white-space: nowrap; 
-            height: 180px; width: 1300px; border: 1px solid #ccc; margin-top:5px; margin-left:20px;">
+            height: 240px; width: 1300px; border: 1px solid #ccc; margin-top:5px; margin-left:20px;">
             <div style="padding-left:5px; padding-top:5px;">
               {% for item in job_list %}
               <!-- 각 입력 필드를 감싸는 div 대신 span 사용 -->
@@ -126,7 +126,9 @@
 
         <!-- 직무 기본사항 추가에 대한 button control - 전체 직무를 제외하면 직무사항 추가 가능 -->
         {% if job_type_selected == "former" %}
+        
         {% else %}
+        <div style="display: flex; padding-left: 500px;">
 
           {% if job_type == "all" %}
           {% else %}
@@ -146,7 +148,7 @@
           <!-- 직무 기본사항 수정(저장), 삭제에 대한 button control -->
           <!-- 직무 유형이 고유일 때 -->
           {% if job_type == "unique" %}
-          <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
+          <div class="forbutton" style="width:1357px; height:auto; display: flex; align-items: center;">
             <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
             {% if new_key == "activate" %}
               <div style="text-align: center; display: flex;">
@@ -171,7 +173,7 @@
           {% endif %}
           <!-- 직무 유형이 공통일 때 -->
           {% if job_type == "common" %} 
-          <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
+          <div class="forbutton" style="width:1357px; height:auto; display: flex; align-items: center;">
             <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
             {% if new_key == "activate" %}
               <div style="text-align: center; display: flex;">
@@ -194,6 +196,7 @@
             {% endif %}
           </div>
           {% endif %}
+        </div>
         {% endif %}
 
       </div>

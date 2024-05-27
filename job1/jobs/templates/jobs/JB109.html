@@ -64,7 +64,7 @@
                 </select>
                 {% if dept_selected_key == "latter" %}
                 <span style="margin-left: 795px;">
-                    <button class="save" onclick="printTableContent('job_analysis')">인쇄</button>
+                    <button class="save" onclick="printTableContent('job_analysis', '{{ prd_cd_selected }}', '{{ dept_selected_nm }}')">인쇄</button>
                     <button class="save" onclick="exportToExcel('job_analysis')">다운로드</button> 
                 </span>
                 {% else %}
@@ -254,55 +254,69 @@
     <script>
 
         //프린트
-        function printTableContent(tableId) {
-            var table = document.getElementById(tableId);
-            var content = table.outerHTML; // 테이블 제목을 사용하지 않음
-            var originalDocument = document.body.innerHTML;
+        function printTableContent(tableId, prdCdSelected, deptSelectedNm) {
 
-            // 표의 내용을 현재 문서로 설정하여 프린트
-            document.body.innerHTML = content;
+            // 테이블 요소 가져오기
+            var table = document.getElementById(tableId);
+
+            // 테이블이 없으면 경고 후 리턴
+            if (!table) {
+                alert("인쇄할 자료가 없습니다");
+                    return;
+                }
+            
+            var content = table.outerHTML; // 테이블 요소의 HTML 내용을 가져와 content에 저장
+            var originalDocument = document.body.innerHTML; // 원래 문서 내용을 originalDocument에 저장
+
+            // 프린트 내용에 추가할 내용
+            var printContent = `
+                <div>
+                    <p>회기: ${prdCdSelected}</p>
+                    <p>부서: ${deptSelectedNm}</p>
+                </div>
+                ${content}
+            `;
+
+            // 문서 내용을 프린트 내용으로 변경
+            document.body.innerHTML = printContent;
 
             // 프린트 대화 상자 열기
             window.print();
 
-            // 원래 문서로 복원
+            // 원래 문서 내용으로 복원
             document.body.innerHTML = originalDocument;
-            if (!table) {
-                alert("Table not found!");
-                return;
-            }
         }
 
         //-----------------엑셀로 저장-----------------
         // 행사이즈 조절
         function autoSizeColumns(worksheet) {
 
-        //각 행 마다 가장 긴 글자 수를 기준으로 각 열 넓이 자동 조정
-        worksheet.columns.forEach((column, columnIndex) => {
-            let maxColumnLength = 0;
-            column.eachCell({ includeEmpty: true }, cell => {
-                const cellValue = cell.value ? cell.value.toString() : '';
-                let cellLength = 0;
+            //각 행 마다 가장 긴 글자 수를 기준으로 각 열 넓이 자동 조정
+            worksheet.columns.forEach((column, columnIndex) => {
+                let maxColumnLength = 0;
+                column.eachCell({ includeEmpty: true }, cell => {
+                    const cellValue = cell.value ? cell.value.toString() : '';
+                    let cellLength = 0;
 
-                // 각 문자에 대해 길이 측정
-                for (let char of cellValue) {
-                    if (char.match(/[\uac00-\ud7a3]/)) { // 한글과 같은 폭이 넓은 문자 처리
-                        cellLength += 2;
-                    } else if (char.match(/[\u0020-\u007E]/)) { // 기본 ASCII 문자
-                        cellLength += 1;
-                    } else {
-                        cellLength += 1.5; // 그 외 다른 문자 (일반적으로 넓은 문자)
+                    // 각 문자에 대해 길이 측정
+                    for (let char of cellValue) {
+                        if (char.match(/[\uac00-\ud7a3]/)) { // 한글과 같은 폭이 넓은 문자 처리
+                            cellLength += 2;
+                        } else if (char.match(/[\u0020-\u007E]/)) { // 기본 ASCII 문자
+                            cellLength += 1;
+                        } else {
+                            cellLength += 1.5; // 그 외 다른 문자 (일반적으로 넓은 문자)
+                        }
                     }
-                }
 
-                // 현재 셀의 길이가 저장된 최대 길이보다 크다면 업데이트
-                if (cellLength * 2 > maxColumnLength) {
-                    maxColumnLength = cellLength * 2;
-                }
-                // 열의 너비를 최대 길이에 따라 설정, 최소 너비는 10으로 설정
-                column.width = maxColumnLength < 10 ? 10 : maxColumnLength + 2; // 약간의 여유 공간 추가
+                    // 현재 셀의 길이가 저장된 최대 길이보다 크다면 업데이트
+                    if (cellLength * 2 > maxColumnLength) {
+                        maxColumnLength = cellLength * 2;
+                    }
+                    // 열의 너비를 최대 길이에 따라 설정, 최소 너비는 10으로 설정
+                    column.width = maxColumnLength < 10 ? 10 : maxColumnLength + 2; // 약간의 여유 공간 추가
+                });
             });
-        });
         }
 
         function exportToExcel(tableId) {
@@ -441,9 +455,6 @@
                 return `FF${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
             }
         }
-
-
-
 
         window.addEventListener('load', function() {
             // 모든 'number-format' 클래스를 가진 요소 찾기

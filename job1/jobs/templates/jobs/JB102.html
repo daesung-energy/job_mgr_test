@@ -113,7 +113,7 @@
                     </tr>
                     <tr>
                       <td>
-                        <select name="new_job_cd" class="select-combox3" size="4" style="height: 117px;">
+                        <select name="new_job_cd" class="select-combox3" size="4" style="height: 167px;">
                           {% for item in job_new_list %}
                           <option value="{{ item.job_cd }}"> {{ item.job_nm }} </option>
                           {% endfor %}
@@ -148,7 +148,7 @@
             <input type="hidden" name="job_type" value={{ job_type }}>
 
             <!-- 박스1 : 직무코드, 직무명, 직무개요, 직무 수행자 표시 -->
-            <div data-index="0" style="display: flex; overflow-y: scroll; white-space: nowrap; height: 150px; width: 1330px; border: 1px solid #ccc; margin-top:5px; margin-left:10px;">
+            <div data-index="0" style="display: flex; overflow-y: scroll; white-space: nowrap; height: 200px; width: 1330px; border: 1px solid #ccc; margin-top:5px; margin-left:10px;">
               <div>                        
                 {% for item in job_list %}
                   <!-- 라디오 버튼, 직무코드를 value로 함. 선택하면 submit함. -->
@@ -179,11 +179,14 @@
 
           <!-- 버튼 컨트롤 - 직무 유형 선택해야만 보임 -->
           {% if job_type_selected == "former" %}
+          <!-- 직무 유형을 선택하지 않으면 버튼은 없음 -->
           {% else %}
+            <div style="display: flex;">
             <!-- 직무 기본사항 추가에 대한 button control : 직무 유형이 전체이면 안보임-->
             {% if job_type == "all" %}
+            <!-- 직무 유형이 전체인 경우에는 직무 추가 버튼이 보이지 않음 -->
             {% else %}
-            <div style="display: flex; justify-content: center; align-items: center; height: 80px;">
+            <div style="display: flex; justify-content: center; align-items: center; height: 80px; padding-left: 500px;">
               <!-- 회기가 확정되어 있으면 추가, 취소 버튼 비활성화 -->
               {% if prd_done == "Y" %}
                 <button class="del_disabled" disabled>추가</button>
@@ -205,7 +208,7 @@
             <!-- 직무 수행자 저장, 직무 삭제에 대한 button control : 회기 확정이면 비활성화, 직무 유형이 전체이면 안보임 -->
             {% if job_type == "all" %}
             {% else %}
-            <div class="forbutton" style="width:1357px; height:auto; display: flex; justify-content: center;">
+            <div class="forbutton" style="width:1357px; height:auto; display: flex; align-items: center;">
               <!-- 행 추가 버튼 눌렀을 때 : 저장 버튼을 activate시킨다. 그리고, 저장만 할 수 있도록 하고 삭제 버튼은 비활성화시킨다.-->
               {% if new_key == "activate" %}
                 <div style="text-align: center; display: flex;">
@@ -239,6 +242,7 @@
               {% endif %}
             </div>
             {% endif %}
+            </div>
           {% endif %}
         </div>
       </div>

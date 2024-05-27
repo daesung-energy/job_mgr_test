@@ -130,7 +130,7 @@
             </div>
         </div>
 
-        <!-- 에러 메시지 -->
+        <!-- 메시지 표시 -->
         {% if messages %}
         <div id="messages" style="display: none;">
             {% for message in messages %}
@@ -150,9 +150,13 @@
                     }
                 }
 
+        var copiedDuty = null;
+
         document.addEventListener("DOMContentLoaded", function() { // DOM이 로드되면 실행되는 함수
         
         var jsonData = JSON.parse('{{ data|escapejs|safe }}'); // JSON 데이터 파싱
+
+/////////////////////////////////////////////////////// 직무 ////////////////////////////////////////////////////////////////////////////////////////////////
 
         function createJobList() { // 직무 목록을 생성하는 함수
 
@@ -352,6 +356,20 @@
                         if (uniqueDuties.length <= 1) {
                             alert("최소 하나의 책무가 있어야 합니다.");
                         } else {
+
+                            // 내가 지우려는 책무가 선택된 책무라면 과업, 활동 div 내용 초기화
+                            var selectedDuty = duty; // 선택된 책무명을 저장
+                            var selectedDutyRadio = document.querySelector('input[name="duty"]:checked'); // 선택된 책무 라디오 버튼을 찾음
+                            if (selectedDutyRadio) { // 선택된 책무 라디오 버튼이 있으면
+                                selectedDuty = selectedDutyRadio.value; // 선택된 책무명을 저장
+                            }
+                            if (selectedDuty === duty) { // 선택된 책무가 삭제하려는 책무라면
+                                var taskDiv = document.getElementById('taskDiv'); // 과업 목록을 담을 div 요소 찾기
+                                taskDiv.innerHTML = ''; // 과업 목록 초기화
+                                var activityDiv = document.getElementById('activityDiv');
+                                activityDiv.innerHTML = ''; // 활동 목록 초기화
+                            }
+
                             jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === duty)); // 해당 책무 데이터를 제외하고 새로운 jsonData를 생성
                             dutyDiv.removeChild(container); // 해당 책무 컨테이너를 삭제
                             updateDutySequence(selectedJob); // 순서 업데이트
@@ -536,7 +554,23 @@
 
             updateDutyList(selectedJobCd); // 추가 한 이후 책무 목록 업데이트
 
+            ////////////////////////////////////////////////////////////////// 새로 추가한 책무를 자동으로 선택하도록 하는 부분
+            var newDutyRadio = document.querySelector(`input[name="duty"][value="${newDutyNm}"]`); // 새로 추가한 책무를 선택
+            if (newDutyRadio) { // 새로 추가한 책무가 있다면
+                newDutyRadio.checked = true; // 새로 추가한 책무를 선택(checked 속성 추가)
+                updateTaskList(selectedJobCd, newDutyNm); // 새로 추가한 책무에 대한 과업 목록을 업데이트
+
+                // 과업도 하나만 추가된 상태이므로 첫 번째 과업 선택
+                var firstTaskRadio = document.querySelector('input[name="task"]'); // 첫 번째 과업 라디오 버튼을 찾음
+                if (firstTaskRadio) { // 첫 번째 과업 라디오 버튼이 있다면
+                    firstTaskRadio.checked = true; // 첫 번째 과업 라디오 버튼을 선택
+                    updateActivityList(selectedJobCd, newDutyNm, firstTaskRadio.value); // 첫 번째 과업에 대한 활동 목록을 업데이트
+                }
+            }
+
         });
+
+
 
 /////////////////////////////////////////////////////// 과업 //////////////////////////////////////////////////////////////////////////////////////////
         
@@ -828,6 +862,12 @@
                             jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === taskName)); // 해당 과업 데이터를 제외하고 새로운 jsonData를 생성
                             taskDiv.removeChild(container); // 해당 과업 컨테이너를 삭제
                             updateTaskSequence(selectedJob, selectedDuty); // 순서 업데이트
+
+                            // 내가 지운 과업이 내가 선택했던 과업이라면 활동 div 내용 초기화
+                            if (selectedTask === taskName) {
+                                var activityDiv = document.getElementById('activityDiv');
+                                activityDiv.innerHTML = '';
+                            } 
                         }
                     }
                 };
@@ -1041,6 +1081,12 @@
 
             // 선택된 책무의 과업 목록을 다시 업데이트하여 변경사항 반영
             updateTaskList(selectedJob, selectedDutyNm);
+
+            var newTaskRadio = document.querySelector(`input[name="task"][value="${newTaskNm}"]`);
+            if (newTaskRadio) {
+                newTaskRadio.checked = true;
+                updateActivityList(selectedJob, selectedDutyNm, newTaskNm);
+            }
         });
 
 //////////////////////////////////////////////////활동//////////////////////////////////////////////////////////////////////////////////////////////
@@ -1635,6 +1681,11 @@
             updateActivityList(selectedJob, selectedDuty, selectedTaskNm);
         });
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
         document.getElementById('dataForm').onsubmit = function() { // 폼 제출 시 실행되는 함수
             // jsonData 변수는 서버로 전송하기 전에 설정한 JSON 데이터를 담고 있는 변수
             document.getElementById('jsonData').value = JSON.stringify(jsonData);
@@ -1715,6 +1766,9 @@
         });        
 
         });
+
+
+
 
         function clearLocalStorage() {
             localStorage.removeItem('selectedJob');

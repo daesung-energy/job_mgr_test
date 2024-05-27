@@ -43,7 +43,7 @@
 
                 <!-- 탭 선택에 따라 값을 다르게 하여 submit한다. 그 값은 view파일에서 어떤 탭인지 구분할 수 있는 key값(span)으로 쓰인다. -->
                 <div style="padding-left: 20px;">
-                <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %}l style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
+                <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
                 <span style="padding-right: 40px"></span>
                 <span name="span2" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
                 </div>
@@ -51,7 +51,7 @@
             </div>
 
             <!-- 부서 선택 div -->
-            <div style="padding-top: 20px;">
+            <div style="padding-top: 20px; display:flex;">
                 <!-- 부서 선택 form -->
                 <form id="JB110_2" action="{% url 'JB110_2' %}" method="POST">
                     {% csrf_token %}
@@ -71,6 +71,13 @@
                     </select>
                     </p>
                 </form>
+
+                {% if tab == "tab1" %}
+                <span style="margin-left: 795px;">
+                    <button class="save" onclick="printTableContent('analysis_by_jobs', '{{prd_cd_selected}}', '{{dept_selected_nm}}')">인쇄</button>
+                    <button class="save" onclick="exportToExcel('analysis_by_jobs')">다운로드</button> 
+                </span>
+                {% endif %}
             </div>
 
             {% if tab == "tab1" %}
@@ -131,6 +138,190 @@
     </wrap>
     
     <script>
+
+        ////////////////////////////// 프린트 ///////////////////////////////////////////////////////////////////////////////////////////////
+        function printTableContent(tableId, prdCdSelected, deptSelectedNm) {
+            var table = document.getElementById(tableId);
+            if (!table) {
+                alert("인쇄할 자료가 없습니다");
+                return;
+            }
+
+            var content = table.outerHTML; // 테이블 내용
+            var originalDocument = document.body.innerHTML; // 원래 문서 내용 저장
+
+            // 표의 내용에 prdCdSelected, deptSelected를 추가하여 프린트
+            var printContent = `
+                <div>
+                    <p>회기: ${prdCdSelected}</p>
+                    <p>부서: ${deptSelectedNm}</p>
+                </div>
+                ${content}
+            `;
+
+            // 문서 내용을 프린트 내용으로 변경
+            document.body.innerHTML = printContent;
+
+            // 프린트 대화 상자 열기
+            window.print();
+
+            // 원래 문서 내용으로 복원
+            document.body.innerHTML = originalDocument;
+        }
+        ////////////////////////////// 프린트 끝 /////////////////////////////////////////////////////////////////////////////////////////////
+
+        ////////////////////////////// 엑셀 다운로드 /////////////////////////////////////////////////////////////////////////////////////////////
+        function exportToExcel(tableId) {
+            const fileName = prompt('파일 이름을 입력하세요.');
+            if (fileName === null || fileName.trim() === '') {
+                alert('파일 이름을 입력하세요.');
+                return;
+            }
+
+            const table = document.getElementById(tableId);
+            if (!table) {
+                alert("Table not found!");
+                return;
+            }
+
+            const prd_cd_selected = document.querySelector("input[name='prd_cd_selected']").value;
+            const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Sheet 1');
+
+            const headerRow1 = worksheet.getRow(1);
+            headerRow1.getCell(1).value = "회기: " + prd_cd_selected;
+            headerRow1.getCell(2).value = "부서: " + dept_selected;
+            headerRow1.commit();
+
+            let currentExcelRow = 3;
+            let mergeMap = [];
+
+            Array.from(table.rows).forEach((htmlRow, rowIndex) => {
+                const excelRow = worksheet.getRow(currentExcelRow);
+                let currentExcelColumn = 1;
+
+                Array.from(htmlRow.cells).forEach(htmlCell => {
+                    while (mergeMap[currentExcelColumn] >= currentExcelRow) {
+                        currentExcelColumn++;
+                    }
+
+                    const excelCell = excelRow.getCell(currentExcelColumn);
+                    excelCell.value = htmlCell.innerText.trim();
+                    applyStylesToCell(excelCell, htmlCell);
+
+                    const colSpan = htmlCell.colSpan || 1;
+                    const rowSpan = htmlCell.rowSpan || 1;
+
+                    if (colSpan > 1 || rowSpan > 1) {
+                        let mergeEndColumn = currentExcelColumn + colSpan - 1;
+                        let mergeEndRow = currentExcelRow + rowSpan - 1;
+                        worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn);
+
+                        for (let col = currentExcelColumn; col <= mergeEndColumn; col++) {
+                            mergeMap[col] = mergeEndRow;
+                        }
+                    }
+
+                    currentExcelColumn += colSpan;
+                });
+
+                currentExcelRow++;
+            });
+
+            autoSizeColumns(worksheet);
+
+            workbook.xlsx.writeBuffer().then(function(buffer) {
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+
+                const confirmation = confirm(`파일 이름: ${fileName}.xlsx \n파일을 다운로드하시겠습니까?`);
+                if (confirmation) {
+                    const anchor = document.createElement('a');
+                    anchor.href = url;
+                    anchor.download = fileName + '.xlsx';
+                    anchor.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            }).catch(error => {
+                console.error('Error writing excel file', error);
+                alert('Error exporting table to excel file. Check the console for more details.');
+            });
+        }
+
+        function applyStylesToCell(excelCell, htmlElement) {
+            const cssStyle = window.getComputedStyle(htmlElement);
+            excelCell.style = {
+                font: {
+                    bold: cssStyle.fontWeight === 'bold' || parseInt(cssStyle.fontWeight) >= 600,
+                    color: { argb: colorToArgb(cssStyle.color) }
+                },
+                fill: {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: colorToArgb(cssStyle.backgroundColor) }
+                },
+                alignment: {
+                    horizontal: cssStyle.textAlign,
+                    vertical: 'middle'
+                },
+                border: {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                }
+            };
+        }
+
+        function colorToArgb(color) {
+            if (!color || color === 'transparent' || color.includes('rgba(0, 0, 0, 0)')) {
+                return 'FFFFFFFF'; // Use white for fully transparent colors
+            }
+
+            const rgba = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/);
+            if (rgba) {
+                const r = parseInt(rgba[1]).toString(16).padStart(2, '0');
+                const g = parseInt(rgba[2]).toString(16).padStart(2, '0');
+                const b = parseInt(rgba[3]).toString(16).padStart(2, '0');
+                const a = rgba[4] ? Math.round(parseFloat(rgba[4]) * 255).toString(16).padStart(2, '0') : 'FF';
+                if (a === '00') {
+                    return 'FFFFFFFF'; // Convert fully transparent to white
+                }
+                return a + r + g + b; // ARGB
+            } else {
+                // Handle named colors and hex colors
+                const canvas = document.createElement("canvas");
+                canvas.height = 1;
+                canvas.width = 1;
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, 1, 1);
+                const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+                if (a === 0) {
+                    return 'FFFFFFFF'; // Convert fully transparent to white
+                }
+                return `FF${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+            }
+        }
+
+        function autoSizeColumns(worksheet) {
+            worksheet.columns.forEach(column => {
+                let maxColumnLength = 0;
+                column.eachCell({ includeEmpty: true }, cell => {
+                    const cellValue = cell.value ? cell.value.toString() : '';
+                    const columnLength = cellValue.length;
+                    if (columnLength > maxColumnLength) {
+                        maxColumnLength = columnLength;
+                    }
+                });
+                column.width = maxColumnLength < 15 ? 15 : maxColumnLength + 2; // 최소 너비를 15로 설정
+            });
+        }
+        ////////////////////////////// 엑셀 다운로드 끝 /////////////////////////////////////////////////////////////////////////////////////////////
+
+
         function submitForm(spanName) { // submit하는 폼
             // 폼을 가져옵니다.
             var form = document.getElementById("JB110_1");

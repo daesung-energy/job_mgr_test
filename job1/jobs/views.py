@@ -28,7 +28,6 @@ import os #추가
 from pathlib import Path #추가
 
 
-
 now = dt.datetime.now() #지금 날짜를 가져옴
 
 # Create your views here.
@@ -585,7 +584,7 @@ def JB102_copy(request): #JB102 회기 띄워줌
 def JB103(request): # JB103페이지의 초기화면
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
-    print('user', request.user.username)
+    # print('user', request.user.username)
     # print(VJb110F.objects.get(prd_cd="2022A", dept_cd="DD01", job_cd="JC001", job_nm="팀리더").cnt_task)
 
     dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
@@ -996,6 +995,8 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                 # df3.to_excel('df3.xlsx')
                 df_json = df_show_3.to_json(orient='records')
 
+                messages.success(request, "저장되었습니다.")
+
                 context = {
                     'title' : '직무 상세정보', # 제목
                     'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
@@ -1097,10 +1098,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.112.100',
-            user='cdh',
-            password='cdh0706**',
-            db='betadb',
+            host='130.1.200.200', # 데이터베이스 주소
+            user='cdh', # 데이터베이스 사용자 이름
+            password='1234', # 데이터베이스 비밀번호
+            db='jobdb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -1226,7 +1227,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             RESP_START_ROW = 11
             for i, r in df_resp.iterrows():
                 row_no = RESP_START_ROW+i
-                ws.row_dimensions[row_no].height = 20
+                ws.row_dimensions[row_no].height = 40
                 resp_no = ws.cell(row=row_no, column=2)    
                 resp_no.value = "핵심목표 " + str(r['dept_resp_ordr'])
                 resp_no.border = BORDER_THIN_ALL
@@ -6675,7 +6676,7 @@ def JB109_1(request): # 업무량 분석화면 - 회기 선택 후 선택한 회
     return render(request, 'jobs/JB109.html', context)
 
 
-def JB109_2(request): # 업무량 분석화면 - 회기 선택 후 선택한 회기를 넘겨준다.
+def JB109_2(request): # 업무량 분석화면 - 탭 선택 후 선택한 탭을 넘겨준다.
 
     if request.method == 'POST':
 
@@ -6791,6 +6792,7 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
                 'tab' : tab,
                 'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
                 'dept_selected' : dept_selected,
+                'dept_selected_nm' : BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_selected).dept_nm,
                 'analysis' : analysis,
                 # 'sum' : sum,
                 'dept_selected_key' : 'latter',
@@ -6876,6 +6878,7 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
 
             context.update({
                 'dept_selected': dept_login,
+                'dept_selected_nm' : dept_login_nm,
                 'activate': 'yes', # 버튼 컨트롤 on
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'analysis' : df1,
@@ -6884,7 +6887,7 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                 'sum_3' : sum_3,
             })
 
-        elif span_name == 'span2':
+        elif span_name == 'span2': # 담당자별 업무량 분석 탭일 경우
             context['tab'] = "tab2"
 
             context.update({
@@ -6911,6 +6914,7 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
             'prd_cd_selected': prd_cd_selected,
             'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
             'dept_selected': dept_selected,
+            'dept_selected_nm' : BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_selected).dept_nm,
             'tab': tab,
             'activate': 'yes', # 버튼 컨트롤 on
             'status': 'tab_after',
@@ -7043,10 +7047,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7118,10 +7122,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
