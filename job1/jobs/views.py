@@ -2723,12 +2723,14 @@ def BS300_4(request): # 부서 관리 탭에서 부서를 선택한 후 편집�
         prd_cd_selected = request.POST['prd_cd_selected']
         tab = request.POST['tab_selected']
         dept_selected = request.POST['dept_selected']
-        dept_selected_nm = request.POST['dept_selected_nm']
+        
         dept_ttl_nm = request.POST.getlist('dept_ttl_nm') # 부서의 직책 이름
         dept_ttl_cnt = request.POST.getlist('dept_ttl_cnt') # 부서의 직책별 TO
         action = request.POST['action']
 
         if action == 'action1': # 저장 눌렀을 때
+
+            dept_selected_nm = request.POST['dept_selected_nm']
 
             # 부서 이름 업데이트
             BsDept.objects.filter(pk=prd_cd_selected, dept_cd=dept_selected).update(dept_nm=dept_selected_nm)
