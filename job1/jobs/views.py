@@ -3150,18 +3150,18 @@ def BS103_2(request): ## 회기 확정일 지정
     return render(request, 'jobs/BS103.html', context) #장고가 context를 meshup해서 html template으로 보내줌
 
 
-# def delete_bs_prd(request): # 회기 삭제-BS104
-#     if request.method == 'POST':
-#         past_history_str = request.POST["past_history"] #html에서 선택한 값(prd_cd)를 POST메소드를 이용해 받아옴
+def delete_bs_prd(request): # 회기 삭제-BS104
+    if request.method == 'POST':
+        past_history_str = request.POST["past_history"] #html에서 선택한 값(prd_cd)를 POST메소드를 이용해 받아옴
 
-#         context5 = {
-#             'zzz' : past_history_str + "가 삭제되었습니다.", # 확인용
-#             'contents': BsPrd.objects.all() # 지우고 난 후의 BsPrd를 BS104로 context에 얹어서 보냄
-#         }
-#         item = get_object_or_404(BsPrd, pk=past_history_str) #html에서 선택한 값(prd_cd)를 Primary Key로 하는 데이터를 item이라는 값에 지정
-#         item.delete() #그걸 삭제
+        context5 = {
+            'zzz' : past_history_str + "가 삭제되었습니다.", # 확인용
+            'contents': BsPrd.objects.all() # 지우고 난 후의 BsPrd를 BS104로 context에 얹어서 보냄
+        }
+        item = get_object_or_404(BsPrd, pk=past_history_str) #html에서 선택한 값(prd_cd)를 Primary Key로 하는 데이터를 item이라는 값에 지정
+        item.delete() #그걸 삭제
 
-#     return render(request, 'jobs/BS104.html', context5)
+    return render(request, 'jobs/BS104.html', context5)
 
 
 def BS105_1(request): #회기 표준정보에서 회기 선택할 시 그 회기에 해당하는 데이터 표시
