@@ -3150,7 +3150,7 @@ def BS103_2(request): ## 회기 확정일 지정
     return render(request, 'jobs/BS103.html', context) #장고가 context를 meshup해서 html template으로 보내줌
 
 
-def delete_bs_prd_pr(request): # 회기 삭제-BS104
+def delete_bs_prd(request): # 회기 삭제-BS104
     if request.method == 'POST':
         past_history_str = request.POST["past_history"] #html에서 선택한 값(prd_cd)를 POST메소드를 이용해 받아옴
 
