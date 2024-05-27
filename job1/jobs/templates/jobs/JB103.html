@@ -78,8 +78,9 @@
                         <!-- 선택된 직무에 따라 책무 목록이 동적으로 생성 -->
                     </div>
                     <button id="addDuty" class="add_3" type="button">책무 추가</button>
-                    <!-- <button id="copyDuty" type="button">책무 복사</button> -->
-                    </div>
+                    <button id="copyDuty" class="add_3" type="button">책무 복사</button>
+                    <button id="pasteDuty" class="add_3" type="button">책무 붙여넣기</button>
+                </div>
                 </div>
 
                 <!-- 과업 Div -->
@@ -570,6 +571,56 @@
 
         });
 
+
+        // 책무 복사 기능
+        document.getElementById('copyDuty').addEventListener('click', function() {
+            var selectedJobRadio = document.querySelector('input[name="job"]:checked');
+            var selectedDutyRadio = document.querySelector('input[name="duty"]:checked');
+            if (selectedJobRadio && selectedDutyRadio) {
+                var selectedJobCd = selectedJobRadio.value;
+                var selectedDutyName = selectedDutyRadio.value;
+                copiedDuty = jsonData.filter(data => data.job_cd === selectedJobCd && data.duty_nm === selectedDutyName);
+                alert('책무가 복사되었습니다.');
+            } else {
+                alert('복사할 책무와 직무를 선택해주세요.');
+            }
+        });
+
+        // 책무 붙여넣기 기능
+        document.getElementById('pasteDuty').addEventListener('click', function() {
+            var selectedJobRadio = document.querySelector('input[name="job"]:checked');
+            if (selectedJobRadio && copiedDuty) {
+                var selectedJobCd = selectedJobRadio.value;
+                var jobSeq = jsonData.find(data => data.job_cd === selectedJobCd).job_seq;
+
+                // 현재 직무의 가장 큰 duty_seq 값을 가져와서 1 증가시킴
+                var maxDutySeq = Math.max(...jsonData.filter(data => data.job_cd === selectedJobCd).map(data => data.duty_seq), 0) + 1;
+
+                // 붙여넣기 할 책무가 이미 존재하는지 확인
+                var existingDuties = jsonData.filter(data => data.job_cd === selectedJobCd).map(data => data.duty_nm);
+                var duplicateFound = copiedDuty.some(duty => existingDuties.includes(duty.duty_nm + ' (복사됨)'));
+
+                if (duplicateFound) {
+                    alert('같은 이름의 책무가 이미 존재합니다.');
+                    return;
+                }
+
+                var newDuties = copiedDuty.map(duty => {
+                    var newDuty = { ...duty, job_cd: selectedJobCd, job_seq: jobSeq, duty_seq: maxDutySeq };
+                    newDuty.duty_nm += ' (복사됨)';
+                    return newDuty;
+                });
+
+                jsonData.push(...newDuties);
+                updateDutyList(selectedJobCd);
+                alert('책무가 붙여넣기 되었습니다.');
+                copiedDuty = null; // 붙여넣기 후 copiedDuty 초기화
+            } else if (!selectedJobRadio) {
+                alert('붙여넣기 할 직무를 선택해주세요.');
+            } else {
+                alert('붙여넣기 할 책무가 없습니다.');
+            }
+        });
 
 
 /////////////////////////////////////////////////////// 과업 //////////////////////////////////////////////////////////////////////////////////////////
