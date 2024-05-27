@@ -82,7 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql', # mysqlclient library 설치 필요
         'NAME': 'jobdb', #MariaDB에서 내가 접근할 DB이름 testdb / betadb / jobdb(운영)
         'USER': 'cdh', #내 계정(모든 권한이 필요함)
-        'PASSWORD': 'cdh0706**', #내 계정의 비밀번호 - 개발서버: cdh0706** / 운영서버: 1234
+        'PASSWORD': '1234', #내 계정의 비밀번호 - 개발서버: cdh0706** / 운영서버: 1234
         'HOST': '130.1.200.200', #DB IP주소 - 개발서버 IP: 130.1.112.100 / 운영서버 IP: 130.1.200.200
         'PORT': '3306' #DB port
     }
