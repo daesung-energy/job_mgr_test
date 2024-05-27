@@ -1,4 +1,4 @@
-from django.shortcuts import redirect, render, get_object_or_404jobdb
+from django.shortcuts import redirect, render, get_object_or_404
 from django.http import HttpResponse
 #BsPrd 메시지 끌고옴
 from .models import BsPrd, CcCdDetail, CcCdHeader, BsJob, BsDept, BsJobDept, BsMbr, BsWorkGrade, MbrJobGrp, MbrJobGrpDetail, JobTask, JobActivity, BsPrd, BsAcnt, BsJobResp, JobSpcfc, BsStdWrkTm, BsWlOvSht, BsPosGrade, BsPosList, BsDeptGrp, BsDeptResp, BsDeptGrpDomain, BsTtlList, BsTtlCnt, BsMbrGrp, BsMbrGrpNm, VJb110F
