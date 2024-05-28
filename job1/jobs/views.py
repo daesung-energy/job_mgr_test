@@ -1098,10 +1098,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.112.100', # 데이터베이스 주소
+            host='130.1.200.200', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='cdh0706**', # 데이터베이스 비밀번호
-            db='testdb',
+            password='1234', # 데이터베이스 비밀번호
+            db='jobdb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -7049,10 +7049,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "testdb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7124,10 +7124,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "testdb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
@@ -7185,7 +7185,7 @@ def delete_period_data(period):
 
 
 def get_dept_code(user_id):
-    prd_cd_id = "2022A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
+    prd_cd_id = "2023A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
     try:
         account = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id)
         return account.dept_cd_id
