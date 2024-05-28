@@ -789,7 +789,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                 data = json.loads(json_data)
                 # Pandas DataFrame으로 변환합니다.
                 df = pd.DataFrame(data).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq'])
-                df.to_excel('df.xlsx')
+                # df.to_excel('df.xlsx')
 
                 # df에서 job_cd가 JC001 or JC002 or JC004이면, work_lv_imprt, work_lv_dfclt, work_lv_prfcn, work_lv_sum, prfrm_tm_ann을 0으로 바꿔준다.
                 # 그리고 act_prfrm_cnt, act_prfrm_cnt_ann, act_prfrm_tm_cs, act_prfrm_tm_ann, act_prfrm_tm_ann을 0으로 바꿔준다.
