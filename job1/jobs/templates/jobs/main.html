@@ -18,7 +18,7 @@
             <a href="{% url 'main' %}"
               ><img
                 src="{% static 'img/daesung_logo.png' %}"
-                width="180px"
+                width="120px"
                 alt="대성에너지(주)"
             /></a>
           </dl>
@@ -29,9 +29,9 @@
             <dd>
               <!-- 바꿔야함 -->
               {% if user.is_authenticated %}
-              <a href="{% url 'common:logout' %}"
-                ><img src="{% static 'img/logout.jpg' %}" alt="로그아웃이미지"
-              />{{ user.username }}</a>
+              <a href="{% url 'common:logout' %}" id="logoutLink"
+                ><img src="{% static 'img/logout.jpg' %}" alt="로그아웃이미지" style="padding-top:2px;"/><span style="font-size:16px; padding-bottom:20px;">{{ user.username }}</span>
+              </a>
               {% else %}
               <a href="{% url 'common:login' %}">로그인</a>
               {% endif %}

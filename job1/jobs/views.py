@@ -1114,10 +1114,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.112.100', # 데이터베이스 주소
+            host='130.1.200.200', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='cdh0706**', # 데이터베이스 비밀번호
-            db='betadb',
+            password='1234', # 데이터베이스 비밀번호
+            db='jobdb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -6388,7 +6388,7 @@ def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
 
         dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
 
-        try: 
+        try:
             dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
             # 회기, 부서 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
@@ -7077,10 +7077,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7152,10 +7152,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
@@ -7213,7 +7213,7 @@ def delete_period_data(period):
 
 
 def get_dept_code(user_id):
-    prd_cd_id = "2023A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
+    prd_cd_id = "2024A"  # 상수로 지정하여 항상 2022A 회기의 부서 코드를 조회합니다. 2023A로 바꿔줘야 함.
     try:
         account = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id)
         return account.dept_cd_id

@@ -88,18 +88,22 @@
         <a href="{% url 'main' %}"
           ><img
             src="{% static 'img/daesung_logo.png' %}"
-            width="180px"
+            width="120px"
             alt="대성에너지(주)"
         /></a>
       </dl>
 
       <!-- 중간에 메인 직무가 표시될 위치 -->
-      <h1 class="main-title" style="padding-top:10px; padding-left:550px;"> {{ title }} </h1>
+      <h1 class="main-title" style="padding-left:650px;"> {{ title }} </h1>
+      <!-- <h1 class="main-title" style="text-align: center;"> {{ title }} </h1> -->
       
       <!-- 매뉴얼 표시 버튼 -->
-      <dl style="padding-left:400px;">
+      <dl style="padding-left:650px; padding-top:5px;">
         <dd>
-          <button id="pdfButton" onclick="openPDF()" class="save">매뉴얼</button>
+          <!-- <button id="pdfButton" onclick="openPDF()" class="save">매뉴얼</button> -->
+          
+          <button id="pdfButton" onclick="openPDF()"><img src="{% static 'img/manual7.png' %}" alt="매뉴얼" style="height:20px;"/></button>
+
         </dd>
       </dl>
 
@@ -109,8 +113,9 @@
         <dd>
           {% if user.is_authenticated %}
           <a href="{% url 'common:logout' %}" id="logoutLink"
-            ><img src="{% static 'img/logout.jpg' %}" alt="로그아웃이미지"
-          />{{ user.username }}</a>
+            ><img src="{% static 'img/logout.jpg' %}" alt="로그아웃이미지" style="padding-top:2px;"/><span style="font-size:16px; padding-bottom:20px;">{{ user.username }}</span>
+          </a>
+          
           {% else %}
           <a href="{% url 'common:login' %}">로그인</a>
           {% endif %}
