@@ -698,6 +698,7 @@ def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화�
                     'prfrm_tm_ann': rows.prfrm_tm_ann } for rows in original_rows]
 
         df1 = pd.DataFrame(data_list)
+       
 
         # job_activity 접근
         original_rows_2=JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함

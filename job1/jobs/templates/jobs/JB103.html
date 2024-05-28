@@ -20,7 +20,7 @@
                             <p>회 기</p>
                         </th>
                         <th>                           
-                            <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="clearLocalStorage(); this.form.submit()">
+                            <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
                                 {% for item in prd_list %}
                                 <option value="{{ item.prd_cd }}" {%if prd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
                                 {% endfor %}
@@ -144,20 +144,6 @@
     </wrap>
 
     <script>
-
-        document.getElementById('saveButton').addEventListener('click', function(event) {
-                var confirmSave = confirm("저장하시겠습니까?");
-                if (!confirmSave) {
-                    event.preventDefault(); // 사용자가 취소를 선택하면 저장을 막음
-                }
-            });
-
-            document.getElementById('cancelButton').addEventListener('click', function(event) {
-                var confirmCancel = confirm("작업 내용을 취소하시겠습니까?");
-                if (!confirmCancel) {
-                    event.preventDefault(); // 사용자가 취소를 선택하면 작업 취소를 막음
-                }
-            });
 
         var messagesContainer = document.getElementById('messages');
                 if (messagesContainer) {
@@ -1924,7 +1910,23 @@
             localStorage.removeItem('selectedJob');
             localStorage.removeItem('selectedDuty');
             localStorage.removeItem('selectedTask');
-        });        
+        });
+        
+        document.getElementById('saveButton').addEventListener('click', function(event) {
+                var confirmSave = confirm("저장하시겠습니까?");
+                if (!confirmSave) {
+                    event.preventDefault(); // 사용자가 취소를 선택하면 저장을 막음
+                }
+            });
+
+        document.getElementById('cancelButton').addEventListener('click', function(event) {
+            var confirmCancel = confirm("작업 내용을 취소하시겠습니까?");
+            if (!confirmCancel) {
+                event.preventDefault(); // 사용자가 취소를 선택하면 작업 취소를 막음
+            }
+        });
+
+
 
         });
 
