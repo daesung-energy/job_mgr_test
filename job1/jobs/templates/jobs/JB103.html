@@ -124,9 +124,9 @@
                     {% if prd_done == 'Y' %}
                     <button class="del_disabled" disabled>저장</button>
                     {% else %}
-                    <button type="submit" class="save" name="action" value="action1">저장</button>
+                    <button type="submit" class="save" name="action" value="action1" id="saveButton">저장</button>
                     {% endif %}
-                    <button type="submit" class="cancel" name="action" value="action2">취소</button>
+                    <button type="submit" class="cancel" name="action" value="action2" id="cancelButton">취소</button>
                     
                 </form>
             </div>
@@ -144,6 +144,20 @@
     </wrap>
 
     <script>
+
+        document.getElementById('saveButton').addEventListener('click', function(event) {
+                var confirmSave = confirm("저장하시겠습니까?");
+                if (!confirmSave) {
+                    event.preventDefault(); // 사용자가 취소를 선택하면 저장을 막음
+                }
+            });
+
+            document.getElementById('cancelButton').addEventListener('click', function(event) {
+                var confirmCancel = confirm("작업 내용을 취소하시겠습니까?");
+                if (!confirmCancel) {
+                    event.preventDefault(); // 사용자가 취소를 선택하면 작업 취소를 막음
+                }
+            });
 
         var messagesContainer = document.getElementById('messages');
                 if (messagesContainer) {
@@ -1223,7 +1237,7 @@
                         newTask.final_rpt_to = null;
                         newTask.rpt_nm = null;
                     }
-                    
+
                     return newTask;
                 });
 

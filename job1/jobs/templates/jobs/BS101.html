@@ -58,21 +58,13 @@
               {% endif %}
             </div>
           </div>
-          <button type="submit" id="finaliseButton" onclick="return confirm('이전 직무조사 자료를 복사하여 불러오시겠습니까?');" name="action" value="action1">복사/생성</button>
+          <button type="submit" id="finaliseButton" onclick="return confirm('이전 직무조사 자료를 복사하여 새로운 자료를 생성하시겠습니까?');" name="action" value="action1">복사/생성</button>
           <button type="submit" id="finaliseButton2" onclick="return confirm('해당 회기의 직무조사 자료를 삭제하시겠습니까?');" name="action" value="action2">삭제</button>
-          <!-- <button class="back" onclick="location.href='/jobs/BS101'">취소</button> -->
         </form>
       </div>
     </div>
   </wrap>
   <script>
-    //  var messagesContainer = document.getElementById('messages');
-    //   if (messagesContainer) {
-    //     var messages = messagesContainer.getElementsByTagName('span');
-    //     for (var i = 0; i < messages.length; i++) {
-    //       alert(messages[i].textContent);
-    //     }
-    //   }
 
     function checkPrdStatus() {
       // select 박스에서 선택된 옵션의 data-done 값을 확인
@@ -97,12 +89,13 @@
           finaliseButton2.disabled = false; // 활성화
           finaliseButton2.className = 'del';
       }
-      }
+    }
       
-      // 페이지 로드 시 최초 실행
-      document.addEventListener('DOMContentLoaded', function() {
-          checkPrdStatus(); // 페이지가 로드되면 현재 선택된 항목에 따라 버튼 상태 초기화
-      });
+    // 페이지 로드 시 최초 실행
+    document.addEventListener('DOMContentLoaded', function() {
+        checkPrdStatus(); // 페이지가 로드되면 현재 선택된 항목에 따라 버튼 상태 초기화
+    });
+    
   </script>
 
 </body>

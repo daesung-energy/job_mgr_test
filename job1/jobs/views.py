@@ -522,18 +522,34 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
     # 회기 선택 후 화면
 
     if request.method == 'POST':
-        prd_cd_selected = request.POST["prd_cd_selected"]
-        dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
-        context = {
-            'title' : '부서 기본정보', # 제목
-            'prd_list' : BsPrd.objects.all(),
-            'user_name' : user_name,
-            'activate' : 'no', #버튼 컨트롤 off
-            'prd_cd_selected' : prd_cd_selected,
-            'dept_login_nm' : dept_login_nm,
-            'status' : 'tab_before'
-        }
+        prd_cd_selected = request.POST["prd_cd_selected"]
+
+        try:
+            dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+            context = {
+                'title' : '부서 기본정보', # 제목
+                'prd_list' : BsPrd.objects.all(),
+                'user_name' : user_name,
+                'activate' : 'no', #버튼 컨트롤 off
+                'prd_cd_selected' : prd_cd_selected,
+                'dept_login_nm' : dept_login_nm,
+                'status' : 'tab_before'
+            }
+
+        except:
+            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+
+            context = {
+                'title' : '부서 기본정보', # 제목
+                'prd_list' : BsPrd.objects.all(),
+                'user_name' : user_name,
+                'activate' : 'no', #버튼 컨트롤 off
+                'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
+                'dept_login_nm' : dept_login_nm,
+                'status' : 'tab_before'
+            }
 
     return render(request, 'jobs/JB101.html', context)
 
@@ -1087,7 +1103,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
     if request.method == 'POST':
 
-        action = request.POST["action"]
+        action = request.POST["action"] # action1: 직무 현황표, action2: 직무 기술서
 
         prd_selected = request.POST["prd_selected"]
         dept_cd_selected = request.POST["dept_cd_selected"]
@@ -1174,7 +1190,8 @@ def JB103_4(request): # 직무 현황표, 기술서 print
         dept_nm = df_dept.loc[0].dept_nm
         dept_po = df_dept.loc[0].dept_po
 
-        if action == "action1": # 직무 현황표 버튼 눌렀을 때
+        # 직무 현황표 버튼 눌렀을 때
+        if action == "action1":
             
             wb = Workbook()
 
@@ -1256,7 +1273,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             """
             두번째 Sheet : 직무 데이터
             """
-            ws_data = wb.create_sheet("직무표", 2)        # 2번째 index에 sheet 생성
+            ws_data = wb.create_sheet("직무표", 2) # 2번째 index에 sheet 생성
 
             HEADER_1 = 1     # 항목명 첫째줄
             HEADER_2 = 2     # 항목명 둘째줄
@@ -1276,9 +1293,13 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             # 열 너비 지정(A~Z열)
             alphabet_list = list(ascii_uppercase)
             for c in alphabet_list:
-                if c in ["F", "G", "H", "J", "P"]:    
+                # if c in ["F", "G", "H", "J", "P"]:    
+                #     ws_data.column_dimensions[c].width = COL_WIDTH_1
+                # elif c in ["I", "K", "N", "Q", "R", "S"]: 
+                #     ws_data.column_dimensions[c].width = COL_WIDTH_2
+                if c in ["F", "G", "H", "J", "P", "Q"]:    
                     ws_data.column_dimensions[c].width = COL_WIDTH_1
-                elif c in ["I", "K", "N", "Q", "R", "S"]: 
+                elif c in ["I", "K", "N", "R", "S"]: 
                     ws_data.column_dimensions[c].width = COL_WIDTH_2
                 elif c in ["E"]: 
                     ws_data.column_dimensions[c].width = COL_WIDTH_3
@@ -1296,14 +1317,18 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             ws_data.row_dimensions[1].height = 20
 
             # 헤더: 항목 명칭
+            # header1 = ["직무\n(Job)", "책무\n(Duty)", "과업\n(Task)", "과업 담당자", "업무 특성", \
+            #         "업무 수준 및 등급", "", "", "", "", "과업\n수행시간\n(연간)", \
+            #         "활동\n(Activity)", "수행 결과물", "최종 보고대상", "관련 부서", \
+            #         "수행\n빈도", "수행시간", "", "", "활동 담당자"]
             header1 = ["직무\n(Job)", "책무\n(Duty)", "과업\n(Task)", "과업 담당자", "업무 특성", \
                     "업무 수준 및 등급", "", "", "", "", "과업\n수행시간\n(연간)", \
                     "활동\n(Activity)", "수행 결과물", "최종 보고대상", "관련 부서", \
-                    "수행\n빈도", "수행시간", "", "", "활동 담당자"]
+                    "수행빈도", "", "수행시간", "", "활동 담당자"]
             header2 = ["", "", "", "", "정형/비정형", \
                     "중요도\n(1~5)", "난이도\n(1~5)", "숙련도\n(1~5)", "업무수준\n(계)", "등급", "", \
                     "", "", "", "", \
-                    "", "수행건수\n(연간)", "건당\n소요시간", "소요시간\n(연간)", ""]
+                    "빈도", "건수", "건당\n소요시간", "소요시간\n(연간)", ""]
             ws_data.append(header1)
             ws_data.append(header2)
 
@@ -1392,7 +1417,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
                 final_rpt_to = ws_data.cell(row=row_no, column=14)
                 dept_rltd = ws_data.cell(row=row_no, column=15)
                 act_prfrm_freq = ws_data.cell(row=row_no, column=16)
-                act_prfrm_cnt_ann = ws_data.cell(row=row_no, column=17)
+                act_prfrm_cnt = ws_data.cell(row=row_no, column=17)
                 act_prfrm_tm_cs = ws_data.cell(row=row_no, column=18)
                 act_prfrm_tm_ann = ws_data.cell(row=row_no, column=19)
                 act_prsn_chrg = ws_data.cell(row=row_no, column=20)
@@ -1402,7 +1427,8 @@ def JB103_4(request): # 직무 현황표, 기술서 print
                 dept_rltd.value = r['dept_rltd']
                 # act_prfrm_freq.value = r['act_prfrm_freq']
                 act_prfrm_freq.value = r['cc_code_nm']
-                act_prfrm_cnt_ann.value = r['act_prfrm_cnt_ann']
+                # act_prfrm_cnt.value = r['act_prfrm_cnt_ann']
+                act_prfrm_cnt.value = r['act_prfrm_cnt']
                 act_prfrm_tm_cs.value = r['act_prfrm_tm_cs']
                 act_prfrm_tm_ann.value = r['act_prfrm_tm_ann']
                 act_prsn_chrg.value = r['act_prsn_chrg']
@@ -1411,7 +1437,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
                 final_rpt_to.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
                 dept_rltd.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
                 act_prfrm_freq.alignment = Alignment(horizontal="center", vertical="top")
-                act_prfrm_cnt_ann.alignment = Alignment(horizontal="center", vertical="top")
+                act_prfrm_cnt.alignment = Alignment(horizontal="center", vertical="top")
                 act_prfrm_tm_cs.alignment = Alignment(horizontal="center", vertical="top")
                 act_prfrm_tm_ann.alignment = Alignment(horizontal="center", vertical="top")
                 act_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
@@ -1419,7 +1445,9 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             """ 열 병합은 데이터 처리 후에 마지막에 진행 """
             # 열 병합
             ws_data.merge_cells(start_row=HEADER_1, start_column=6, end_row=HEADER_1, end_column=10)   # 업무 수준 및 등급
-            ws_data.merge_cells(start_row=HEADER_1, start_column=17, end_row=HEADER_1, end_column=19)  # 수행시간
+            # ws_data.merge_cells(start_row=HEADER_1, start_column=17, end_row=HEADER_1, end_column=19)  # 수행시간
+            ws_data.merge_cells(start_row=HEADER_1, start_column=16, end_row=HEADER_1, end_column=17)  # 수행빈도(신규)
+            ws_data.merge_cells(start_row=HEADER_1, start_column=18, end_row=HEADER_1, end_column=19)  # 수행시간
             # 행 병합: 헤더 1 & 2
             ws_data.merge_cells(start_row=HEADER_1, start_column=1, end_row=HEADER_2, end_column=1)   # 직무
             ws_data.merge_cells(start_row=HEADER_1, start_column=2, end_row=HEADER_2, end_column=2)   # 책무
@@ -1430,7 +1458,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             ws_data.merge_cells(start_row=HEADER_1, start_column=13, end_row=HEADER_2, end_column=13)   # 수행 결과물
             ws_data.merge_cells(start_row=HEADER_1, start_column=14, end_row=HEADER_2, end_column=14)   # 최종 보고대상
             ws_data.merge_cells(start_row=HEADER_1, start_column=15, end_row=HEADER_2, end_column=15)   # 관련 부서
-            ws_data.merge_cells(start_row=HEADER_1, start_column=16, end_row=HEADER_2, end_column=16)   # 수행빈도
+            # ws_data.merge_cells(start_row=HEADER_1, start_column=16, end_row=HEADER_2, end_column=16)   # 수행빈도
             ws_data.merge_cells(start_row=HEADER_1, start_column=20, end_row=HEADER_2, end_column=20)   # 활동 담당자
 
             # 행 고정
@@ -2015,7 +2043,7 @@ def JB103_grid(request): # 직무정보 조회 초기화면
     original_rows_2=JobActivity.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
     data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
                 'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
-                'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
+                'act_prfrm_cnt': rows.act_prfrm_cnt, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
                 'rpt_nm': rows.rpt_nm, 'job_seq':rows.job_seq, 'duty_seq':rows.duty_seq, 'task_seq':rows.task_seq, 'act_seq':rows.act_seq } for rows in original_rows_2]
 
     df2 = pd.DataFrame(data_list_2)
