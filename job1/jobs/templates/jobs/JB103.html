@@ -20,7 +20,7 @@
                             <p>회 기</p>
                         </th>
                         <th>                           
-                            <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                            <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="clearLocalStorage(); this.form.submit()">
                                 {% for item in prd_list %}
                                 <option value="{{ item.prd_cd }}" {%if prd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
                                 {% endfor %}
@@ -78,8 +78,8 @@
                         <!-- 선택된 직무에 따라 책무 목록이 동적으로 생성 -->
                     </div>
                     <button id="addDuty" class="add_3" type="button">책무 추가</button>
-                    <!-- <button id="copyDuty" class="add_3" type="button">책무 복사</button>
-                    <button id="pasteDuty" class="add_3" type="button">책무 붙여넣기</button> -->
+                    <button id="copyDuty" class="add_3" type="button">책무 복사</button>
+                    <button id="pasteDuty" class="add_3" type="button">책무 붙여넣기</button>
                 </div>
                 </div>
 
@@ -95,7 +95,9 @@
                     <!-- 선택된 직무와 책무에 따라 과업 목록이 동적으로 생성 -->
                 </div>
                 </div>
-                <button id="addTask" class="add_3"  type="button">과업 추가</button>
+                <button id="addTask" class="add_3" type="button">과업 추가</button>
+                <button id="copyTask" class="add_3" type="button">과업 복사</button>
+                <button id="pasteTask" class="add_3" type="button">과업 붙여넣기</button>
 
                 <!-- 활동 Div -->
                 <p style="font-family: Seed-Medium; font-size: 14px; margin-top: 10px;"><span>활동</span><span style="margin-left:290px;">업무 수행자</span>
@@ -152,6 +154,7 @@
                 }
 
         var copiedDuty = null;
+        var copiedTask = null;
 
         document.addEventListener("DOMContentLoaded", function() { // DOM이 로드되면 실행되는 함수
         
@@ -571,57 +574,74 @@
 
         });
 
+        document.getElementById('copyDuty').addEventListener('click', function() { // 책무 복사 기능
+            var selectedJobRadio = document.querySelector('input[name="job"]:checked');
+            var selectedDutyRadio = document.querySelector('input[name="duty"]:checked');
+            if (selectedJobRadio && selectedDutyRadio) {
+                var selectedJobCd = selectedJobRadio.value;
+                var selectedDutyName = selectedDutyRadio.value;
+                copiedDuty = jsonData.filter(data => data.job_cd === selectedJobCd && data.duty_nm === selectedDutyName); // 선택한 직무의 선택한 책무를 복사
+                alert('책무가 복사되었습니다.');
+            } else {
+                alert('복사할 책무와 직무를 선택해주세요.');
+            }
+        });
+        
+        document.getElementById('pasteDuty').addEventListener('click', function() { // 책무 붙여넣기 기능
+            var selectedJobRadio = document.querySelector('input[name="job"]:checked'); // 붙여넣을 대상 직무 라디오 버튼 가져오기
+            if (selectedJobRadio && copiedDuty) { // 붙여넣을 대상 직무가 선택되었고, 복사된 책무가 존재할 경우
+                var selectedJobCd = selectedJobRadio.value; // 선택된 직무의 직무코드 가져와서 변수 selectedJobCd에 저장
+                var jobSeq = jsonData.find(data => data.job_cd === selectedJobCd).job_seq; // 선택된 직무의 job_seq 가져와서 변수 jobSeq에 저장
 
-        // // 책무 복사 기능
-        // document.getElementById('copyDuty').addEventListener('click', function() {
-        //     var selectedJobRadio = document.querySelector('input[name="job"]:checked');
-        //     var selectedDutyRadio = document.querySelector('input[name="duty"]:checked');
-        //     if (selectedJobRadio && selectedDutyRadio) {
-        //         var selectedJobCd = selectedJobRadio.value;
-        //         var selectedDutyName = selectedDutyRadio.value;
-        //         copiedDuty = jsonData.filter(data => data.job_cd === selectedJobCd && data.duty_nm === selectedDutyName);
-        //         alert('책무가 복사되었습니다.');
-        //     } else {
-        //         alert('복사할 책무와 직무를 선택해주세요.');
-        //     }
-        // });
+                // 붙여넣을 직무의 가장 큰 duty_seq 값을 가져와서 1 증가시킴. 이 값을 새로운 책무의 duty_seq로 사용
+                var maxDutySeq = Math.max(...jsonData.filter(data => data.job_cd === selectedJobCd).map(data => data.duty_seq), 0) + 1;
 
-        // // 책무 붙여넣기 기능
-        // document.getElementById('pasteDuty').addEventListener('click', function() {
-        //     var selectedJobRadio = document.querySelector('input[name="job"]:checked');
-        //     if (selectedJobRadio && copiedDuty) {
-        //         var selectedJobCd = selectedJobRadio.value;
-        //         var jobSeq = jsonData.find(data => data.job_cd === selectedJobCd).job_seq;
+                // 붙여넣기 할 책무명이 이미 그 직무 내에 존재하는지 확인
+                var existingDuties = jsonData.filter(data => data.job_cd === selectedJobCd).map(data => data.duty_nm); // 선택된 직무의 책무명들을 가져옴
+                 // 복사된 책무가 이미 존재하는지 확인
+                var duplicateFound = copiedDuty.some(duty => existingDuties.includes(duty.duty_nm + ' (복사됨)') || existingDuties.includes(duty.duty_nm));
 
-        //         // 현재 직무의 가장 큰 duty_seq 값을 가져와서 1 증가시킴
-        //         var maxDutySeq = Math.max(...jsonData.filter(data => data.job_cd === selectedJobCd).map(data => data.duty_seq), 0) + 1;
+                if (duplicateFound) { // 복사된 책무가 이미 존재할 경우
+                    alert('같은 이름의 책무가 이미 존재합니다.'); // 경고 표시
+                    return; // pasteDuty 함수 종료
+                }
 
-        //         // 붙여넣기 할 책무가 이미 존재하는지 확인
-        //         var existingDuties = jsonData.filter(data => data.job_cd === selectedJobCd).map(data => data.duty_nm);
-        //         var duplicateFound = copiedDuty.some(duty => existingDuties.includes(duty.duty_nm + ' (복사됨)'));
+                var newDuties = copiedDuty.map(duty => { // 복사된 책무를 붙여넣기. duty는 copiedDuty 배열의 각 요소이다.
+                    var newDuty = { ...duty, job_cd: selectedJobCd, job_seq: jobSeq, duty_seq: maxDutySeq }; // 새로운 책무 데이터 생성. newDuty는 copiedDuty의 각 요소를 복사한 객체이다.
+                    newDuty.duty_nm += ' (복사됨)'; // 책무명에 ' (복사됨)'을 추가하여 새로운 책무명 생성
 
-        //         if (duplicateFound) {
-        //             alert('같은 이름의 책무가 이미 존재합니다.');
-        //             return;
-        //         }
+                    // selectedJobCd가 JC001 또는 JC002이면 특정 값을 null로 설정
+                    if (selectedJobCd === 'JC001' || selectedJobCd === 'JC002') {
+                        newDuty.work_lv_imprt = null;
+                        newDuty.work_lv_dfclt = null;
+                        newDuty.work_lv_prfcn = null;
+                        newDuty.work_lv_sum = null;
+                        newDuty.work_grade = null;
+                        newDuty.work_attrbt = null;
+                        newDuty.prfrm_tm_ann = null;
+                        newDuty.act_prfrm_cnt = null;
+                        newDuty.act_prfrm_freq = null;
+                        newDuty.act_prfrm_cnt_ann = null;
+                        newDuty.act_prfrm_tm_cs = null;
+                        newDuty.act_prfrm_tm_ann = null;
+                        newDuty.dept_rltd = null;
+                        newDuty.final_rpt_to = null;
+                        newDuty.rpt_nm = null;
+                    }
 
-        //         var newDuties = copiedDuty.map(duty => {
-        //             var newDuty = { ...duty, job_cd: selectedJobCd, job_seq: jobSeq, duty_seq: maxDutySeq };
-        //             newDuty.duty_nm += ' (복사됨)';
-        //             return newDuty;
-        //         });
+                    return newDuty; // 새로운 책무 데이터 반환
+                });
 
-        //         jsonData.push(...newDuties);
-        //         updateDutyList(selectedJobCd);
-        //         alert('책무가 붙여넣기 되었습니다.');
-        //         copiedDuty = null; // 붙여넣기 후 copiedDuty 초기화
-        //     } else if (!selectedJobRadio) {
-        //         alert('붙여넣기 할 직무를 선택해주세요.');
-        //     } else {
-        //         alert('붙여넣기 할 책무가 없습니다.');
-        //     }
-        // });
-
+                jsonData.push(...newDuties); // 새로운 책무 데이터를 jsonData에 추가. ...은 배열을 펼쳐서 각 요소를 전달한다. push는 여러 개의 요소를 추가할 수 있다.
+                updateDutyList(selectedJobCd); // 책무 목록을 다시 생성하여 변경사항을 반영
+                alert('책무가 붙여넣기 되었습니다.'); // 붙여넣기 완료 메시지 표시
+                copiedDuty = null; // 붙여넣기 후 copiedDuty 초기화
+            } else if (!selectedJobRadio) { // 붙여넣을 대상 직무가 선택되지 않았을 경우
+                alert('붙여넣기 할 직무를 선택해주세요.'); // 사용자에게 직무를 선택하라는 경고 표시
+            } else { // 복사된 책무가 없을 경우
+                alert('붙여넣기 할 책무가 없습니다.'); // 사용자에게 복사된 책무가 없다는 경고 표시
+            }
+        });
 
 /////////////////////////////////////////////////////// 과업 //////////////////////////////////////////////////////////////////////////////////////////
         
@@ -1140,7 +1160,86 @@
             }
         });
 
-//////////////////////////////////////////////////활동//////////////////////////////////////////////////////////////////////////////////////////////
+        document.getElementById('copyTask').addEventListener('click', function() { // 과업 복사 기능
+            var selectedJobRadio = document.querySelector('input[name="job"]:checked'); // 선택된 직무 라디오 버튼 값을 저장. 값은 직무 코드
+            var selectedDutyRadio = document.querySelector('input[name="duty"]:checked'); // 선택된 책무 라디오 버튼 값을 저장. 값은 책무명
+            var selectedTaskRadio = document.querySelector('input[name="task"]:checked'); // 선택된 과업 라디오 버튼 값을 저장. 값은 과업명
+            if (selectedJobRadio && selectedDutyRadio && selectedTaskRadio) { // 모든 라디오 버튼이 선택되었는지 확인
+                // 모든 라디오 버튼이 선택된 상태라면, 선택된 과업을 복사하여 copiedTask에 저장
+                var selectedJobCd = selectedJobRadio.value;
+                var selectedDutyName = selectedDutyRadio.value;
+                var selectedTaskName = selectedTaskRadio.value;
+                // 선택된 직무의 선택된 책무의 선택된 과업명을 가진 데이터들을 copiedTask에 저장
+                copiedTask = jsonData.filter(data => data.job_cd === selectedJobCd && data.duty_nm === selectedDutyName && data.task_nm === selectedTaskName);
+                alert('과업이 복사되었습니다.');
+            } else {
+                alert('복사할 직무 → 책무 → 과업을 선택해주세요.');
+            }
+        });
+
+        document.getElementById('pasteTask').addEventListener('click', function() { // 과업 붙여넣기 기능
+            var selectedJobRadio = document.querySelector('input[name="job"]:checked'); // 선택된 직무 라디오 버튼 값을 저장. 값은 직무 코드
+            var selectedDutyRadio = document.querySelector('input[name="duty"]:checked'); // 선택된 책무 라디오 버튼 값을 저장. 값은 책무명
+            if (selectedJobRadio && selectedDutyRadio && copiedTask) { // 직무, 책무, 복사된 과업이 모두 선택되었는지 확인
+                var selectedJobCd = selectedJobRadio.value; // 선택된 직무 코드를 저장
+                var selectedDutyName = selectedDutyRadio.value; // 선택된 책무명을 저장
+                
+                // 붙여넣는 직무의 job_seq 가져옴
+                var selectedJobSeq = jsonData.find(data => data.job_cd === selectedJobCd).job_seq;
+                // 붙여넣는 책무의 duty_seq 가져옴
+                var selectedDutySeq = jsonData.find(data => data.job_cd === selectedJobCd && data.duty_nm === selectedDutyName).duty_seq;
+
+                // 현재 책무의 가장 큰 task_seq 값을 가져와서 1 증가시킴
+                var maxTaskSeq = Math.max(...jsonData.filter(data => data.duty_nm === selectedDutyName).map(data => data.task_seq), 0) + 1;
+
+                // 붙여넣기 할 과업이 이미 존재하는지 확인
+                var existingTasks = jsonData.filter(data => data.duty_nm === selectedDutyName).map(data => data.task_nm);
+                var duplicateFound = copiedTask.some(task => existingTasks.includes(task.task_nm + ' (복사됨)'));
+
+                if (duplicateFound) {
+                    alert('같은 이름의 과업이 이미 존재합니다.');
+                    return;
+                }
+
+                var newTasks = copiedTask.map(task => {
+                    var newTask = { ...task, duty_nm: selectedDutyName, task_seq: maxTaskSeq, job_cd: selectedJobCd, job_seq: selectedJobSeq, duty_seq: selectedDutySeq };
+                    newTask.task_nm += ' (복사됨)';
+
+                    // selectedJobCd가 JC001 또는 JC002이면 특정 값을 null로 설정
+                    if (selectedJobCd === 'JC001' || selectedJobCd === 'JC002') {
+                        newTask.work_lv_imprt = null;
+                        newTask.work_lv_dfclt = null;
+                        newTask.work_lv_prfcn = null;
+                        newTask.work_lv_sum = null;
+                        newTask.work_grade = null;
+                        newTask.work_attrbt = null;
+                        newTask.prfrm_tm_ann = null;
+                        newTask.act_prfrm_cnt = null;
+                        newTask.act_prfrm_freq = null;
+                        newTask.act_prfrm_cnt_ann = null;
+                        newTask.act_prfrm_tm_cs = null;
+                        newTask.act_prfrm_tm_ann = null;
+                        newTask.dept_rltd = null;
+                        newTask.final_rpt_to = null;
+                        newTask.rpt_nm = null;
+                    }
+                    
+                    return newTask;
+                });
+
+                jsonData.push(...newTasks);
+                updateTaskList(selectedJobCd, selectedDutyName); // 과업 리스트를 업데이트합니다.
+                alert('과업이 붙여넣기 되었습니다.');
+                copiedTask = null; // 붙여넣기 후 copiedTask 초기화
+            } else if (!selectedDutyRadio) {
+                alert('붙여넣기 할 책무를 선택해주세요.');
+            } else if (!copiedTask) {
+                alert('붙여넣기 할 과업이 없습니다.');
+            }
+        });
+
+
+////////////////////////////////////////////////// 활동 //////////////////////////////////////////////////////////////////////////////////////////////
 
         // 활동 목록을 업데이트하는 함수
         function updateActivityList(selectedJob, selectedDuty, selectedTask) {
@@ -1732,10 +1831,7 @@
             updateActivityList(selectedJob, selectedDuty, selectedTaskNm);
         });
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+///////////////////////////////////////////////// 기타 함수 ///////////////////////////////////////////////////////////////////////////////////////
 
         document.getElementById('dataForm').onsubmit = function() { // 폼 제출 시 실행되는 함수
             // jsonData 변수는 서버로 전송하기 전에 설정한 JSON 데이터를 담고 있는 변수
