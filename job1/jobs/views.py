@@ -10,6 +10,7 @@ import datetime as dt
 from django.utils import timezone
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
 import json
 import numpy as np
 #import mysql.connector
@@ -538,23 +539,35 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
                 'status' : 'tab_before'
             }
 
-        except:
-            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+        except ObjectDoesNotExist as e: # 로그인한 부서가 해당 회기에 없을 때
+
+            # 오류 메시지 띄워주고 탭 선택할 수 없도록 막는다.
+            messages.error(request, '해당 회기에 로그인한 부서가 없습니다.')
+
+            # context = {
+            #     'title' : '부서 기본정보', # 제목
+            #     'prd_list' : BsPrd.objects.all(),
+            #     'user_name' : user_name,
+            #     'activate' : 'no', #버튼 컨트롤 off
+            #     'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
+            #     'dept_login_nm' : dept_login_nm,
+            #     'status' : 'tab_before'
+            # }
 
             context = {
                 'title' : '부서 기본정보', # 제목
                 'prd_list' : BsPrd.objects.all(),
                 'user_name' : user_name,
                 'activate' : 'no', #버튼 컨트롤 off
-                'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
-                'dept_login_nm' : dept_login_nm,
-                'status' : 'tab_before'
+                'prd_cd_selected' : prd_cd_selected,
+                'status' : 'tab_before',
+                'tab_activate' : 'no' # 탭 선택 못하도록 막음
             }
 
     return render(request, 'jobs/JB101.html', context)
 
 
-def JB102(request): # JB102 페이지의 초기화면 - 회기 선택 화면
+def JB102(request): # JB102 페이지의 초기화면 - 회기 선택은 JB102_1에서 함
 
     # 경영기획팀이면 team_list 있고 경영기획팀 아니면 team_list 없음
 
@@ -597,11 +610,9 @@ def JB102_copy(request): #JB102 회기 띄워줌
     return render(request, 'jobs/JB102_copy.html', context)
 
 
-def JB103(request): # JB103페이지의 초기화면
+def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로그인 부서에 대한 정보를 가져옴)
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
-    # print('user', request.user.username)
-    # print(VJb110F.objects.get(prd_cd="2022A", dept_cd="DD01", job_cd="JC001", job_nm="팀리더").cnt_task)
 
     dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
@@ -611,7 +622,7 @@ def JB103(request): # JB103페이지의 초기화면
         'title' : '직무 상세정보', # 제목
         'prd_selected' : last_prd_cd,
         'prd_done' : BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn,
-        'dept_selected_key' : "former" # 부서 선택 전
+        # 'dept_selected_key' : "former" # 부서 선택 전
     }
 
     if dept_login == "DD06":
@@ -644,19 +655,30 @@ def JB103(request): # JB103페이지의 초기화면
 
     df2 = pd.DataFrame(data_list_2)
 
-    df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge, 순서는 job_seq, duty_seq, task_seq, act_seq 순
+    try:
 
-    # job_nm 찾기
-    original_rows_3 = BsJob.objects.filter(prd_cd=last_prd_cd)
-    data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
-    df4 = pd.DataFrame(data_list_3)
+        df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge, 순서는 job_seq, duty_seq, task_seq, act_seq 순
 
-    df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+        # job_nm 찾기
+        original_rows_3 = BsJob.objects.filter(prd_cd=last_prd_cd)
+        data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
+        df4 = pd.DataFrame(data_list_3)
 
-    # df3.to_excel('df3.xlsx')
-    df_json = df3.to_json(orient='records')
+        df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
 
-    context.update({'data' : df_json})
+        # df3.to_excel('df3.xlsx')
+        df_json = df3.to_json(orient='records')
+
+        context.update({'data' : df_json})
+
+    except pd.errors.MergeError as e:
+
+        messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+
+        # 버튼 컨트롤 다 막아야 함
+        context.update({'button_control' : 'no'})
+
+        context.update({'data' : 'null'})
 
     return render(request, 'jobs/JB103.html', context)
 
@@ -669,60 +691,107 @@ def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화�
         prd_selected = request.POST["prd_selected"]
 
         dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
-        dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
-        context = {
-            'title' : '직무 상세정보', # 제목
-            'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-            'prd_selected' : prd_selected,
-            'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
-            'dept_selected_key' : "former" # 부서 선택 전
-        }
+        try:
+            dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
-        if dept_login == "DD06":
-            context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
-            context['dept_login_nm'] = dept_login_nm
-            context['dept_cd_selected'] = dept_login
-        else:
-            context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
-            context['dept_login_nm'] = dept_login_nm
-            context['dept_cd_selected'] = dept_login
+            context = {
+                'title' : '직무 상세정보', # 제목
+                'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                # 'dept_selected_key' : "former" # 부서 선택 전
+            }
 
-        # 회기, 부서 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
-        original_rows=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
+            if dept_login == "DD06":
+                context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
+            else:
+                context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
 
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
-                    'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                    'work_grade': rows.work_grade_id, 'work_attrbt': rows.work_attrbt,
-                    'prfrm_tm_ann': rows.prfrm_tm_ann } for rows in original_rows]
+            # 회기, 부서 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
+            original_rows=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
 
-        df1 = pd.DataFrame(data_list)
-       
+            data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
+                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
+                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                        'work_grade': rows.work_grade_id, 'work_attrbt': rows.work_attrbt,
+                        'prfrm_tm_ann': rows.prfrm_tm_ann } for rows in original_rows]
 
-        # job_activity 접근
-        original_rows_2=JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
-        data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
-                    'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq, 'act_prfrm_cnt' : rows.act_prfrm_cnt,
-                    'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                    'dept_rltd': rows.dept_rltd, 'final_rpt_to' : rows.final_rpt_to, 'rpt_nm': rows.rpt_nm,
-                    'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq} for rows in original_rows_2]
+            df1 = pd.DataFrame(data_list)
 
-        df2 = pd.DataFrame(data_list_2)
+            # job_activity 접근
+            original_rows_2=JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_login) # 나중에 prd_cd 바꿔줘야 함
+            data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
+                        'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq, 'act_prfrm_cnt' : rows.act_prfrm_cnt,
+                        'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
+                        'dept_rltd': rows.dept_rltd, 'final_rpt_to' : rows.final_rpt_to, 'rpt_nm': rows.rpt_nm,
+                        'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq} for rows in original_rows_2]
 
-        df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge
+            df2 = pd.DataFrame(data_list_2)
 
-        # job_nm 찾기
-        original_rows_3 = BsJob.objects.filter(prd_cd=prd_selected)
-        data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
-        df4 = pd.DataFrame(data_list_3)
+            df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge
 
-        df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+            # job_nm 찾기
+            original_rows_3 = BsJob.objects.filter(prd_cd=prd_selected)
+            data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
+            df4 = pd.DataFrame(data_list_3)
 
-        # df3.to_excel('df3.xlsx')
-        df_json = df3.to_json(orient='records')
+            df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
 
-        context.update({'data' : df_json})
+            # df3.to_excel('df3.xlsx')
+            df_json = df3.to_json(orient='records')
+
+            context.update({'data' : df_json})
+        
+        except pd.errors.MergeError as e: # 바꾼 회기에 그 부서가 없을 때(dept_login_nm)이 없을 때.
+
+            # 메시지 띄움
+            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+
+            # 회기는 그대로 띄워주되, data는 null로 처리하고, button_control 막아준다.
+            context = {
+                'title' : '직무 상세정보', # 제목
+                'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                # 'dept_selected_key' : "former", # 부서 선택 전
+                'button_control' : 'no'
+            }
+
+            context.update({'data' : 'null'})
+
+            # 부서 리스트 만들어주기
+            if dept_login == "DD06":
+                context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
+            else:
+                context['dept_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
+
+
+        except ObjectDoesNotExist as e1:
+                
+                # 메시지 띄움
+                messages.error(request, '해당 회기에 로그인한 부서가 없습니다.')
+    
+                # 회기는 그대로 띄워주되, data는 null로 처리하고, button_control 막아준다.
+                context = {
+                    'title' : '직무 상세정보', # 제목
+                    'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+                    'prd_selected' : prd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                    # 'dept_selected_key' : "former", # 부서 선택 전
+                    'button_control' : 'no'
+                }
+    
+                context.update({'data' : 'null'})
+
 
     return render(request, 'jobs/JB103.html', context)
 
@@ -757,29 +826,50 @@ def JB103_2(request): #JB103 부서 선택 후 화면(직무 띄워주는 화면
 
         df2 = pd.DataFrame(data_list_2)
 
-        df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge
+        try:
 
-        # job_nm 찾기
-        original_rows_3 = BsJob.objects.filter(prd_cd=prd_selected)
-        data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
-        df4 = pd.DataFrame(data_list_3)
+            df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq']) # job_task와 job_activity merge
 
-        df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+            # job_nm 찾기
+            original_rows_3 = BsJob.objects.filter(prd_cd=prd_selected)
+            data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
+            df4 = pd.DataFrame(data_list_3)
 
-        # df3.to_excel('df3.xlsx')
-        df_json = df3.to_json(orient='records')
+            df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
 
-        context = {
-            'title' : '직무 상세정보', # 제목
-            'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-            'prd_selected' : prd_selected,
-            'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
-            'dept_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서 목록은 그대로 둔다.
-            'dept_cd_selected' : dept_cd_selected,
-            'data' : df_json,
-            'dept_selected_key' : "latter" # 부서 선택 후
-            # 데이터프레임을 JSON 형식으로 변환하여 전달
-        }
+            # df3.to_excel('df3.xlsx')
+            df_json = df3.to_json(orient='records')
+
+            context = {
+                'title' : '직무 상세정보', # 제목
+                'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                'dept_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서 목록은 그대로 둔다.
+                'dept_cd_selected' : dept_cd_selected,
+                'data' : df_json,
+                # 'dept_selected_key' : "latter" # 부서 선택 후
+                # 데이터프레임을 JSON 형식으로 변환하여 전달
+            }
+
+        except pd.errors.MergeError as e: # 경영기획팀이 회기 내에서 부서를 선택했는데, 그 부서가 회기에 존재하긴 하지만 직무 데이터가 없을 경우(신생 부서)
+            # data null, button_ctrl 막음
+                
+            # 메시지 띄움
+            messages.error(request, '해당 회기에 선택한 부서의 직무정보가 없습니다.')
+
+            # 회기는 그대로 띄워주되, data는 null로 처리하고, button_control 막아준다.
+            context = {
+                'title' : '직무 상세정보', # 제목
+                'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                'dept_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서 목록은 그대로 둔다.
+                'dept_cd_selected' : dept_cd_selected,
+                'button_control' : 'no'
+            }
+
+            context.update({'data' : 'null'})
 
     return render(request, 'jobs/JB103.html', context)
 
@@ -2091,12 +2181,13 @@ def JB103_grid(request): # 직무정보 조회 초기화면
 
     except pd.errors.MergeError as e:
 
-        messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
+        # messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
+        messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
 
         context = {
             'prd' : BsPrd.objects.all(),
             'prd_cd_selected' : last_prd_cd,
-            'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+            # 'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
             'my_value' : "에러",
             'activate' : 'no', #버튼 컨트롤 off
         }
@@ -2187,7 +2278,7 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
     #return redirect('BS101') #BS101로 돌아감.
 
 
-def JB108(request): # 직무현황 제출 초기화면 - 회기선택화면
+def JB108(request): # 직무현황 제출 초기화면
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
     prd_done_yn = BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn
@@ -2249,7 +2340,7 @@ def JB110(request): # 부서 업무량 분석화면 초기 화면 + 회기 선�
         'title' : '부서 업무량 분석', # 제목
         'prd_list' : BsPrd.objects.all(),
         'user_name' : user_name,
-        'activate' : 'no', #버튼 컨트롤 off
+        # 'activate' : 'no', #버튼 컨트롤 off
         'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
         'dept_login_nm' : dept_login_nm,
         'status' : 'tab_before'
@@ -2259,17 +2350,35 @@ def JB110(request): # 부서 업무량 분석화면 초기 화면 + 회기 선�
 
     if request.method == 'POST':
         prd_cd_selected = request.POST["prd_cd_selected"]
-        dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
-        context = {
-            'title' : '부서 업무량 분석', # 제목
-            'prd_list' : BsPrd.objects.all(),
-            'user_name' : user_name,
-            'activate' : 'no', #버튼 컨트롤 off
-            'prd_cd_selected' : prd_cd_selected,
-            'dept_login_nm' : dept_login_nm,
-            'status' : 'tab_before'
-        }
+        try:
+            dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+            context = {
+                'title' : '부서 업무량 분석', # 제목
+                'prd_list' : BsPrd.objects.all(),
+                'user_name' : user_name,
+                'activate' : 'no', #버튼 컨트롤 off
+                'prd_cd_selected' : prd_cd_selected,
+                'dept_login_nm' : dept_login_nm,
+                'status' : 'tab_before'
+            }
+
+        except ObjectDoesNotExist as e: # 회기 선택을 했는데 로그인한 부서가 그 회기에 없는 경우
+            
+            # 탭 선택 비활성화 시켜줌.
+
+            messages.error(request, '해당 회기에 로그인한 부서가 없습니다.')
+
+            context = {
+                'title' : '부서 업무량 분석', # 제목
+                'prd_list' : BsPrd.objects.all(),
+                'user_name' : user_name,
+                'activate' : 'no', #버튼 컨트롤 off
+                'prd_cd_selected' : prd_cd_selected,
+                'status' : 'tab_before',
+                'tab_activate' : 'no' # 탭 선택 비활성화
+            }
 
     return render(request, 'jobs/JB110.html', context)
 
@@ -2883,7 +2992,7 @@ def BS300_5(request): # 부서 추가
             char = BsDept.objects.filter(prd_cd_id=prd_cd_selected).order_by('dept_cd').last().dept_cd
             new_dept_cd = code_prefix + f"{(int(char[2:5]) + 1):02d}"  # char의 마지막 두 숫자를 기준으로 새 코드 생성
 
-            BsDept.objects.create(prd_cd_id=prd_cd_selected, dept_cd=new_dept_cd, dept_nm=new_dept_nm, dept_po=0, dept_to=0)
+            BsDept.objects.create(prd_cd_id=prd_cd_selected, dept_cd=new_dept_cd, dept_nm=new_dept_nm, dept_po=0, dept_to=0, job_details_submit_yn='N')
 
             for i, j in zip(dept_ttl_nm, dept_ttl_cnt):
                 BsTtlCnt.objects.create(prd_cd_id=prd_cd_selected, dept_cd_id=new_dept_cd, ttl_nm=i, ttl_cnt=j)
@@ -4513,7 +4622,7 @@ def jb101_4(request): # 부서원 그룹 탭에서 저장 및 취소 눌렀을 �
     return render(request, 'jobs/JB101.html', context)
 
 
-def JB102_1(request): # 직무 기본정보의 부서 선택할 수 있도록 띄워줌
+def JB102_1(request): # 직무 기본정보 회기 선택화면 - 회기를 선택하면 로그인한 부서에 따라 다른 정보를 띄워줌. 직무유형 선택하게 함.
 
     if request.method == 'POST':
 
@@ -4522,24 +4631,63 @@ def JB102_1(request): # 직무 기본정보의 부서 선택할 수 있도록 �
         key = request.POST["key_prd_select"]
 
         dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
-        dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
-        context = {
+        try:
+            dept_login_nm = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
-        'prd_list' : BsPrd.objects.all(),
-        'title' : '직무 기본정보', # 제목
-        'prd_selected' : prd_selected,
-        'job_type_selected' : "former" # 직무유형 선택 전
-        }
+            context = {
 
-        if dept_login == "DD06":
-            context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected)
-            context['dept_login_nm'] = dept_login_nm
-            context['dept_selected'] = dept_login
-        else:
-            context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
-            context['dept_login_nm'] = dept_login_nm
-            context['dept_selected'] = dept_login
+            'prd_list' : BsPrd.objects.all(),
+            'title' : '직무 기본정보', # 제목
+            'prd_selected' : prd_selected,
+            'job_type_selected' : "former" # 직무유형 선택 전
+
+            }
+
+            if dept_login == "DD06":
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected)
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_selected'] = dept_login
+            else:
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_selected'] = dept_login
+
+        except ObjectDoesNotExist as e: # 새로운 부서가 로그인했을 때, 그 부서가 없었던 회기를 선택할 때만 나타난다.
+
+            # 오류 메시지 띄워주고 라디오 버튼 선택 막는다.
+
+            messages.error(request, '해당 회기에 로그인한 부서가 없습니다.')
+
+            # last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
+
+            # dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
+
+            # context = {
+            #     'title' : '직무 기본정보', # 제목
+            #     'prd_list' : BsPrd.objects.all(),
+            #     'prd_selected' : last_prd_cd,
+            #     'job_type_selected' : "former", # 직무유형 선택 전
+            # }
+
+            # context['team_list'] = BsDept.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_login)
+            # context['dept_login_nm'] = dept_login_nm
+            # context['dept_selected'] = dept_login
+
+            context = {
+                'title' : '직무 기본정보', # 제목
+                'prd_list' : BsPrd.objects.all(),
+                'prd_selected' : prd_selected,
+                'job_type_selected' : "former", # 직무유형 선택 전
+                'radio_activate': 'no', # 라디오 버튼 비활성화
+            }
+
+            if dept_login == "DD06":
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected)
+                context['dept_selected'] = dept_login
+            else:
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
+                context['dept_selected'] = dept_login
 
     return render(request, 'jobs/JB102.html', context)
 
@@ -6412,76 +6560,73 @@ def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
 
             df2 = pd.DataFrame(data_list_2)
 
-            try:
+            
+            df3 = pd.merge(df1, df2)
 
-                df3 = pd.merge(df1, df2)
+            # dataframe의 index를 열로 만들어줌
+            df3.reset_index(inplace=True)
 
-                # dataframe의 index를 열로 만들어줌
-                df3.reset_index(inplace=True)
+            # df3의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
+            df3['index_pos'] = df3['index']
 
-                # df3의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
-                df3['index_pos'] = df3['index']
+            # job_nm 열을 추가
+            df3['job_nm'] = df3['job_cd'].apply(lambda x: BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm)
 
-                # job_nm 열을 추가
-                df3['job_nm'] = df3['job_cd'].apply(lambda x: BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm)
+            # job_cd 열 삭제
+            df3.drop('job_cd', axis=1, inplace=True)
 
-                # job_cd 열 삭제
-                df3.drop('job_cd', axis=1, inplace=True)
+            # job_seq, duty_seq, task_seq, act_seq 순으로 정렬
+            df3 = df3.sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq'])
 
-                # job_seq, duty_seq, task_seq, act_seq 순으로 정렬
-                df3 = df3.sort_values(['job_seq', 'duty_seq', 'task_seq', 'act_seq'])
+            # 데이터프레임을 JSON 형식으로 변환하여 전달
+            df_json = df3.to_json(orient='records')
 
-                # 데이터프레임을 JSON 형식으로 변환하여 전달
-                df_json = df3.to_json(orient='records')
+            context = {
+                'data' : df_json,
+                'prd_cd_selected' : prd_cd_selected,
+                'prd' : BsPrd.objects.all(),
+            }
 
-                context = {
-                    'data' : df_json,
-                    'prd_cd_selected' : prd_cd_selected,
-                    'prd' : BsPrd.objects.all(),
-                }
+            if dept_login == "DD06":
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected) 
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
+            else:
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
 
-                if dept_login == "DD06":
-                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected) 
-                    context['dept_login_nm'] = dept_login_nm
-                    context['dept_cd_selected'] = dept_login
-                else:
-                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
-                    context['dept_login_nm'] = dept_login_nm
-                    context['dept_cd_selected'] = dept_login
+            return render(request, 'jobs/JB103_grid.html', context)
 
-                return render(request, 'jobs/JB103_grid.html', context)
+        except pd.errors.MergeError as e:
 
-            except pd.errors.MergeError as e:
-
-                # error_message = "해당 회기 및 부서에는 데이터가 없습니다."
-                messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
-
-                context = {
-                    'prd' : BsPrd.objects.all(),
-                    'prd_cd_selected' : prd_cd_selected,
-                    'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
-                    'my_value' : "에러"
-                }
-
-                if dept_login == "DD06":
-                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
-                    context['dept_login_nm'] = dept_login_nm
-                    context['dept_cd_selected'] = dept_login
-                else:
-                    context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
-                    context['dept_login_nm'] = dept_login_nm
-                    context['dept_cd_selected'] = dept_login
-
-                return render(request, 'jobs/JB103_grid.html', context)
-        
-        except:
-
-            messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
+            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
 
             context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
-                'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+                # 'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+                'my_value' : "에러"
+            }
+
+            if dept_login == "DD06":
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected) #마지막 회기의 부서 띄워주는게 좋을 듯
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
+            else:
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+                context['dept_login_nm'] = dept_login_nm
+                context['dept_cd_selected'] = dept_login
+
+            return render(request, 'jobs/JB103_grid.html', context)
+        
+        except ObjectDoesNotExist as e:
+
+            messages.error(request, '해당 회기에 로그인한 부서가 없습니다.')
+
+            context = {
+                'prd' : BsPrd.objects.all(),
+                'prd_cd_selected' : prd_cd_selected,
                 'my_value' : "에러"
             }
 
@@ -6558,13 +6703,12 @@ def JB103_grid_2(request): # 부서 선택 후 조회 화면(경영기획팀만 
 
         except pd.errors.MergeError as e:
 
-            # error_message = "해당 회기 및 부서에는 데이터가 없습니다."
-            messages.error(request, f'에러 발생: {"해당 회기 및 부서 내 데이터 없음"}')
+            messages.error(request, '해당 회기에 선택한 부서의 직무정보가 없습니다.')
 
             context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
-                'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
+                # 'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
                 'my_value' : "에러",
                 'team_list' : BsDept.objects.filter(prd_cd=prd_cd_selected),
                 'dept_cd_selected' : dept_cd_selected,
@@ -6573,43 +6717,63 @@ def JB103_grid_2(request): # 부서 선택 후 조회 화면(경영기획팀만 
             return render(request, 'jobs/JB103_grid.html', context)
 
 
-def JB108_1(request): # 직무현황 제출 - 부서를 선택할 수 있도록 함
+def JB108_1(request): # 직무현황 제출 - 회기 선택
 
     if request.method == 'POST':
 
-        #html에서 회기 선택
-        prd_selected = request.POST["prd_selected"]
-        key = request.POST["key_prd_select"]
-        # print(prd_selected)
-        prd_done_yn = BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn
-        dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
+        try:
+            #html에서 회기 선택
+            prd_selected = request.POST["prd_selected"]
+            key = request.POST["key_prd_select"]
+            # print(prd_selected)
+            prd_done_yn = BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn
+            dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
 
-        submit_yn = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).job_details_submit_yn
+            submit_yn = BsDept.objects.get(prd_cd=prd_selected, dept_cd=dept_login).job_details_submit_yn
 
-        if prd_done_yn == 'N':
-                if submit_yn == 'N':
-                    confirm_text = "직무현황을 제출하지 않았습니다."
-                else:
-                    confirm_text = "직무현황을 제출한 상태입니다."
-        else:
-            confirm_text = "마감된 회기입니다."
+            if prd_done_yn == 'N':
+                    if submit_yn == 'N':
+                        confirm_text = "직무현황을 제출하지 않았습니다."
+                    else:
+                        confirm_text = "직무현황을 제출한 상태입니다."
+            else:
+                confirm_text = "마감된 회기입니다."
 
-        context = {
-            'title' : '직무 현황제출',
-            'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-            'key' : key, # 회기 바꿨다는 뜻,
-            'prd_selected' : prd_selected,
-            'prd_done_yn' : prd_done_yn,
-            'modified' : "n",
-            'confirm_text' : confirm_text
-        }
+            context = {
+                'title' : '직무 현황제출',
+                'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+                'key' : key, # 회기 바꿨다는 뜻,
+                'prd_selected' : prd_selected,
+                'prd_done_yn' : prd_done_yn,
+                'modified' : "n",
+                'confirm_text' : confirm_text
+            }
 
-        if dept_login == "DD06":
-            context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected)
-            context['dept_selected'] = dept_login
-        else:
-            context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
-            context['dept_selected'] = dept_login
+            if dept_login == "DD06":
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected)
+                context['dept_selected'] = dept_login
+            else:
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
+                context['dept_selected'] = dept_login
+
+        except ObjectDoesNotExist as e:
+
+            messages.error(request, '해당 회기에 로그인한 부서가 없습니다.')
+
+            context = {
+                'title' : '직무 현황제출',
+                'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
+                'prd_selected' : prd_selected,
+                'modified' : "n",
+                'confirm_text' : "해당 회기에 부서 정보가 없습니다."
+            }
+
+            if dept_login == "DD06":
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected)
+                context['dept_selected'] = dept_login
+            else:
+                context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
+                context['dept_selected'] = dept_login
 
     return render(request, 'jobs/JB108.html', context)
 
@@ -6859,7 +7023,7 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
             'title': '부서 업무량 분석',  # 제목
             'prd_list': BsPrd.objects.all(),
             'prd_cd_selected': prd_cd_selected,
-            'activate': 'no',  # 버튼 컨트롤 off
+            # 'activate': 'no',  # 버튼 컨트롤 off
             'status': 'tab_after',
             'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
             'dept_login_nm' : dept_login_nm
@@ -6876,53 +7040,67 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
 
         # 선택된 탭에 따라 tab 값 설정
         if span_name == 'span1': # 직무별 업무량 분석 탭일 경우
-            context['tab'] = "tab1"
 
-            # v_jb110f 뷰에서 해당 부서의 업무량 분석 정보를 가져와서 dataframe 생성
-            analysis_target = VJb110F.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
-            data_list = [{'job_nm' : rows.job_nm, 'cnt_task' : rows.cnt_task, 'wrk_tm' : rows.wrk_tm, 'wrk_ratio1' : rows.wrk_ratio1,
-                          'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
-                            'work_grade' : rows.work_grade  } for rows in analysis_target]
-            
-            df1 = pd.DataFrame(data_list)
+            try: 
+                context['tab'] = "tab1"
 
-            # job_cd열 추가. BsJob열 참조
-            job_cd_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_nm=x).job_cd for x in df1['job_nm']]
-            df1['job_cd'] = job_cd_list
+                # v_jb110f 뷰에서 해당 부서의 업무량 분석 정보를 가져와서 dataframe 생성
+                analysis_target = VJb110F.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+                data_list = [{'job_nm' : rows.job_nm, 'cnt_task' : rows.cnt_task, 'wrk_tm' : rows.wrk_tm, 'wrk_ratio1' : rows.wrk_ratio1,
+                            'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
+                                'work_grade' : rows.work_grade  } for rows in analysis_target]
+                
+                df1 = pd.DataFrame(data_list)
 
-            # df1을 job_cd 순으로 정렬
-            df1 = df1.sort_values(by='job_cd')
+                # job_cd열 추가. BsJob열 참조
+                job_cd_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_nm=x).job_cd for x in df1['job_nm']]
+                df1['job_cd'] = job_cd_list
 
-            df1 = df1.fillna('') # NaN값을 ''로 채워줌
+                # df1을 job_cd 순으로 정렬
+                df1 = df1.sort_values(by='job_cd')
 
-            sum_1 = df1['cnt_task'].sum() # 과업수 합계
-            # ''을 제외하고 wrK_tm의 합계를 구한다.
-            sum_2 = df1.loc[df1['wrk_tm'] != '', 'wrk_tm'].sum() # 업무량 합계
-            # 연간 수행시간의 합에서 각 연간 수행시간을 나누어 구성비를 구한다. 그 구성비를 리스트로 만든다. 단, NaN값은 0으로 처리한다.
-            ratio_list = [(x/sum_2)*100 if x != '' else 0 for x in df1['wrk_tm']]
-            # 이 리스트의 합을 구한다.
-            sum_3 = round(sum(ratio_list), 1)
-            print(sum_3)
-            
-            # sum_2 = df1['wrk_tm'].sum() # 업무량 합계
-            # sum_3 = df1['imprt'].sum() # 중요도 합계
+                df1 = df1.fillna('') # NaN값을 ''로 채워줌
 
-            context.update({
-                'dept_selected': dept_login,
-                'dept_selected_nm' : dept_login_nm,
-                'activate': 'yes', # 버튼 컨트롤 on
-                'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
-                'analysis' : df1,
-                'sum_1' : sum_1,
-                'sum_2' : sum_2,
-                'sum_3' : sum_3,
-            })
+                sum_1 = df1['cnt_task'].sum() # 과업수 합계
+                # ''을 제외하고 wrK_tm의 합계를 구한다.
+                sum_2 = df1.loc[df1['wrk_tm'] != '', 'wrk_tm'].sum() # 업무량 합계
+                # 연간 수행시간의 합에서 각 연간 수행시간을 나누어 구성비를 구한다. 그 구성비를 리스트로 만든다. 단, NaN값은 0으로 처리한다.
+                ratio_list = [(x/sum_2)*100 if x != '' else 0 for x in df1['wrk_tm']]
+                # 이 리스트의 합을 구한다.
+                sum_3 = round(sum(ratio_list), 1)
+                print(sum_3)
+                
+                # sum_2 = df1['wrk_tm'].sum() # 업무량 합계
+                # sum_3 = df1['imprt'].sum() # 중요도 합계
+
+                context.update({
+                    'dept_selected': dept_login,
+                    'dept_selected_nm' : dept_login_nm,
+                    # 'activate': 'yes', # 버튼 컨트롤 on
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+                    'analysis' : df1,
+                    'sum_1' : sum_1,
+                    'sum_2' : sum_2,
+                    'sum_3' : sum_3,
+                })
+
+            except KeyError as e:
+
+                messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+
+                context.update({
+                    'dept_selected': dept_login,
+                    'dept_selected_nm' : dept_login_nm,
+                    # 'activate': 'yes', # 버튼 컨트롤 on
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+                })
+
 
         elif span_name == 'span2': # 담당자별 업무량 분석 탭일 경우
             context['tab'] = "tab2"
 
             context.update({
-                'activate': 'yes', # 버튼 컨트롤 on
+                # 'activate': 'yes', # 버튼 컨트롤 on
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'dept_selected' : dept_login
             })
@@ -6947,43 +7125,49 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
             'dept_selected': dept_selected,
             'dept_selected_nm' : BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_selected).dept_nm,
             'tab': tab,
-            'activate': 'yes', # 버튼 컨트롤 on
+            # 'activate': 'yes', # 버튼 컨트롤 on
             'status': 'tab_after',
             'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn
         }
 
         if tab == "tab1": # 부서 정보 탭 선택한 상태일 시 - 부서 성과책임 표시
 
-            # v_jb110f 뷰에서 해당 부서의 업무량 분석 정보를 가져와서 dataframe 생성
-            analysis_target = VJb110F.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
-            data_list = [{'job_nm' : rows.job_nm, 'cnt_task' : rows.cnt_task, 'wrk_tm' : rows.wrk_tm, 'wrk_ratio1' : rows.wrk_ratio1,
-                          'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
-                            'work_grade' : rows.work_grade  } for rows in analysis_target]
-            df1 = pd.DataFrame(data_list)
+            try:
 
-            # job_cd열 추가. BsJob열 참조
-            job_cd_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_nm=x).job_cd for x in df1['job_nm']]
-            df1['job_cd'] = job_cd_list
+                # v_jb110f 뷰에서 해당 부서의 업무량 분석 정보를 가져와서 dataframe 생성
+                analysis_target = VJb110F.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
+                data_list = [{'job_nm' : rows.job_nm, 'cnt_task' : rows.cnt_task, 'wrk_tm' : rows.wrk_tm, 'wrk_ratio1' : rows.wrk_ratio1,
+                            'imprt' : rows.imprt, 'dfclt' : rows.dfclt, 'prfcn' : rows.prfcn, 'wrk_lv_sum' : rows.wrk_lv_sum,
+                                'work_grade' : rows.work_grade  } for rows in analysis_target]
+                df1 = pd.DataFrame(data_list)
 
-            # df1을 job_cd 순으로 정렬
-            df1 = df1.sort_values(by='job_cd')
+                # job_cd열 추가. BsJob열 참조
+                job_cd_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_nm=x).job_cd for x in df1['job_nm']]
+                df1['job_cd'] = job_cd_list
+
+                # df1을 job_cd 순으로 정렬
+                df1 = df1.sort_values(by='job_cd')
+                
+                df1 = df1.fillna('') # NaN값을 ''로 채워줌
+
+                sum_1 = df1['cnt_task'].sum() # 과업수 합계
+                # ''을 제외하고 wrK_tm의 합계를 구한다.
+                sum_2 = df1.loc[df1['wrk_tm'] != '', 'wrk_tm'].sum() # 업무량 합계
+                # 연간 수행시간의 합에서 각 연간 수행시간을 나누어 구성비를 구한다. 그 구성비를 리스트로 만든다. 단, NaN값은 0으로 처리한다.
+                ratio_list = [(x/sum_2)*100 if x != '' else 0 for x in df1['wrk_tm']]
+                # 이 리스트의 합을 구한다.
+                sum_3 = round(sum(ratio_list), 1)
+                
+                context.update({
+                    'analysis' : df1,
+                    'sum_1' : sum_1,
+                    'sum_2' : sum_2,
+                    'sum_3' : sum_3,
+                })
             
-            df1 = df1.fillna('') # NaN값을 ''로 채워줌
+            except KeyError as e:
 
-            sum_1 = df1['cnt_task'].sum() # 과업수 합계
-            # ''을 제외하고 wrK_tm의 합계를 구한다.
-            sum_2 = df1.loc[df1['wrk_tm'] != '', 'wrk_tm'].sum() # 업무량 합계
-            # 연간 수행시간의 합에서 각 연간 수행시간을 나누어 구성비를 구한다. 그 구성비를 리스트로 만든다. 단, NaN값은 0으로 처리한다.
-            ratio_list = [(x/sum_2)*100 if x != '' else 0 for x in df1['wrk_tm']]
-            # 이 리스트의 합을 구한다.
-            sum_3 = round(sum(ratio_list), 1)
-            
-            context.update({
-                'analysis' : df1,
-                'sum_1' : sum_1,
-                'sum_2' : sum_2,
-                'sum_3' : sum_3,
-            })
+                messages.error(request, '해당 회기에 선택한 부서의 정보가 없습니다.')
 
         elif tab == "tab2": # 부서원 탭 선택한 상태일 시 - 부서원 목록 표시
             

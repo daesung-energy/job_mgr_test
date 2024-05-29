@@ -43,9 +43,16 @@
 
                 <!-- 탭 선택에 따라 값을 다르게 하여 submit한다. 그 값은 view파일에서 어떤 탭인지 구분할 수 있는 key값(span)으로 쓰인다. -->
                 <div style="padding-left: 20px;">
-                <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
-                <span style="padding-right: 40px"></span>
-                <span name="span2" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
+                    {% if tab_activate == 'no' %}
+                        <span name="span1" style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
+                        <span style="padding-right: 40px"></span>
+                        <span name="span2" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
+                    {% else %}
+                        <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %}
+                        style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
+                        <span style="padding-right: 40px"></span>
+                        <span name="span2" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
+                    {% endif %}
                 </div>
             </form>
             </div>
@@ -135,9 +142,26 @@
 
         </div>
 
+         <!-- 에러 메시지 -->
+        {% if messages %}
+        <div id="messages" style="display: none;">
+            {% for message in messages %}
+            <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
     </wrap>
     
     <script>
+
+        var messagesContainer = document.getElementById('messages');
+                if (messagesContainer) {
+                    var messages = messagesContainer.getElementsByTagName('span');
+                    for (var i = 0; i < messages.length; i++) {
+                    alert(messages[i].textContent);
+                    }
+                }
 
         ////////////////////////////// 프린트 ///////////////////////////////////////////////////////////////////////////////////////////////
         function printTableContent(tableId, prdCdSelected, deptSelectedNm) {

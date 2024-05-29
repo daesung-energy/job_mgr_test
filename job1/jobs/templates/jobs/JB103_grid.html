@@ -71,25 +71,43 @@
         <!-- Grid 영역 -->
         <div id="myGrid" class="ag-theme-alpine" style="height: 600px; width: auto; margin-top:20px; margin-left:20px;" ></div>
     </div>
+
+    <!-- 에러 메시지 출력하는 부분 -->
+    <div id="myElement" data-my-value= {{ mylist }}></div>
+    {% if messages %}
+    <div id="messages" style="display: none;">
+        {% for message in messages %}
+        <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
 </body>
 
 <script>
 
-    // 페이지 로드 시 메시지를 확인하고 에러 시 팝업 표시
-    $(document).ready(function () {
-        // Django에서 전달한 값 확인
-        var myValue = "{{ my_value }}";
+    // // 페이지 로드 시 메시지를 확인하고 에러 시 팝업 표시
+    // $(document).ready(function () {
+    //     // Django에서 전달한 값 확인
+    //     var myValue = "{{ my_value }}";
 
-        // 특정 조건을 만족하는 경우에만 팝업 띄우기
-        if (myValue === "에러") {
-            // 여기에 팝업을 띄우는 JavaScript 코드 작성
-            alert("해당 회기 및 부서에 데이터가 없습니다.");
+    //     // 특정 조건을 만족하는 경우에만 팝업 띄우기
+    //     if (myValue === "에러") {
+    //         // 여기에 팝업을 띄우는 JavaScript 코드 작성
+    //         alert("해당 회기 및 부서에 데이터가 없습니다.");
+    //     }
+    //     if (myValue === "에러2") {
+    //         // 여기에 팝업을 띄우는 JavaScript 코드 작성
+    //         alert("직무코드 / 과업 / 활동명을 확인하십시오.");
+    //     }
+    // });
+    var messagesContainer = document.getElementById('messages'); // 에러 메시지 출력하는 부분
+      if (messagesContainer) {
+        var messages = messagesContainer.getElementsByTagName('span');
+        for (var i = 0; i < messages.length; i++) {
+          alert(messages[i].textContent);
         }
-        if (myValue === "에러2") {
-            // 여기에 팝업을 띄우는 JavaScript 코드 작성
-            alert("직무코드 / 과업 / 활동명을 확인하십시오.");
-        }
-    });
+      }
 
     document.addEventListener('DOMContentLoaded', function () {
     

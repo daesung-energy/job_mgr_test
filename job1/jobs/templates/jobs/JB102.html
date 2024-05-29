@@ -74,13 +74,16 @@
         <div class="input-radio1" style="padding-top: 20px;">
           <span class="label-text2" style="padding-right: 30px;"> 직무유형 </span>
           <!-- 라디오 버튼 선택하면 바로 해당 값 조회됨(onchange) -->
-          <input type="radio" name="job_type" value="all" onchange="this.form.submit();" {% if job_type == "all" %} checked {% endif %}/>
+          <input type="radio" name="job_type" value="all" onchange="this.form.submit();" {% if job_type == "all" %} checked {% endif %}
+           {% if radio_activate == 'no' %} disabled {% endif %}/>
               <label for="all" style="font-family: Seed-Regular; font-size: 16px;">전체 직무</u></label>
           &nbsp;&nbsp;&nbsp;
-          <input type="radio" name="job_type" value="common" onchange="this.form.submit();" {% if job_type == "common" %} checked {% endif %}/>
+          <input type="radio" name="job_type" value="common" onchange="this.form.submit();" {% if job_type == "common" %} checked {% endif %}
+           {% if radio_activate == 'no' %} disabled {% endif %}/>
               <label for="common" style="font-family: Seed-Regular; font-size: 16px;">공통 직무</label>
           &nbsp;&nbsp;&nbsp;
-          <input type="radio" name="job_type" value="unique" onchange="this.form.submit();" {% if job_type == "unique" %} checked {% endif %}/>
+          <input type="radio" name="job_type" value="unique" onchange="this.form.submit();" {% if job_type == "unique" %} checked {% endif %}
+            {% if radio_activate == 'no' %} disabled {% endif %}/>
               <label for="unique" style="font-family: Seed-Regular; font-size: 16px;">고유 직무</label>
         </div>
       </form>

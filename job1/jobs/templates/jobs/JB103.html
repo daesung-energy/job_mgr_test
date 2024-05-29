@@ -53,8 +53,13 @@
                     {% csrf_token %}
                     <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
                     <input type="hidden" name="dept_cd_selected" value="{{ dept_cd_selected }}">
-                    <button type="submit" class="save" name="action" value="action1">직무현황표</button>
-                    <button type="submit" class="save" name="action" value="action2">직무기술서</button>
+                    {% if button_control == 'no' %}
+                        <button type="submit" class="del_disabled" disabled>직무현황표</button>
+                        <button type="submit" class="del_disabled" disabled>직무기술서</button>
+                    {% else %}
+                        <button type="submit" class="save" name="action" value="action1">직무현황표</button>
+                        <button type="submit" class="save" name="action" value="action2">직무기술서</button>
+                    {% endif %}
                 </form>
                 </div>
             </div>
@@ -63,20 +68,20 @@
 
                 <div style="display: flex;">
                     <div id="job">
-                    <p style="font-family: Seed-Medium;"><span>직무</span></p>
-                    <div id="jobDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                    height:180px; width:400px; flex-wrap: wrap; margin-top:5px;">
-                    <!-- 여기에 직무 목록이 동적으로 생성 -->
-                    </div>
+                        <p style="font-family: Seed-Medium;"><span>직무</span></p>
+                        <div id="jobDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
+                        height:180px; width:400px; flex-wrap: wrap; margin-top:5px;">
+                        <!-- 여기에 직무 목록이 동적으로 생성 -->
+                        </div>
                     </div>
                     
                     <!-- 책무 Div -->
                     <div id="duty" style="padding-left:20px;">
-                    <p style="font-family: Seed-Medium;"><span>책무</span></p>
-                    <div id="dutyDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                    height:180px; width:400px; flex-wrap: wrap; margin-top:5px;">
+                        <p style="font-family: Seed-Medium;"><span>책무</span></p>
+                        <div id="dutyDiv" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
+                        height:180px; width:400px; flex-wrap: wrap; margin-top:5px;">
                         <!-- 선택된 직무에 따라 책무 목록이 동적으로 생성 -->
-                    </div>
+                        </div>
                     <button id="addDuty" class="add_3" type="button">책무 추가</button>
                     <button id="copyDuty" class="add_3" type="button">책무 복사</button>
                     <button id="pasteDuty" class="add_3" type="button">책무 붙여넣기</button>
@@ -120,14 +125,18 @@
                     <input type="hidden" name="jsonData" id="jsonData" value="">
                     <input type="hidden" name="prd_selected" value={{ prd_selected }}>
                     <input type="hidden" name="dept_cd_selected" value={{ dept_cd_selected }}>
-                    
-                    {% if prd_done == 'Y' %}
-                    <button class="del_disabled" disabled>저장</button>
+                    {% if button_control == 'no' %}
+                        <button type="submit" class="del_disabled" disabled>저장</button>
+                        <button type="submit" class="del_disabled" disabled>취소</button>
                     {% else %}
-                    <button type="submit" class="save" name="action" value="action1" id="saveButton">저장</button>
+                        {% if prd_done == 'Y' %}
+                        <button class="del_disabled" disabled>저장</button>
+                        <button type="submit" class="cancel" name="action" value="action2" id="cancelButton">취소</button>
+                        {% else %}
+                        <button type="submit" class="save" name="action" value="action1" id="saveButton">저장</button>
+                        <button type="submit" class="cancel" name="action" value="action2" id="cancelButton">취소</button>
+                        {% endif %}
                     {% endif %}
-                    <button type="submit" class="cancel" name="action" value="action2" id="cancelButton">취소</button>
-                    
                 </form>
             </div>
             </div>
@@ -1926,12 +1935,7 @@
             }
         });
 
-
-
         });
-
-
-
 
         function clearLocalStorage() {
             localStorage.removeItem('selectedJob');
