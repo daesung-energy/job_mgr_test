@@ -64,8 +64,9 @@ document.addEventListener("DOMContentLoaded", function() {
       link.addEventListener("click", function(event) {
         const username = "{{ user.username }}";
         const linkText = this.textContent.trim();
+        const deptMgrYn = "{{ dept_mgr_yn }}";
 
-        if (username !== "ID105" && restrictedLinks.includes(linkText)) {
+        if (deptMgrYn !== 'Y' && restrictedLinks.includes(linkText)) {
           event.preventDefault(); // 링크 이동을 막음
           alert("접근 권한이 없습니다."); // 알림 표시
         } 
@@ -169,7 +170,7 @@ document.addEventListener("DOMContentLoaded", function() {
               <a href="{% url 'BS101' %}">회기 관리</a>
               <a href="{% url 'BS105' %}">표준 정보</a>
               <a href="{% url 'BS300' %}">조직 정보</a>
-              <a href="{% url 'BS106' %}">공통 직무</a>
+              <a href="{% url 'BS106' %}">직무 관리</a>
               <a href="{% url 'BS200' %}">직무 조사</a>
             </div>
           </div>

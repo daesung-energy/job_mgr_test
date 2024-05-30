@@ -2,7 +2,6 @@ from django.db import models
 #모델 이름과 테이블 이름이 다르다는 것을 명심! 이거 안되면 MariaDB에 따로 모델을 만든다. 모델명을 제대로 써야 MariaDB의 DB에 제대로 접근할 수 있다.
 #명령어: python manage.py inspectdb - 기존의 DB/모델을 장고 모델로 가져올 수 있다. 그리고 그 안의 Meta data까지 가져오므로 정확하게 modeling 가능
 
-
 class AuthGroup(models.Model):
     name = models.CharField(unique=True, max_length=150)
 

@@ -251,7 +251,8 @@ def BS101(request): #BS101사이트의 view파일
         'tab' : 'tab1',
         'prd' : BsPrd.objects.all(),
         'prd_cd_selected' : BsPrd.objects.last().prd_cd,
-        'modified' : 'n' # 회기 복사나 삭제 작업을 하지 않았다는 키값(메시지용)
+        'modified' : 'n', # 회기 복사나 삭제 작업을 하지 않았다는 키값(메시지용),
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
     }
 
     return render(request, 'jobs/BS101.html', context1) #장고가 context를 meshup해서 html template으로 보내줌
@@ -270,6 +271,7 @@ def BS200(request):
         'prd_cd_selected' : prd_cd_selected,
         # 'result_object' : result_object,
         'modify' : "n", #수정할 수 없도록 키값 부여
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         # 'prd_selected' : BsPrd.
     }
 
@@ -282,7 +284,8 @@ def BS300(request): #BS300 초기화면 + 회기 선택 화면
         'prd' : BsPrd.objects.all(),
         'prd_cd_selected' : BsPrd.objects.all().last().prd_cd, # 마지막 회기가 디폴트로 뜰 것임
         'activate' : 'no', #버튼 컨트롤 off
-        'title' : '조직 정보' # 제목
+        'title' : '조직 정보', # 제목
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
     
     if request.method == 'POST':
@@ -293,6 +296,7 @@ def BS300(request): #BS300 초기화면 + 회기 선택 화면
             'prd' : BsPrd.objects.all(),
             'activate' : 'yes', #버튼 컨트롤 on
             'title' : '조직 정보', # 제목
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'prd_cd_selected' : prd_cd_selected
         }
 
@@ -340,6 +344,7 @@ def BS103(request): #BS103 초기화면
         register_act = 'yes' # 최종 마감 버튼을 활성화시킨다.
 
     context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         'title' : '회기 관리',
         'tab' : 'tab2',
         'prd' : BsPrd.objects.all(),
@@ -389,7 +394,8 @@ def BS105(request):
             't_grade' : BsPosGrade.objects.get(prd_cd=prd_cd_selected, pos_nm="기능직"),
             'prd' : BsPrd.objects.all(),
             'prd_cd_selected' : prd_cd_selected,
-            'activate' : "activate"
+            'activate' : "activate",
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         return render(request, 'jobs/BS105.html', context)
@@ -401,6 +407,7 @@ def BS105(request):
 
         context = {
             'prd' : BsPrd.objects.all().order_by('-prd_cd'),
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         return render(request, 'jobs/BS105.html', context)
@@ -413,6 +420,7 @@ def BS106(request): #BS106 초기화면 + 회기 선택 화면
         'prd_list' : BsPrd.objects.all().order_by('prd_cd'), # 회기 리스트
         'prd_selected' : BsPrd.objects.all().order_by('prd_cd').last().prd_cd, # 마지막 회기가 디폴트로 뜰 것임.
         'job_type_selected' : "former", # 직무유형 선택 전
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         # attribute error 처리 필요
     }
 
@@ -424,6 +432,7 @@ def BS106(request): #BS106 초기화면 + 회기 선택 화면
             'prd_list' : BsPrd.objects.all().order_by('prd_cd'), # 회기 리스트
             'prd_selected' : prd_selected,
             'job_type_selected' : "former", # 직무유형 선택 전
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
     return render(request, 'jobs/BS106.html', context)
@@ -454,6 +463,7 @@ def CC102_1(request): ## 공통코드관리 초기화면
 def CC102(request): ## 공통코드관리 초기화면
 
     context = {
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         'CC_list': CcCdHeader.objects.exclude(domain_cd="A5").all(), #CcCdHeader는 코드에 대한 개략적 정보, A5행을 제외한 모든 값을 가져옴,
         'text' : "초기",
         'title' : '공통 코드' # 제목
@@ -465,6 +475,7 @@ def CC102(request): ## 공통코드관리 초기화면
 def CC105(request):
 
     context = {
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'title' : '비밀번호 변경', # 제목
         }
 
@@ -517,6 +528,7 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
         'activate' : 'no', #버튼 컨트롤 off
         'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
         'dept_login_nm' : dept_login_nm,
+        'dept_mgr_yn': get_dept_mgr_yn(user_name),
         'status' : 'tab_before'
     }
 
@@ -536,6 +548,7 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
                 'activate' : 'no', #버튼 컨트롤 off
                 'prd_cd_selected' : prd_cd_selected,
                 'dept_login_nm' : dept_login_nm,
+                'dept_mgr_yn': get_dept_mgr_yn(user_name),
                 'status' : 'tab_before'
             }
 
@@ -544,16 +557,6 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
             # 오류 메시지 띄워주고 탭 선택할 수 없도록 막는다.
             messages.error(request, '해당 회기에 로그인한 부서가 없습니다.')
 
-            # context = {
-            #     'title' : '부서 기본정보', # 제목
-            #     'prd_list' : BsPrd.objects.all(),
-            #     'user_name' : user_name,
-            #     'activate' : 'no', #버튼 컨트롤 off
-            #     'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
-            #     'dept_login_nm' : dept_login_nm,
-            #     'status' : 'tab_before'
-            # }
-
             context = {
                 'title' : '부서 기본정보', # 제목
                 'prd_list' : BsPrd.objects.all(),
@@ -561,6 +564,7 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
                 'activate' : 'no', #버튼 컨트롤 off
                 'prd_cd_selected' : prd_cd_selected,
                 'status' : 'tab_before',
+                'dept_mgr_yn': get_dept_mgr_yn(user_name),
                 'tab_activate' : 'no' # 탭 선택 못하도록 막음
             }
 
@@ -580,6 +584,7 @@ def JB102(request): # JB102 페이지의 초기화면 - 회기 선택은 JB102_1
         'prd_list' : BsPrd.objects.all(),
         'title' : '직무 기본정보', # 제목
         'prd_selected' : last_prd_cd,
+        'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
         'job_type_selected' : "former" # 직무유형 선택 전
     }
 
@@ -672,6 +677,8 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
 
         context.update({'data' : df_json})
 
+        context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username),
+
     except pd.errors.MergeError as e:
 
         messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
@@ -680,6 +687,8 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
         context.update({'button_control' : 'no'})
 
         context.update({'data' : 'null'})
+
+        context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username),
 
     return render(request, 'jobs/JB103.html', context)
 
@@ -701,6 +710,7 @@ def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화�
                 'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                 'prd_selected' : prd_selected,
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 # 'dept_selected_key' : "former" # 부서 선택 전
             }
 
@@ -760,7 +770,8 @@ def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화�
                 'prd_selected' : prd_selected,
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                 # 'dept_selected_key' : "former", # 부서 선택 전
-                'button_control' : 'no'
+                'button_control' : 'no',
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             context.update({'data' : 'null'})
@@ -788,7 +799,8 @@ def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화�
                     'prd_selected' : prd_selected,
                     'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     # 'dept_selected_key' : "former", # 부서 선택 전
-                    'button_control' : 'no'
+                    'button_control' : 'no',
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 }
     
                 context.update({'data' : 'null'})
@@ -851,6 +863,7 @@ def JB103_2(request): #JB103 부서 선택 후 화면(직무 띄워주는 화면
                 'dept_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서 목록은 그대로 둔다.
                 'dept_cd_selected' : dept_cd_selected,
                 'data' : df_json,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 # 'dept_selected_key' : "latter" # 부서 선택 후
                 # 데이터프레임을 JSON 형식으로 변환하여 전달
             }
@@ -869,7 +882,8 @@ def JB103_2(request): #JB103 부서 선택 후 화면(직무 띄워주는 화면
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                 'dept_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서 목록은 그대로 둔다.
                 'dept_cd_selected' : dept_cd_selected,
-                'button_control' : 'no'
+                'button_control' : 'no',
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             context.update({'data' : 'null'})
@@ -1113,6 +1127,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                     'prd_selected' : prd_selected,
                     'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'dept_selected_key' : "former", # 부서 선택 후
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'data' : df_json # 데이터프레임을 JSON 형식으로 변환하여 전달
                 }
 
@@ -1168,6 +1183,7 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                     'prd_selected' : prd_selected,
                     'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'dept_selected_key' : "former", # 부서 선택 후
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'data' : df_json # 데이터프레임을 JSON 형식으로 변환하여 전달
                 }
 
@@ -1984,6 +2000,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
             'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
             'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
             'dept_selected_key' : "former", # 부서 선택 후
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'data' : df_json, # 데이터프레임을 JSON 형식으로 변환하여 전달
         }
 
@@ -2169,6 +2186,7 @@ def JB103_grid(request): # 직무정보 조회 초기화면
             'prd_cd_selected' : last_prd_cd,
             'data' : df_json,
             'activate' : 'no', #버튼 컨트롤 off
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         if dept_login == "DD06":
@@ -2193,6 +2211,7 @@ def JB103_grid(request): # 직무정보 조회 초기화면
             # 'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
             'my_value' : "에러",
             'activate' : 'no', #버튼 컨트롤 off
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         if dept_login == "DD06":
@@ -2254,6 +2273,7 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
             context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
                 'title' : '회기 관리',
                 'user_name' : 'inu',
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'today_date' : str(dt.datetime.today()).split()[0],
                 'messages': messages,  # 메시지 리스트를 context에 추가
                 'prd' : BsPrd.objects.all(),
@@ -2270,6 +2290,7 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
             context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
                 'title' : '회기 관리',
                 'user_name' : 'inu',
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'today_date' : str(dt.datetime.today()).split()[0],
                 'messages': messages,  # 메시지 리스트를 context에 추가
                 'prd' : BsPrd.objects.all(),
@@ -2304,6 +2325,7 @@ def JB108(request): # 직무현황 제출 초기화면
         'prd_done_yn' : prd_done_yn,
         'modified' : "n",
         'confirm_text' : confirm_text,
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
     }
 
     if dept_login == "DD06":
@@ -2324,7 +2346,8 @@ def JB109(request): # 업무량 분석화면 - 회기선택화면
         'prd_list' : BsPrd.objects.all(),
         'title' : '업무량 분석', # 제목
         'prd_cd_selected' : last_prd_cd,
-        'dept_selected_key' : 'former'
+        'dept_selected_key' : 'former',
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
     }
 
     return render(request, 'jobs/JB109.html', context)
@@ -2346,6 +2369,7 @@ def JB110(request): # 부서 업무량 분석화면 초기 화면 + 회기 선�
         # 'activate' : 'no', #버튼 컨트롤 off
         'prd_cd_selected' : BsPrd.objects.all().last().prd_cd,
         'dept_login_nm' : dept_login_nm,
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         'status' : 'tab_before'
     }
 
@@ -2364,6 +2388,7 @@ def JB110(request): # 부서 업무량 분석화면 초기 화면 + 회기 선�
                 'activate' : 'no', #버튼 컨트롤 off
                 'prd_cd_selected' : prd_cd_selected,
                 'dept_login_nm' : dept_login_nm,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'status' : 'tab_before'
             }
 
@@ -2377,6 +2402,7 @@ def JB110(request): # 부서 업무량 분석화면 초기 화면 + 회기 선�
                 'title' : '부서 업무량 분석', # 제목
                 'prd_list' : BsPrd.objects.all(),
                 'user_name' : user_name,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'activate' : 'no', #버튼 컨트롤 off
                 'prd_cd_selected' : prd_cd_selected,
                 'status' : 'tab_before',
@@ -2401,6 +2427,7 @@ def BS200_1(request): #BS200에서 탭 선택 후 display
                 context = { #context를 넘겨줌.
                 'title' : '직무 조사',
                 'prd' : BsPrd.objects.all(),
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'prd_cd_selected' : prd_cd_selected,
                 'job_srv_str_dt' : str(result_object.job_srv_str_dt).split()[0],
                 'job_srv_end_dt' : str(result_object.job_srv_end_dt).split()[0],
@@ -2419,6 +2446,7 @@ def BS200_1(request): #BS200에서 탭 선택 후 display
                 context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
                     'title' : '직무 조사',
                     'prd' : BsPrd.objects.all(),
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_srv_str_dt' : job_srv_str_dt,
                     'job_srv_end_dt' : job_srv_end_dt,
                     'prd_cd_selected' : prd_cd_selected,
@@ -2452,7 +2480,8 @@ def BS200_1(request): #BS200에서 탭 선택 후 display
                 'dept_list' : df1,
                 'dept_all_cnt' : dept_all_cnt,
                 'dept_y_cnt' : dept_y_cnt,
-                'dept_n_cnt' : dept_n_cnt
+                'dept_n_cnt' : dept_n_cnt,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
         if 'action' in request.POST: # 직무 제출현황 요약에서 조회 버튼 눌렀을 때
@@ -2489,6 +2518,7 @@ def BS200_1(request): #BS200에서 탭 선택 후 display
                 'dept_y_cnt' : dept_y_cnt,
                 'dept_n_cnt' : dept_n_cnt,
                 'dept_list_selected' : df2,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
     return render(request, 'jobs/BS200.html', context) #장고가 context를 meshup해서 html template으로 보내줌
@@ -2519,7 +2549,8 @@ def BS200_2(request): ## BS200 직무 조사일탭 직무조사 시작일, 종�
                 'confirm_text_1' : "해당 회기의 직무 조사 기간이 저장되었습니다.",
                 'modified' : "y", #저장되었을 경우 키값 부여. 인포 메시지 띄우기 위함.
                 'prd_str_dt' : str(bs_prd_update.prd_str_dt).split()[0],
-                'tab' : 'tab1'
+                'tab' : 'tab1',
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
         elif action == 'action2': #취소 버튼 눌렀을 때
@@ -2540,7 +2571,8 @@ def BS200_2(request): ## BS200 직무 조사일탭 직무조사 시작일, 종�
                     'prd_cd_selected' : prd_cd_selected,
                     'result_object' : result_object,
                     'modify' : "n", #수정할 수 없도록 키값 부여
-                    'tab' : 'tab1'
+                    'tab' : 'tab1',
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 }
 
             elif result_object.prd_done_yn == "N": #회기 확정되지 않은 경우 - 수정 가능
@@ -2562,7 +2594,8 @@ def BS200_2(request): ## BS200 직무 조사일탭 직무조사 시작일, 종�
                     'modify' : "y", #수정할 수 있도록 키값 부여
                     'confirm_text_1' : "해당 회기의 직무 조사 시작일과 종료일을 설정하여 저장해 주세요.",
                     'confirm_text_2' : "직무 조사 기간 변경 시 종료일을 재선택한 후 저장해 주세요.",
-                    'tab' : 'tab1'
+                    'tab' : 'tab1',
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 }
 
         return render(request, 'jobs/BS200.html', context)
@@ -2589,6 +2622,7 @@ def BS300_1(request): #BS300 회기 및 탭 선택 후 display
                 'prd_cd_selected' : prd_cd_selected,
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'dept_list' : df1,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'activate' : 'yes', #버튼 컨트롤 on
                 'tab' : "tab1",
                 'save_activate' : 'no', # 저장 버튼 activate
@@ -2602,6 +2636,7 @@ def BS300_1(request): #BS300 회기 및 탭 선택 후 display
             context = {
                 'prd_cd_selected' : prd_cd_selected,
                 'tab' : "tab2",
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'title' : '조직 정보' # 제목
             }
 
@@ -2623,6 +2658,7 @@ def BS300_1(request): #BS300 회기 및 탭 선택 후 display
                 context = {
                     'prd' : BsPrd.objects.all(),
                     'prd_cd_selected' : prd_cd_selected,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                     'pos_grade_list' : df1,
                     'pos_list' : BsPosGrade.objects.filter(prd_cd_id = prd_cd_selected),
@@ -2639,6 +2675,7 @@ def BS300_1(request): #BS300 회기 및 탭 선택 후 display
                 context = {
                     'prd' : BsPrd.objects.all(),
                     'prd_cd_selected' : prd_cd_selected,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     # 'activate' : 'yes', #버튼 컨트롤 on
                     'tab' : "tab3",
                     'title' : '조직 정보' # 제목
@@ -2655,6 +2692,7 @@ def BS300_1(request): #BS300 회기 및 탭 선택 후 display
                 context = {
                     'prd' : BsPrd.objects.all(),
                     'prd_cd_selected' : prd_cd_selected,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                     'ttl_list' : df1,
                     'activate' : 'yes', #버튼 컨트롤 on
@@ -2668,6 +2706,7 @@ def BS300_1(request): #BS300 회기 및 탭 선택 후 display
                 context = {
                     'prd' : BsPrd.objects.all(),
                     'prd_cd_selected' : prd_cd_selected,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     # 'activate' : 'yes', #버튼 컨트롤 on
                     'tab' : "tab4",
                     'title' : '조직 정보' # 제목
@@ -2725,6 +2764,7 @@ def BS300_2(request): #BS300 편집(행추가, 저장, 취소, 삭제 후)
                     'pos_list' : BsPosGrade.objects.filter(prd_cd_id = prd_cd_selected),
                     'activate' : 'yes', #버튼 컨트롤 on
                     'tab' : "tab3",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'work_grade_list' : BsWorkGrade.objects.filter(prd_cd_id=prd_cd_selected),
                     'title' : '조직 정보' # 제목
                     }
@@ -2750,6 +2790,7 @@ def BS300_2(request): #BS300 편집(행추가, 저장, 취소, 삭제 후)
                     'pos_list' : BsPosGrade.objects.filter(prd_cd_id = prd_cd_selected),
                     'activate' : 'yes', #버튼 컨트롤 on
                     'tab' : "tab3",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'work_grade_list' : BsWorkGrade.objects.filter(prd_cd_id=prd_cd_selected),
                     'title' : '조직 정보' # 제목
                 }
@@ -2789,6 +2830,7 @@ def BS300_2(request): #BS300 편집(행추가, 저장, 취소, 삭제 후)
                     'ttl_list' : df1,
                     'activate' : 'yes', #버튼 컨트롤 on
                     'tab' : "tab4",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'title' : '조직 정보' # 제목
                     }
 
@@ -2805,6 +2847,7 @@ def BS300_2(request): #BS300 편집(행추가, 저장, 취소, 삭제 후)
                     'ttl_list' : df1,
                     'activate' : 'yes', #버튼 컨트롤 on
                     'tab' : "tab4",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'title' : '조직 정보' # 제목
                     }
 
@@ -2842,6 +2885,7 @@ def BS300_3(request): # BS300 부서관리 탭에서 부서 선택했을 때, �
             'prd' : BsPrd.objects.all(),
             'prd_cd_selected' : prd_cd_selected,
             'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'dept_list' : df1,
             'activate' : 'yes', #버튼 컨트롤 on
             'tab' : tab,
@@ -2902,6 +2946,7 @@ def BS300_4(request): # 부서 관리 탭에서 부서를 선택한 후 편집�
             context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'dept_list' : df1,
                 'activate' : 'yes', #버튼 컨트롤 on
                 'tab' : tab,
@@ -2923,6 +2968,7 @@ def BS300_4(request): # 부서 관리 탭에서 부서를 선택한 후 편집�
             context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'dept_list' : df1,
                 'activate' : 'yes', # 버튼 컨트롤 on
                 'tab' : tab,
@@ -2944,6 +2990,7 @@ def BS300_4(request): # 부서 관리 탭에서 부서를 선택한 후 편집�
             context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'dept_list' : df1,
                 'activate' : 'yes', #버튼 컨트롤 on
                 'tab' : "tab1",
@@ -2962,6 +3009,7 @@ def BS300_4(request): # 부서 관리 탭에서 부서를 선택한 후 편집�
             context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'dept_list' : df1,
                 'activate' : 'yes', #버튼 컨트롤 on
                 'tab' : "tab1",
@@ -3007,6 +3055,7 @@ def BS300_5(request): # 부서 추가
         context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'dept_list' : df1,
                 'activate' : 'yes', # 버튼 컨트롤 on
                 'tab' : tab,
@@ -3259,6 +3308,7 @@ def BS103_1(request): ## 회기 선택 후 화면
             register_act = 'yes' # 최종 마감 버튼을 활성화시킨다.
 
         context = {
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'title' : '회기 관리',
             'tab' : 'tab2',
             'prd' : BsPrd.objects.all(),
@@ -3282,6 +3332,7 @@ def BS103_2(request): ## 회기 확정일 지정
         bs_prd_update.save()
 
         context = {
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'title' : '회기 관리',
             'today_date' : str(dt.datetime.today()).split()[0],
             'tab' : 'tab2',
@@ -3339,7 +3390,8 @@ def BS105_1(request): #회기 표준정보에서 회기 선택할 시 그 회기
             't_grade' : BsPosGrade.objects.get(prd_cd=prd_cd_selected, pos_nm="기능직"),
             'prd' : BsPrd.objects.all(),
             'prd_cd_selected' : prd_cd_selected,
-            'activate' : "activate"
+            'activate' : "activate",
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             return render(request, 'jobs/BS105.html', context)
@@ -3353,6 +3405,7 @@ def BS105_1(request): #회기 표준정보에서 회기 선택할 시 그 회기
                 'prd' : BsPrd.objects.all().order_by('-prd_cd'),
                 'error_message' : "해당 회기 내 데이터 없음",
                 'my_value' : "에러",
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
 
             }
 
@@ -3468,7 +3521,8 @@ def BS105_2(request): #회기 표준정보에서 등록 버튼 누를 시 그 �
             't_grade' : BsPosGrade.objects.get(prd_cd=prd_cd_selected, pos_nm="기능직"),
             'prd_cd_selected' : prd_cd_selected,
             'prd' : BsPrd.objects.all(),
-            'activate' : "activate"
+            'activate' : "activate",
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
     return render(request, 'jobs/BS105.html', context)
@@ -3480,6 +3534,7 @@ def BS106_1(request): # 직무 관리에서 회기 및 직무 유형을 선택�
         'title' : '직무 관리', # 제목
         'prd_list': BsPrd.objects.all().order_by('-prd_cd'),  # 회기 리스트
         'activate': "activate",  # 라디오 버튼 작동 시 사용
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
     }
 
     if request.method == 'POST':
@@ -3530,6 +3585,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                     'prd_selected' : prd_selected,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_list' : job_list, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
                     'job_type' : "all",
                     'activate' : "activate", # 직무유형 라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
@@ -3546,6 +3602,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                     'prd_selected' : prd_selected,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_list' : job_list.filter(job_type="공통"), # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
                     'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
                     'job_type' : "common",
@@ -3563,6 +3620,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                     'prd_selected' : prd_selected,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_list' : job_list.filter(job_type="고유"), # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
                     'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
                     'job_type' : 'unique',
@@ -3606,6 +3664,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'job_type': job_type,
                     'activate': "activate",
                     'save': "yes",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_type_selected' : "latter" # 직무유형 선택 전
                 }
 
@@ -3633,6 +3692,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'job_list': job_list,
                     'job_type' : job_type,
                     'activate' : "activate",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'save' : "yes", #저장 버튼 activate
                     'job_type_selected' : "latter" # 직무유형 선택 전
                 }
@@ -3660,6 +3720,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                         'job_type': job_type,
                         'activate': "activate",
                         'save': "yes",  # 저장 버튼 활성화
+                        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                         'new_key': "activate",  # 새 칸 추가 활성화
                         'new_code': new_code,  # 생성된 새 코드
                         'job_type_selected' : "latter" # 직무유형 선택 전
@@ -3681,6 +3742,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                         'job_list': job_list,
                         'job_type': job_type,
                         'activate': "activate",
+                        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                         'save': "yes",  # 저장 버튼 활성화
                         'new_key': "activate",  # 새 칸 추가 활성화
                         'new_code': new_code  # 생성된 새 코드
@@ -3701,6 +3763,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'job_list' : job_list,
                     'job_type' : job_type,
                     'activate' : "activate",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'save' : "yes", #저장 버튼 activate
                     'job_type_selected' : "latter" # 직무유형 선택 전
                 }
@@ -3739,6 +3802,7 @@ def BS106_3(request): # 추가 후 저장 혹은 취소 버튼 누르기
             'prd_selected': prd_selected,
             'job_list': job_list,
             'job_type': job_type,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'save': "yes",  # "저장 버튼 activate" 의미를 갖는지 확인 필요
             'activate': "activate",  # 상황에 따라 필요한지 검토
             'job_type_selected' : "latter" # 직무유형 선택 전
@@ -3786,6 +3850,7 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
                 'job_type' : job_type,
                 'radio_selected' : radio_selected,
                 'act_del' : "yes",
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'job_type_selected' : "latter" # 직무유형 선택 전
             }
 
@@ -3806,6 +3871,7 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
                 'job_type' : job_type,
                 'radio_selected' : radio_selected,
                 'act_del' : "yes",
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'job_type_selected' : "latter" # 직무유형 선택 전
             }
 
@@ -3946,6 +4012,7 @@ def CC102_a(request): ## 공통코드관리 초기화면
     if request.method == 'POST':
         common_code = request.POST["common_code"] #html에서 선택한 값(CcCdHeader 모델의 domain_cd)를 common_code라는 변수에 지정(str)
         context = {
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'title' : '공통 코드', # 제목
             'CC_list': CcCdHeader.objects.exclude(domain_cd="A5").all(), #A1은 직무 유형이라서 필요없고 다 가져옴
             'new_value' : "ready", #신규추가 버튼을 나타나게 해줌
@@ -3969,6 +4036,7 @@ def CC102_b(request): ## 공통코드 관리 수정
         #저장 버튼을 누를 때. 기존 DB 삭제하고 새로운 값들로 채워넣을 것이다. 그리고 추가 칸이 있을때와 없을 때 로직이 달라져야 한다.
         if action == 'action1':
             context = {
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'title' : '공통 코드', # 제목
                 'CC_list': CcCdHeader.objects.exclude(domain_cd="A5").all(),
                 'radio_list' : CcCdDetail.objects.filter(domain_cd=common_code),
@@ -3986,6 +4054,7 @@ def CC102_b(request): ## 공통코드 관리 수정
         elif action == 'action2':
             del_target_nm = request.POST["radanswer"] #삭제 버튼 누르면, 라디오 버튼의 선택값(cc_code_nm 즉, 공통코드이름)을 넘겨받는다.
             context = {
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'title' : '공통 코드', # 제목
                 'CC_list': CcCdHeader.objects.exclude(domain_cd="A5").all(),
                 'radio_list' : CcCdDetail.objects.filter(domain_cd=common_code),
@@ -4001,10 +4070,11 @@ def CC102_b(request): ## 공통코드 관리 수정
 
             last_number = CcCdDetail.objects.filter(domain_cd_id=common_code).order_by('cc_code').last().cc_code
             new_number = f"{(int(last_number)+1):02}"
-            print(last_number)
-            print(new_number)
+            # print(last_number)
+            # print(new_number)
 
             context = {
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'title' : '공통 코드', # 제목
                 'CC_list': CcCdHeader.objects.exclude(domain_cd="A5").all(),
                 'radio_list' : CcCdDetail.objects.filter(domain_cd=common_code),
@@ -4019,6 +4089,7 @@ def CC102_b(request): ## 공통코드 관리 수정
         elif action == 'action4' :
 
             context = {
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'title' : '공통 코드', # 제목
                 'CC_list': CcCdHeader.objects.exclude(domain_cd="A5").all(),
                 'radio_list' : CcCdDetail.objects.filter(domain_cd=common_code),
@@ -4049,6 +4120,7 @@ def CC102_c(request): ## 공통코드 관리 수정
             text = "check"
 
         context = {
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'title' : '공통 코드', # 제목
                 'CC_list': CcCdHeader.objects.exclude(domain_cd="A5").all(),
                 'radio_list' : CcCdDetail.objects.filter(domain_cd=target_domain_cd),
@@ -4082,7 +4154,8 @@ def jb101_1(request): #JB101에서 회기를 선택한 후 탭을 선택했을 �
             'activate': 'no',  # 버튼 컨트롤 off
             'status': 'tab_after',
             'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
-            'dept_login_nm' : dept_login_nm
+            'dept_login_nm' : dept_login_nm,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         if dept_login == 'DD06': # 경영기획팀이 로그인했을 경우 다른 팀들도 선택할 수 있도록 함.
@@ -4205,6 +4278,7 @@ def jb101_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
         
         tab = request.POST['tab']  # 탭 정보
 
+        dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
 
         # 공통 context 설정
         context = {
@@ -4216,7 +4290,8 @@ def jb101_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
             'tab': tab,
             'activate': 'yes', # 버튼 컨트롤 on
             'status': 'tab_after',
-            'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         if tab == "tab1": # 부서 정보 탭 선택한 상태일 시 - 부서 성과책임 표시
@@ -4329,6 +4404,7 @@ def jb101_3(request): # 저장 및 취소 버튼을 눌렀을 때(부서정보, 
             'activate': 'yes',  # 버튼 컨트롤 on
             'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
             'status': 'tab_after',
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         # 로그인 부서가 경영기획팀일 때와 아닐 때 구분
@@ -4556,6 +4632,7 @@ def jb101_4(request): # 부서원 그룹 탭에서 저장 및 취소 눌렀을 �
                 'status': 'tab_after',
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'data' : df_json,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             # 로그인 부서가 경영기획팀일 때와 아닐 때 구분
@@ -4608,6 +4685,7 @@ def jb101_4(request): # 부서원 그룹 탭에서 저장 및 취소 눌렀을 �
                 'tab': tab,
                 'activate': 'yes',  # 버튼 컨트롤 on
                 'status': 'tab_after',
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'data' : df_json
             }
@@ -4640,10 +4718,11 @@ def JB102_1(request): # 직무 기본정보 회기 선택화면 - 회기를 선�
 
             context = {
 
-            'prd_list' : BsPrd.objects.all(),
-            'title' : '직무 기본정보', # 제목
-            'prd_selected' : prd_selected,
-            'job_type_selected' : "former" # 직무유형 선택 전
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '직무 기본정보', # 제목
+                'prd_selected' : prd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                'job_type_selected' : "former" # 직무유형 선택 전
 
             }
 
@@ -4683,6 +4762,7 @@ def JB102_1(request): # 직무 기본정보 회기 선택화면 - 회기를 선�
                 'prd_selected' : prd_selected,
                 'job_type_selected' : "former", # 직무유형 선택 전
                 'radio_activate': 'no', # 라디오 버튼 비활성화
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             if dept_login == "DD06":
@@ -4701,6 +4781,7 @@ def JB102_2(request): # 직무 기본정보의 부서 선택을 받고 그 정�
 
         prd_selected = request.POST["prd_selected"]
         dept_selected = request.POST["dept_selected"]
+        dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
 
         context = {
             'title' : '직무 기본정보', # 제목
@@ -4708,6 +4789,7 @@ def JB102_2(request): # 직무 기본정보의 부서 선택을 받고 그 정�
             'team_list' : BsDept.objects.filter(prd_cd=prd_selected), # 선택한 회기의 부서 목록
             'dept_selected' : dept_selected,
             'prd_selected' : prd_selected,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'job_type_selected' : "former", # 직무 유형 선택 전 상태
 
         }
@@ -4728,6 +4810,7 @@ def JB102_3(request): # 직무 기본정보의 직무 유형 선택할 수 있�
         'activate': "activate", # 직무 유형 라디오 버튼 작동하면 하단의 직무 기본정보 표시
         'job_type': None,
         'save': "no", # 저장 버튼 활성화
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
     }
 
     if request.method == 'POST':
@@ -5055,6 +5138,8 @@ def JB102_4(request): # 직무 선택 후 직무 성과책임 조회 / 저장, �
                     context['dept_login_nm'] = dept_login_nm
                     context['dept_selected'] = dept_login
 
+        context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username)
+
     return render(request, 'jobs/JB102.html', context)
 
 
@@ -5210,6 +5295,8 @@ def JB102_5(request): # 새로운 직무를 선택하고, 직무 수행자를 �
             context['team_list'] = BsDept.objects.filter(prd_cd=prd_selected, dept_cd=dept_login)
             context['dept_login_nm'] = dept_login_nm
             context['dept_selected'] = dept_login
+
+    context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username),
 
     return render(request, 'jobs/JB102.html', context)
 
@@ -6588,6 +6675,7 @@ def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
                 'data' : df_json,
                 'prd_cd_selected' : prd_cd_selected,
                 'prd' : BsPrd.objects.all(),
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             if dept_login == "DD06":
@@ -6609,7 +6697,8 @@ def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
                 # 'error_message' : "해당 회기 및 부서에는 데이터가 없습니다.",
-                'my_value' : "에러"
+                'my_value' : "에러",
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             if dept_login == "DD06":
@@ -6630,7 +6719,8 @@ def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
             context = {
                 'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
-                'my_value' : "에러"
+                'my_value' : "에러",
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             if dept_login == "DD06":
@@ -6700,6 +6790,7 @@ def JB103_grid_2(request): # 부서 선택 후 조회 화면(경영기획팀만 
                 'prd' : BsPrd.objects.all(),
                 'team_list' : BsDept.objects.filter(prd_cd=prd_cd_selected),
                 'dept_cd_selected' : dept_cd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             return render(request, 'jobs/JB103_grid.html', context)
@@ -6715,6 +6806,7 @@ def JB103_grid_2(request): # 부서 선택 후 조회 화면(경영기획팀만 
                 'my_value' : "에러",
                 'team_list' : BsDept.objects.filter(prd_cd=prd_cd_selected),
                 'dept_cd_selected' : dept_cd_selected,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             return render(request, 'jobs/JB103_grid.html', context)
@@ -6749,7 +6841,8 @@ def JB108_1(request): # 직무현황 제출 - 회기 선택
                 'prd_selected' : prd_selected,
                 'prd_done_yn' : prd_done_yn,
                 'modified' : "n",
-                'confirm_text' : confirm_text
+                'confirm_text' : confirm_text,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             if dept_login == "DD06":
@@ -6768,7 +6861,8 @@ def JB108_1(request): # 직무현황 제출 - 회기 선택
                 'prd_list' : BsPrd.objects.all().order_by, # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                 'prd_selected' : prd_selected,
                 'modified' : "n",
-                'confirm_text' : "해당 회기에 부서 정보가 없습니다."
+                'confirm_text' : "해당 회기에 부서 정보가 없습니다.",
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
             if dept_login == "DD06":
@@ -6807,7 +6901,8 @@ def JB108_2(request): # 직무현황 제출 부서 선택받고 그 값을 html�
             'prd_done_yn' : prd_done_yn,
             'submit_yn' : submit_yn,
             'confirm_text' : confirm_text,
-            'modified' : "n"
+            'modified' : "n",
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
     return render(request, 'jobs/JB108.html', context)
@@ -6845,7 +6940,8 @@ def JB108_3(request): # 직무현황 제출/제출취소 버튼 누르고 난 �
             'prd_done_yn' : prd_done_yn,
             'submit_yn' : submit_yn,
             'confirm_text' : confirm_text,
-            'modified' : "y"
+            'modified' : "y",
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         if dept_login == "DD06":
@@ -6868,7 +6964,8 @@ def JB109_1(request): # 업무량 분석화면 - 회기 선택 후 선택한 회
             'prd_list' : BsPrd.objects.all(),
             'title' : '업무량 분석', # 제목
             'prd_cd_selected' : prd_cd_selected,
-            'dept_selected_key' : 'former'
+            'dept_selected_key' : 'former',
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
     return render(request, 'jobs/JB109.html', context)
@@ -6890,6 +6987,7 @@ def JB109_2(request): # 업무량 분석화면 - 탭 선택 후 선택한 탭을
                 'tab' : 'tab1',
                 'dept_selected_key' : 'former',
                 'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
     return render(request, 'jobs/JB109.html', context)
@@ -7002,7 +7100,8 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
                 'sum_6' : sum_6,
                 'sum_7' : sum_7,
                 'sum_8' : sum_8,
-                'overless' : overless
+                'overless' : overless,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
     return render(request, 'jobs/JB109.html', context)
@@ -7029,7 +7128,8 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
             # 'activate': 'no',  # 버튼 컨트롤 off
             'status': 'tab_after',
             'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
-            'dept_login_nm' : dept_login_nm
+            'dept_login_nm' : dept_login_nm,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         if dept_login == 'DD06': # 경영기획팀이 로그인했을 경우 다른 팀들도 선택할 수 있도록 함.
@@ -7130,7 +7230,8 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
             'tab': tab,
             # 'activate': 'yes', # 버튼 컨트롤 on
             'status': 'tab_after',
-            'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
         if tab == "tab1": # 부서 정보 탭 선택한 상태일 시 - 부서 성과책임 표시
@@ -7408,3 +7509,12 @@ def get_dept_code(user_id):
     except:
         return None  # 부서 코드가 없는 경우에 대한 처리
 
+
+def get_dept_mgr_yn(user_id):
+    prd_cd_id = "2024A"
+    try:
+        account_cd = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id).dept_cd_id
+        dept_mgr_yn = BsDept.objects.get(prd_cd_id=prd_cd_id, dept_cd=account_cd).dept_mgr_yn
+        return dept_mgr_yn
+    except:
+        return None

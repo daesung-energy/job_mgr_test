@@ -29,6 +29,8 @@
 
         // 초기 페이지 로드 시 선택된 메뉴 강조
         const currentTitle = "{{ title }}";
+        const deptMgrYn = "{{ dept_mgr_yn }}";
+
         links.forEach(link => {
           const linkText = link.textContent.trim();
           if (linkText === currentTitle) {
@@ -41,7 +43,7 @@
             const username = "{{ user.username }}";
             const linkText = this.textContent.trim();
 
-            if (username !== "ID105" && restrictedLinks.includes(linkText)) {
+            if (deptMgrYn !== 'Y' && restrictedLinks.includes(linkText)) {
               event.preventDefault(); // 링크 이동을 막음
               alert("접근 권한이 없습니다."); // 알림 표시
 
