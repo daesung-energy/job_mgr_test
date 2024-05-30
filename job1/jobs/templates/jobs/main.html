@@ -43,6 +43,7 @@
             const username = "{{ user.username }}";
             const linkText = this.textContent.trim();
 
+
             if (deptMgrYn !== 'Y' && restrictedLinks.includes(linkText)) {
               event.preventDefault(); // 링크 이동을 막음
               alert("접근 권한이 없습니다."); // 알림 표시

@@ -7285,7 +7285,11 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
 
 def main(request):
 
-    return render(request, 'jobs/main.html')
+    context = {
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+    }
+
+    return render(request, 'jobs/main.html', context)
 
 
 def get_duty_names(request): # 직무 선택에 따라 책무 불러오기
