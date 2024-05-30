@@ -40,6 +40,49 @@
 
 <script>
 
+document.addEventListener("DOMContentLoaded", function() {
+    const restrictedLinks = [
+      "직무 분류 체계",
+      "업무 분장표",
+      "업무량 분석",
+      "회기 관리",
+      "표준 정보",
+      "조직 정보",
+      "직무 관리",
+      "직무 조사",
+      "공통 코드",
+      "계정 관리",
+      "접속 이력"
+    ];
+
+    const links = document.querySelectorAll(".fakeimg a");
+
+    // 초기 페이지 로드 시 선택된 메뉴 강조
+    // const currentTitle = "{{ title }}";
+
+    links.forEach(link => {
+      link.addEventListener("click", function(event) {
+        const username = "{{ user.username }}";
+        const linkText = this.textContent.trim();
+
+        if (username !== "ID105" && restrictedLinks.includes(linkText)) {
+          event.preventDefault(); // 링크 이동을 막음
+          alert("접근 권한이 없습니다."); // 알림 표시
+        } 
+      });
+    });
+
+    const logoutLink = document.getElementById("logoutLink");
+    if (logoutLink) {
+      logoutLink.addEventListener("click", function(event) {
+        if (!confirm("로그아웃 하시겠습니까?")) {
+          event.preventDefault();
+        }
+      });
+    }
+  });
+
+
   // 매뉴얼
   function openPDF() {
     // A4 용지 비율에 맞게 창의 크기를 설정
@@ -106,7 +149,8 @@
               <a href="{% url 'JB101' %}">부서 기본정보</a>
               <a href="{% url 'JB102' %}">직무 기본정보</a>
               <a href="{% url 'JB103' %}">직무 상세정보</a>
-              <a href="{% url 'JB103_grid' %}" style="background-color: red; color: white;">직무정보 조회</a>
+              <a href="{% url 'JB103_grid' %}" style="background-color: red;">직무정보 조회</a>
+              <!-- <a href="{% url 'JB103_grid' %}" style="background-color: red; color: white;">직무정보 조회</a> -->
               <a href="{% url 'JB110' %}">부서 업무량 분석</a>
               <a href="{% url 'JB108' %}">직무 현황제출</a>
             </div>

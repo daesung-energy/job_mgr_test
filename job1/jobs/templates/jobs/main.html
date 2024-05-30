@@ -8,6 +8,70 @@
     <link rel="icon" href="{% static 'img/daesung_image.jpg' %}" />
     <link rel="stylesheet" href="{% static 'css/seed_style.css' %}?after"/>
     <style></style>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const restrictedLinks = [
+          "직무 분류 체계",
+          "업무 분장표",
+          "업무량 분석",
+          "회기 관리",
+          "표준 정보",
+          "조직 정보",
+          "직무 관리",
+          "직무 조사",
+          "공통 코드",
+          "계정 관리",
+          "접속 이력"
+        ];
+
+        const links = document.querySelectorAll(".fakeimg a");
+
+        // 초기 페이지 로드 시 선택된 메뉴 강조
+        const currentTitle = "{{ title }}";
+        links.forEach(link => {
+          const linkText = link.textContent.trim();
+          if (linkText === currentTitle) {
+            link.classList.add("selected_menu");
+          }
+        });
+
+        links.forEach(link => {
+          link.addEventListener("click", function(event) {
+            const username = "{{ user.username }}";
+            const linkText = this.textContent.trim();
+
+            if (username !== "ID105" && restrictedLinks.includes(linkText)) {
+              event.preventDefault(); // 링크 이동을 막음
+              alert("접근 권한이 없습니다."); // 알림 표시
+
+              // 현재 페이지의 a 태그 배경색을 빨간색으로 변경
+              links.forEach(link => link.classList.remove("selected_menu"));
+              const currentLink = Array.from(links).find(link => link.textContent.trim() === currentTitle);
+              if (currentLink) {
+                currentLink.classList.add("selected_menu");
+              }
+            } else {
+              // 선택한 링크에 selected 클래스 추가
+              links.forEach(link => link.classList.remove("selected_menu"));
+              this.classList.add("selected_menu");
+            }
+          });
+        });
+
+        const logoutLink = document.getElementById("logoutLink");
+        if (logoutLink) {
+          logoutLink.addEventListener("click", function(event) {
+            if (!confirm("로그아웃 하시겠습니까?")) {
+              event.preventDefault();
+            }
+          });
+        }
+      });
+
+
+
+    </script>
   </head>
   <body>
     <wrap>
@@ -49,13 +113,14 @@
             <div class="aside">
               <div class="management">
                 <div class="fakeimg" style="height: 270px">
+                  <!-- 여기서 딱히 뭘 해줄 필요 없음 -->
                   <p>직무 관리</p>
                   <a href="{% url 'JB101' %}">부서 기본정보</a>
                   <a href="{% url 'JB102' %}">직무 기본정보</a>
                   <a href="{% url 'JB103' %}">직무 상세정보</a>
                   <a href="{% url 'JB103_grid' %}">직무정보 조회</a>
                   <a href="{% url 'JB110' %}">부서 업무량 분석</a>
-                  <a href="{% url 'JB108' %}">직무현황 제출</a>
+                  <a href="{% url 'JB108' %}">직무 현황제출</a>
                 </div>
               </div>
               <div class="management">

@@ -86,9 +86,9 @@
                                 </tr>
                                 <tr>
                                     <td>
-                                    <select id="dept_select" name="dept_selected" class="select-combox3" size="5" style="height: 300px; width: 150px;" onchange="submitAndScroll(this)">
+                                    <select id="dept_select" name="dept_selected" class="select-combox3" size="5" style="height: 300px; width: 200px;" onchange="submitAndScroll(this)">
                                         {% for index, row in dept_list.iterrows %}
-                                        <option value="{{ row.dept_cd }}" {% if row.dept_cd == dept_selected %} selected {% endif %}> {{ row.dept_nm }} </option>
+                                        <option value="{{ row.dept_cd }}" {% if row.dept_cd == dept_selected %} selected {% endif %}> {{ row.dept_cd }} - {{ row.dept_nm }} </option>
                                         {% endfor %}
                                     </select>
                                     </td>

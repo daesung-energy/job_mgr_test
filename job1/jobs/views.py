@@ -654,6 +654,7 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
                 'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq} for rows in original_rows_2]
 
     df2 = pd.DataFrame(data_list_2)
+    # print(df2)
 
     try:
 
@@ -825,6 +826,8 @@ def JB103_2(request): #JB103 부서 선택 후 화면(직무 띄워주는 화면
                     'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq} for rows in original_rows_2]
 
         df2 = pd.DataFrame(data_list_2)
+        # df2엑셀로 저장
+        # df2.to_excel('df2.xlsx')
 
         try:
 
@@ -1205,10 +1208,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.112.100', # 데이터베이스 주소
+            host='130.1.200.200', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='cdh0706**', # 데이터베이스 비밀번호
-            db='betadb',
+            password='1234', # 데이터베이스 비밀번호
+            db='jobdb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -7262,10 +7265,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7337,10 +7340,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
