@@ -35,7 +35,7 @@
             </div>
 
             <div id="JB103_2" style="display: flex;">
-                <div>
+                <div style="white-space: nowrap;">
                 <!-- 팀 선택하는 폼, 이 값에 따라서 직무 목록이 바뀐다. -->
                 <form action = "{% url 'JB103_2' %}" method="POST" id="jb103_test3">
                     {% csrf_token %}
@@ -49,7 +49,7 @@
                     </p>
                 </form>
                 </div>
-                <div style="padding-left:900px">
+                <div style="padding-left:900px; white-space: nowrap;">
                 <form action = "{% url 'JB103_4' %}" method="POST" id="JB103_4">
                     {% csrf_token %}
                     <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
@@ -2034,6 +2034,7 @@
                 event.preventDefault(); // 사용자가 취소를 선택하면 작업 취소를 막음
             }
         });
+
 
         });
 
