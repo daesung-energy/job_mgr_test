@@ -744,7 +744,8 @@
                         }
                         // 과업 목록 업데이트 후에 커서를 변경된 필드에 위치시키기
                         setTimeout(() => {
-                            var updatedField = document.querySelector(`input[value="${newTaskName}"]`);
+                            var taskDiv = document.getElementById('taskDiv');
+                            var updatedField = taskDiv.querySelector(`input[value="${newTaskName}"]`);
                             if (updatedField) {
                                 updatedField.focus();
                                 updatedField.setSelectionRange(newTaskName.length, newTaskName.length);
@@ -1369,7 +1370,8 @@
                         updateActivityList(selectedJob, selectedDuty, selectedTask) // 활동 목록을 다시 생성하여 변경사항을 반영
 
                         setTimeout(() => {
-                            var updatedField = document.querySelector(`input[value="${newActivityName}"]`);
+                            var activityDiv = document.getElementById('activityDiv');
+                            var updatedField = activityDiv.querySelector(`input[value="${newActivityName}"]`);
                             if (updatedField) {
                                 updatedField.focus();
                                 updatedField.setSelectionRange(newActivityName.length, newActivityName.length);

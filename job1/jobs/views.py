@@ -622,8 +622,6 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
     dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
-    print(get_dept_mgr_yn(request.user.username))
-
     context = {
         'prd_list' : BsPrd.objects.all(),
         'title' : '직무 상세정보', # 제목
