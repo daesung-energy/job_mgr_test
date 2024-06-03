@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>다중선택</title>
+
+</head>
+<body>
+    <p> 조직 그룹 테스트 페이지 </p>
+    <p> 다중선택을 위한 테스트 페이지 </p>
+    <form id="myForm" method="post" action="{% url 'multiple' %}">
+    {% csrf_token %}
+    {{ checked_data }} 리스트 안에 있는 값 중에 선택1이 이
+    <input type="checkbox" name="check" value="선택1">1</input>
+    <input type="checkbox" name="check" value="선택2">2</input>
+    <input type="checkbox" name="check" value="선택3">3</input>
+    <input type="checkbox" name="check" value="선택4">4</input>
+    <input type="checkbox" name="check" value="선택5">5</input>
+    <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

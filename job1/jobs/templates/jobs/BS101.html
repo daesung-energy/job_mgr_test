@@ -26,7 +26,7 @@
                   <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="checkPrdStatus()">
                   {% for item in prd %}
                   <option value="{{ item.prd_cd }}" data-done="{{ item.prd_done_yn }}"
-                   {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                   {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
                   {% endfor %}
                   </select>
                   </th>

@@ -3,7 +3,9 @@
 {% block content %}
 <body>
     <wrap>
-    <div id="jb108" style="margin-left: 50px; margin-top:50px;"> 
+    <div id="jb108" style="margin-left: 50px; margin-top:50px;">
+
+        <div style="display: flex;">
         <!-- 회기 선택 div -->
         <div id = "jb108_1">
             <!-- 회기 선택 form -->
@@ -40,7 +42,7 @@
             </form>
         </div>
         <!-- 부서 선택 div -->
-        <div id = "jb108_2">
+        <div id = "jb108_2" style="padding-left:30px; padding-top:20px;">
             <!-- 부서 선택 form -->
             <form method="POST" id="dept_select" action="{% url 'JB108_2' %}">
             {% csrf_token %}
@@ -50,7 +52,7 @@
             <!-- 부서 정보 선택 -->
             <p class="label-text2"> 부서
                 <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
-                <select name="dept_selected" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
+                <select name="dept_selected" class="select-combox" onchange="this.form.submit()">
                     {% for item in team_list %}
                     <option value="{{ item.dept_cd }}" {%if dept_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
                     {% endfor %}
@@ -58,6 +60,8 @@
             </p>
             </form>
         </div>
+        </div>
+
         <!-- 직무현황 제출 div -->
         <div id = "jb108_3">
             <!-- 직무현황 제출 form -->

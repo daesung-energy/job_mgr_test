@@ -198,7 +198,7 @@
       <dl style="padding-left:650px; padding-top:5px;">
         <dd>
           <!-- title이 부서 기본정보, 직무 기본정보, 직무 상세정보, 직무 정보조회, 부서 업무량 분석, 직무 현황제출일떄만 표시 -->
-          {% if title == "부서 기본정보" or title == "직무 기본정보" or title == "직무 상세정보" or title == "직무정보 조회" or title == "부서 업무량 분석" or title == "직무 현황제출" %}
+          {% if title == "부서 기본정보" or title == "직무 기본정보" or title == "직무 상세정보" %}
           <button id="pdfButton" onclick="openPDF()"><img src="{% static 'img/manual7.png' %}" alt="매뉴얼" style="height:20px;"/></button>
           {% endif %}
         </dd>

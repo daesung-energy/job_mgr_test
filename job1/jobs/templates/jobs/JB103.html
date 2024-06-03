@@ -4,64 +4,65 @@
 
 <body>
     <wrap>
-        <div id="JB103" style="margin-left: 50px; margin-top:50px;">
+        <div id="JB103" style="margin-left: 50px; margin-top:50px; white-space: nowrap;">
             
-            <!-- 회기 선택 div -->
-            <div id = "JB103_1">
-                <!-- 회기 선택 form -->
-                <form method="POST" id="prd_select" action="{% url 'JB103_1' %}">
-                {% csrf_token %}
-                <!-- 회기 표시 박스-->
-                <div class="list-box-prd">
-                    <table>
-                    <thead>
-                        <tr>
-                        <th style="width: 100px;">
-                            <p>회 기</p>
-                        </th>
-                        <th>                           
-                            <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
-                                {% for item in prd_list %}
-                                <option value="{{ item.prd_cd }}" {%if prd_selected == item.prd_cd %} selected {% endif %}>
-                                     {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+            <div style="display: flex;">
+                <!-- 회기 선택 div -->
+                <div id = "JB103_1" style="white-space: nowrap;">
+                    <!-- 회기 선택 form -->
+                    <form method="POST" id="prd_select" action="{% url 'JB103_1' %}">
+                    {% csrf_token %}
+                    <!-- 회기 표시 박스-->
+                    <div class="list-box-prd">
+                        <table>
+                        <thead>
+                            <tr>
+                            <th style="width: 100px;">
+                                <p>회 기</p>
+                            </th>
+                            <th>                           
+                                <select name="prd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                                    {% for item in prd_list %}
+                                    <option value="{{ item.prd_cd }}" {%if prd_selected == item.prd_cd %} selected {% endif %}>
+                                        {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+                                    {% endfor %}
+                                </select>
+                            </th>
+                            </tr>
+                        </thead>
+                        </table>
+                    </div>
+                    </form>
+                </div>
+                
+                <div style="padding-top:20px; padding-left:30px; white-space: nowrap;">
+                    <!-- 팀 선택하는 폼, 이 값에 따라서 직무 목록이 바뀐다. -->
+                    <form action = "{% url 'JB103_2' %}" method="POST" id="jb103_test3">
+                        {% csrf_token %}
+                        <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
+                        <p class="label-text2"> 부서
+                            <select name="dept_cd_selected" class="select-combox" onchange="clearLocalStorage(); this.form.submit()">
+                                {% for item in dept_list %}
+                                    <option value={{ item.dept_cd }} {%if dept_cd_selected == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
                                 {% endfor %}
                             </select>
-                        </th>
-                        </tr>
-                    </thead>
-                    </table>
+                        </p>
+                    </form>
                 </div>
-                </form>
-            </div>
 
-            <div id="JB103_2" style="display: flex;">
-                <div style="white-space: nowrap;">
-                <!-- 팀 선택하는 폼, 이 값에 따라서 직무 목록이 바뀐다. -->
-                <form action = "{% url 'JB103_2' %}" method="POST" id="jb103_test3">
-                    {% csrf_token %}
-                    <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
-                    <p class="label-text2"> 부서
-                        <select name="dept_cd_selected" class="select-combox" onchange="clearLocalStorage(); this.form.submit()" style="margin-left:62px;">
-                            {% for item in dept_list %}
-                                <option value={{ item.dept_cd }} {%if dept_cd_selected == item.dept_cd %} selected {% endif %}> {{ item.dept_nm }} </option>
-                            {% endfor %}
-                        </select>
-                    </p>
-                </form>
-                </div>
-                <div style="padding-left:900px; white-space: nowrap;">
-                <form action = "{% url 'JB103_4' %}" method="POST" id="JB103_4">
-                    {% csrf_token %}
-                    <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
-                    <input type="hidden" name="dept_cd_selected" value="{{ dept_cd_selected }}">
-                    {% if button_control == 'no' %}
-                        <button type="submit" class="del_disabled" disabled>직무현황표</button>
-                        <button type="submit" class="del_disabled" disabled>직무기술서</button>
-                    {% else %}
-                        <button type="submit" class="save" name="action" value="action1">직무현황표</button>
-                        <button type="submit" class="save" name="action" value="action2">직무기술서</button>
-                    {% endif %}
-                </form>
+                <div style="padding-top:20px; padding-left:430px; white-space: nowrap;">
+                    <form action = "{% url 'JB103_4' %}" method="POST" id="JB103_4">
+                        {% csrf_token %}
+                        <input type="hidden" name="prd_selected" value="{{ prd_selected }}">
+                        <input type="hidden" name="dept_cd_selected" value="{{ dept_cd_selected }}">
+                        {% if button_control == 'no' %}
+                            <button type="submit" class="del_disabled" disabled>직무현황표</button>
+                            <button type="submit" class="del_disabled" disabled>직무기술서</button>
+                        {% else %}
+                            <button type="submit" class="save" name="action" value="action1">직무현황표</button>
+                            <button type="submit" class="save" name="action" value="action2">직무기술서</button>
+                        {% endif %}
+                    </form>
                 </div>
             </div>
 
@@ -741,6 +742,14 @@
                             updatedRadio.checked = true;
                             updateActivityList(selectedJob, selectedDuty, newTaskName);
                         }
+                        // 과업 목록 업데이트 후에 커서를 변경된 필드에 위치시키기
+                        setTimeout(() => {
+                            var updatedField = document.querySelector(`input[value="${newTaskName}"]`);
+                            if (updatedField) {
+                                updatedField.focus();
+                                updatedField.setSelectionRange(newTaskName.length, newTaskName.length);
+                            }
+                        }, 0);
                     }
                 });
 
@@ -1358,6 +1367,14 @@
                             }
                         });
                         updateActivityList(selectedJob, selectedDuty, selectedTask) // 활동 목록을 다시 생성하여 변경사항을 반영
+
+                        setTimeout(() => {
+                            var updatedField = document.querySelector(`input[value="${newActivityName}"]`);
+                            if (updatedField) {
+                                updatedField.focus();
+                                updatedField.setSelectionRange(newActivityName.length, newActivityName.length);
+                            }
+                        }, 0);
                     }
                 });
 

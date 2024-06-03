@@ -6,47 +6,52 @@
 
     <div style="margin-left: 50px; margin-top:50px; width:79%;">
         
-        <!-- 회기 선택할 수 있는 곳 -->
-        <div id = "ag_grid_pr_prd">
-            <form id="ag_grid_pr_1" action = "{% url 'JB103_grid_1' %}" method="POST">
-                {% csrf_token %}
+        <div style="display: flex;"> 
+            <!-- 회기 선택할 수 있는 곳 -->
+            <div id = "ag_grid_pr_prd">
+                <form id="ag_grid_pr_1" action = "{% url 'JB103_grid_1' %}" method="POST">
+                    {% csrf_token %}
 
-                <!-- 회기 선택 박스 -->
-                <div class="list-box-prd">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 100px;">
-                                <p>회 기</p>
-                                </th>
-                                <th>
-                                <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
-                                {% for item in prd %}
-                                <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
-                                {% endfor %}
-                                </select>
-                                </th>
-                            </tr>
-                        </thead> 
-                    </table>
-                </div>
-            </form>
-
-            <form id="JB103_2" action = "{% url 'JB103_grid_2' %}" method="POST">
-                {% csrf_token %}
-                <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
-                <!-- 부서 정보 선택 -->
-                <p class="label-text2"> 부서
-                    <!-- 테이블 bs_org에 있는 팀명 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
-                    <select name="team_name" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
-                        {% for item in team_list %}
-                        <option value="{{ item.dept_cd }}" {%if dept_cd_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
-                        {% endfor %}
-                    </select>
-                </p>
-            </form>            
-
+                    <!-- 회기 선택 박스 -->
+                    <div class="list-box-prd">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">
+                                    <p>회 기</p>
+                                    </th>
+                                    <th>
+                                    <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
+                                    {% for item in prd %}
+                                    <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+                                    {% endfor %}
+                                    </select>
+                                    </th>
+                                </tr>
+                            </thead> 
+                        </table>
+                    </div>
+                </form>
+            </div>
+                
+            <div style="padding-top:20px; padding-left:30px;">
+                <form id="JB103_2" action = "{% url 'JB103_grid_2' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+                    <!-- 부서 정보 선택 -->
+                    <p class="label-text2"> 부서
+                        <!-- 테이블 bs_org에 있는 팀명 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
+                        <select name="team_name" class="select-combox" onchange="this.form.submit()">
+                            {% for item in team_list %}
+                            <option value="{{ item.dept_cd }}" {%if dept_cd_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
+                            {% endfor %}
+                        </select>
+                    </p>
+                </form>
+            </div>
         </div>
+
+
 
         <!-- 버튼 div -->
         <div style="margin-top: 20px;">

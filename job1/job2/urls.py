@@ -13,5 +13,5 @@ urlpatterns = [
     path('my_view/', views.my_view, name='my_view'),
     path('my_view_2/', views.my_view_2, name='my_view_2'),
     path('submit_data/', views.submit_data, name='submit_data'),
-    
+    path('multiple', views.multiple, name='multiple'),
 ]

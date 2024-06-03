@@ -9,8 +9,6 @@ import json
 
 def table_test(request):
 
-    
-
     return render(request, 'job2/table_test.html')
 
 
@@ -675,7 +673,9 @@ def table(request):
 
 #     return render(request, 'job2/table.html.html')
 
+
 def submit_data(request):
+
     if request.method == 'POST':
         json_data = request.POST.get('jsonData')
         data = json.loads(json_data)
@@ -703,3 +703,24 @@ def submit_data(request):
         return render(request, 'job2/table.html')
 
     return render(request, 'job2/table.html')
+
+
+def multiple(request):
+
+    checked_data = ['선택1', '선택2']
+
+    context = {
+        'checked_data' : checked_data
+    }
+
+    if request.method == 'POST':
+
+        check = request.POST.getlist('check')
+
+        print(check)
+
+        context = {
+            'checked_data' : check
+        }
+
+    return render(request, 'job2/multiple.html', context)

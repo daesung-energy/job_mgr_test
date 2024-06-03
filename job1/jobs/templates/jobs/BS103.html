@@ -22,7 +22,7 @@
                             <th>
                             <select name="prd_cd" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
                             {% for item in prd %}
-                            <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                            <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
                             {% endfor %}
                             </select>
                             </th>
@@ -44,7 +44,7 @@
                 </div>
                 <div>
                 {% if register_act == "yes" %}
-                <button form="BS103_2" class="register" onclick="return confirm('해당 직무조사의 최종확정 처리하시겠습니까?');" type="submit">최종 마감</button> 
+                <button form="BS103_2" class="register" onclick="return confirm('해당 회기의 직무조사를 최종확정 처리 시 데이터를 수정할 수 없습니다. 계속하시겠습니까?');" type="submit">최종 마감</button> 
                 {% else %}
                 <button class="del_disabled" disabled>최종 마감</button> 
                 {% endif %}

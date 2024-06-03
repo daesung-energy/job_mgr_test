@@ -7,6 +7,7 @@
   <!-- 전체 div -->
   <div id = "jb102" style="margin-left: 50px; margin-top:50px;">
 
+    <div style="display: flex;">
     <!-- 회기 선택 div -->
     <div id = "jb102_1">
       <!-- 회기 선택 form -->
@@ -44,7 +45,7 @@
     </div>
 
     <!-- 부서 선택 div -->
-    <div id = "jb102_2">
+    <div id = "jb102_2" style="padding-top: 20px; padding-left:30px;">
       <!-- 부서 선택 form -->
       <form method="POST" id="dept_select" action="{% url 'JB102_2' %}">
         {% csrf_token %}
@@ -53,13 +54,14 @@
         <!-- 부서 정보 선택 -->
         <p class="label-text2"> 부서
           <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
-            <select name="dept_selected" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
+            <select name="dept_selected" class="select-combox" onchange="this.form.submit()">
               {% for item in team_list %}
               <option value="{{ item.dept_cd }}" {%if dept_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
               {% endfor %}
             </select>
         </p>
       </form>
+    </div>
     </div>
 
     <!-- 직무 유형 선택 div -->
@@ -252,13 +254,12 @@
 
       <!-- 박스2 : 직무 성과책임 표시 -->
       <div>
-        <div class = "jb102_copy_4_2" style="border:1px solid; border-radius: 5px; width:1400px; height:200px; padding: 20px;">
+        <div class = "jb102_copy_4_2" style="border:1px solid; border-radius: 5px; width:1400px; height:250px; padding: 20px;">
           <!-- 직무 성과책임 라벨 -->
           <span class="label-text6" style="padding-left: 55px;">직무 성과책임</span><br><br>
-          <!-- 직무 성과책임 조회, 편집 form -->
-            <!-- 직무 성과책임 조회, 편집 div -->
+            <!-- 직무 성과책임 조회 div -->
             <div id="jb102_copy_4_2_edit" data-index="0" style="display: block; overflow-y: scroll; white-space: nowrap; 
-            height: 100px; width: 1300px; border: 1px solid #ccc; margin-left:10px; margin-top:5px;">
+            height: 150px; width: 1300px; border: 1px solid #ccc; margin-left:10px; margin-top:5px;">
               {% for item in job_resp_list %}
                 <input type="text" class="input-text3" name="job_resp" value="{{ item.job_resp }}" style="width:800px; background-color: #f2f2f2;" readonly>
                 <br>

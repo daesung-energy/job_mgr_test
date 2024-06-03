@@ -23,7 +23,7 @@
                         <th>
                         <select name="prd_cd_selected" class="select-combox3" id="selectOptions" onchange="this.form.submit()">
                         {% for item in prd_list %}
-                        <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} - 확정여부 : {{ item.prd_done_yn }} </option>
+                        <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
                         {% endfor %}
                         </select>
                         </th>
@@ -142,7 +142,7 @@
 
         </div>
 
-         <!-- 에러 메시지 -->
+        <!-- 에러 메시지 -->
         {% if messages %}
         <div id="messages" style="display: none;">
             {% for message in messages %}

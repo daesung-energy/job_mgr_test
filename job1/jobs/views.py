@@ -622,11 +622,14 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
     dept_login = get_dept_code(request.user.username) # 로그인한 부서의 부서코드
     dept_login_nm = BsDept.objects.get(prd_cd=last_prd_cd, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
 
+    print(get_dept_mgr_yn(request.user.username))
+
     context = {
         'prd_list' : BsPrd.objects.all(),
         'title' : '직무 상세정보', # 제목
         'prd_selected' : last_prd_cd,
         'prd_done' : BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn,
+        'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
         # 'dept_selected_key' : "former" # 부서 선택 전
     }
 
@@ -677,7 +680,7 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
 
         context.update({'data' : df_json})
 
-        context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username),
+        # context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username),
 
     except pd.errors.MergeError as e:
 
@@ -688,7 +691,7 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
 
         context.update({'data' : 'null'})
 
-        context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username),
+        # context['dept_mgr_yn'] = get_dept_mgr_yn(request.user.username),
 
     return render(request, 'jobs/JB103.html', context)
 
@@ -1083,6 +1086,8 @@ def JB103_3(request): # 저장, 취소 버튼 누른 후
                         JobActivity.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected, job_cd__in=['JC001', 'JC002', 'JC004']).update(
                             act_prfrm_cnt_ann=None, act_prfrm_tm_cs=None, act_prfrm_tm_ann=None)
 
+
+
                 ########################################## DB에 저장 완료. 다시 DB 불러오기 ##########################################
                 # DB 다시 접근해서 json 생성
                 original_rows_show=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
@@ -1224,10 +1229,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.200.200', # 데이터베이스 주소
+            host='130.1.112.100', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='1234', # 데이터베이스 비밀번호
-            db='jobdb',
+            password='cdh0706**', # 데이터베이스 비밀번호
+            db='betadb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -2226,7 +2231,7 @@ def JB103_grid(request): # 직무정보 조회 초기화면
         return render(request, 'jobs/JB103_grid.html', context)
 
 
-def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반응
+def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반응 - 회기 복사 및 삭제
 
     if request.method == 'POST':
 
@@ -2235,28 +2240,24 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
         if action == 'action1': # 회기 생성
             period_old = request.POST['prd_cd'] # 복사 대상 회기
 
-            # 마지막 회기만 복사할 수 있음
-
             last_prd_cd = BsPrd.objects.last().prd_cd #BsPrd모델 중 마지막 줄의 prd_cd를 last_prd_cd 문자열 변수에 입력.
             last_year = last_prd_cd.strip()[0:4] #BsPrd 모델의 마지막 prd_cd 중 연도 정보
             last_char = last_prd_cd.strip()[-1] #char에는 마지막 prd_cd 중 연도 정보 중 글자만 입력한다.
 
-            if last_year == str(now.year):
-                period_new = str(now.year) + chr(ord(last_char)+1)
-                # period_new = "2023A"
-            else:
-                period_new = str(now.year) + "A"
-                # period_new = "2023A"
+            if last_year == str(now.year): # 마지막 회기의 연도가 현재 년도와 같다면, 즉 현재 년도의 회기가 이미 있으면
+                period_new = str(now.year) + chr(ord(last_char)+1) # 현재 년도의 회기에다가 마지막 회기의 마지막 글자에 +1을 해서 새로운 회기를 만든다.
+
+            else: # 마지막 회기의 연도가 현재 년도와 다르다면, 즉 현재 년도의 회기가 없다면
+                period_new = str(now.year) + "A" # 새로운 회기를 만들 때 현재 년도와 그 뒤에 A를 붙여 해당 년도의 첫 번째 회기를 생성한다.
 
             messages = copy_period_data(period_old, period_new)
 
-            last_bs_prd = BsPrd.objects.last()
+            last_bs_prd = BsPrd.objects.last() # 마지막 회기의 정보를 last_bs_prd에 저장. 새로운 회기를 뜻할 것이다.
 
             if last_bs_prd:
-                
-                # 복사한 회기의 year는 지금 현재 년도
-                last_bs_prd.year = int(now.year)
-
+                # 회기를 만들어줬으니 그 회기에 대한 정보들을 입력해준다.
+                last_bs_prd.year = int(now.year) # 복사한 회기의 year는 지금 현재 년도
+                last_bs_prd.turn = BsPrd.objects.filter(year=now.year).count() + 1 # 새로 만든 회기의 turn은 그 해당하는 연도에 있는 회기 데이터 개수에 1을 더한 같다.
                 last_bs_prd.prd_done_yn = 'N'
                 last_bs_prd.prd_str_dt = dt.datetime.today()
                 last_bs_prd.job_srv_str_dt = None
@@ -2264,9 +2265,11 @@ def create_bs_prd(request): #BS101에서 submit했을 때 request에 대한 반�
                 last_bs_prd.prd_end_dt = None
                 last_bs_prd.save()
 
+            # 새로운 회기에 대한 BsDept 테이블에 접근하여 필요한 데이터들을 업데이트한다.
             update_target = BsDept.objects.filter(prd_cd_id=last_bs_prd.prd_cd)
             update_target.update(job_details_submit_yn="N", job_details_submit_dttm=None)
 
+            # 새로운 회기에 대한 BsJobDept 테이블에 접근하여 필요한 데이터들을 업데이트한다.
             update_target_2 = BsJobDept.objects.filter(prd_cd_id=last_bs_prd.prd_cd)
             update_target_2.update(create_dttm=dt.datetime.today(), alter_dttm=dt.datetime.today())
 
@@ -7370,10 +7373,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7445,10 +7448,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
