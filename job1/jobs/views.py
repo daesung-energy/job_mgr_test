@@ -1540,6 +1540,7 @@ def JB103_4(request): # 직무 현황표, 기술서 print
                 dept_rltd.value = r['dept_rltd']
                 # act_prfrm_freq.value = r['act_prfrm_freq']
                 act_prfrm_freq.value = r['cc_code_nm']
+                act_prfrm_freq.value = r['cc_code']
                 # act_prfrm_cnt.value = r['act_prfrm_cnt_ann']
                 act_prfrm_cnt.value = r['act_prfrm_cnt']
                 act_prfrm_tm_cs.value = r['act_prfrm_tm_cs']
@@ -4453,7 +4454,7 @@ def jb101_3(request): # 저장 및 취소 버튼을 눌렀을 때(부서정보, 
                 if dept_login == "DD06":
 
                     try: # 이름 중복 제한을 위해서 try-except 문 사용
-                        print('dept_selected', dept_selected)
+                        # print('dept_selected', dept_selected)
                         # input value들의 값을 가져온다.
                         input_values_name = request.POST.getlist('team_member_name')
                         input_values_job_level = request.POST.getlist('job_level')
@@ -4465,6 +4466,10 @@ def jb101_3(request): # 저장 및 취소 버튼을 눌렀을 때(부서정보, 
                         # input value들의 값에 따라 추가.
                         for i, j, k in zip(input_values_name, input_values_job_level, input_values_job_title):
                             BsMbr.objects.create(prd_cd_id=prd_cd_selected, dept_cd_id=dept_selected, mbr_nm=i, pos_nm=j, ttl_nm=k)
+
+                        # BsDept 테이블의 dept_po 값 업데이트. 해당 회기의 해당 부서의 BsMbr 테이블의 오브젝트 개수를 가져와서 업데이트
+                        BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected).update(dept_po=BsMbr.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=dept_selected).count())
+
 
                         common_context.update({
                             'mbr_list': BsMbrArrange(prd_cd_selected, dept_selected),
@@ -4497,6 +4502,9 @@ def jb101_3(request): # 저장 및 취소 버튼을 눌렀을 때(부서정보, 
                         # input value들의 값에 따라 추가.
                         for i, j, k in zip(input_values_name, input_values_job_level, input_values_job_title):
                             BsMbr.objects.create(prd_cd_id=prd_cd_selected, dept_cd_id=dept_login, mbr_nm=i, pos_nm=j, ttl_nm=k)
+
+                        # BsDept 테이블의 dept_po 값 업데이트. 해당 회기의 해당 부서의 BsMbr 테이블의 오브젝트 개수를 가져와서 업데이트
+                        BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected).update(dept_po=BsMbr.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=dept_selected).count())
 
                         common_context.update({
                             'mbr_list': BsMbrArrange(prd_cd_selected, dept_login),

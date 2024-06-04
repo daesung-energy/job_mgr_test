@@ -168,7 +168,7 @@
 
         // PDF 파일의 URL을 설정
         // var pdfUrl = "{% static 'doc/manual.pdf' %}";
-        var pdfUrl = "{% static 'doc/' %}" + encodeURIComponent("{{ title }}") + "_매뉴얼" + ".pdf";
+        var pdfUrl = "{% static 'doc/' %}" + encodeURIComponent("{{ title }}") + "_매뉴얼" + ".pdf" + "#zoom=fit";
 
         // 새 창을 열고 PDF 파일을 표시
         window.open(pdfUrl, '_blank', 'noopener,noreferrer, width='+width+',height='+height);
