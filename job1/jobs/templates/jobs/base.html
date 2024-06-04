@@ -166,8 +166,7 @@
         var width = 800; // 폭
         var height = (width * 297) / 210; // 높이를 A4 비율에 맞게 계산
 
-        // PDF 파일의 URL을 설정
-        // var pdfUrl = "{% static 'doc/manual.pdf' %}";
+        // PDF 파일의 URL을 설정. 파일명은 title 변수에 저장된 값으로 설정. 나중에 프린트 할 때 용지에 맞게 출력하기 위해 #zoom=fit을 추가
         var pdfUrl = "{% static 'doc/' %}" + encodeURIComponent("{{ title }}") + "_매뉴얼" + ".pdf" + "#zoom=fit";
 
         // 새 창을 열고 PDF 파일을 표시
@@ -203,7 +202,6 @@
           {% endif %}
         </dd>
       </dl>
-
 
       <!-- 로그아웃 -->
       <dl class="top-menu">

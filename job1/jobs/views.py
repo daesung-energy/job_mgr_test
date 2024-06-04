@@ -493,6 +493,8 @@ def CC105(request):
                 user.set_password(new_password)
                 user.save()
                 auth.login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                # 성공 메시지 띄워주기
+                messages.success(request, '비밀번호를 변경했습니다.')
                 return render(request, 'jobs/CC105.html', context)
         
             else:
@@ -537,6 +539,7 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
     if request.method == 'POST':
 
         prd_cd_selected = request.POST["prd_cd_selected"]
+        # dept_login = get_dept_code_new(user_name, prd_cd_selected)
 
         try:
             dept_login_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_login).dept_nm # 로그인한 부서의 부서명
@@ -661,6 +664,7 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
 
     df2 = pd.DataFrame(data_list_2)
     # print(df2)
+    # df2.to_excel('df2.xlsx')
 
     try:
 
@@ -4266,7 +4270,6 @@ def jb101_1(request): #JB101에서 회기를 선택한 후 탭을 선택했을 �
                 'activate': 'yes', # 버튼 컨트롤 on
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'dept_selected' : dept_login,
-                
             })
 
     return render(request, 'jobs/JB101.html', context)
@@ -7521,6 +7524,15 @@ def get_dept_code(user_id):
         return account.dept_cd_id
     except:
         return None  # 부서 코드가 없는 경우에 대한 처리
+
+
+# def get_dept_code_new(user_id, prd_cd):
+#     prd_cd_id = prd_cd
+#     try:
+#         account = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id)
+#         return account.dept_cd_id
+#     except:
+#         return None  # 부서 코드가 없는 경우에 대한 처리
 
 
 def get_dept_mgr_yn(user_id):

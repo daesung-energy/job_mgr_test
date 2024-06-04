@@ -15,7 +15,7 @@
                         
                 </form>
             </div>
-            <button form="pwd_change" class="save" type="submit">저장</button> 
+            <button form="pwd_change" id="saveButton" class="save" type="submit">저장</button> 
         </div>
         {% if messages %}
         <div id="messages" style="display: none;">
@@ -28,6 +28,12 @@
     </wrap>
 
     <script>
+        document.getElementById('saveButton').addEventListener('click', function() {
+            if (confirm('비밀번호를 변경하시겠습니까?')) {
+                document.getElementById('pwd_change').submit();
+            }
+        });
+
         var messagesContainer = document.getElementById('messages');
         if (messagesContainer) {
             var messages = messagesContainer.getElementsByTagName('span');
