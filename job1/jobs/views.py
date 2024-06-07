@@ -3574,7 +3574,7 @@ def BS106_1(request): # 직무 관리에서 회기 및 직무 유형을 선택�
     return render(request, 'jobs/BS106.html', context)
 
 
-def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄워준다.
+def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직무 사용부서 목록을 띄워준다.
 
     if request.method == 'POST':
         prd_selected = request.POST["prd_selected"] # 회기
@@ -3586,6 +3586,14 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
             job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
 
             if job_type == 'all': # job_type이 all일 경우 해당 dept_cd에 해당하는 bs_job 데이터를 모두 가져옴
+                # BsJobDept 테이블로부터 해당 직무를 사용하는 오브젝트 목록을 가져온다.
+                job_dept_list = BsJobDept.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected)
+                # 가져온 목록으로부터 부서 코드 목록을 추출한다.
+                job_dept_list = [obj.dept_cd_id for obj in job_dept_list]
+                # 부서 코드 목록을 활용하여 BsDept 테이블을 이용해 부서명 목록을 만든다.
+                job_dept_list = BsDept.objects.filter(prd_cd_id=prd_selected, dept_cd__in=job_dept_list)
+                # 부서명 목록을 추출한다.
+                job_dept_list = [obj.dept_nm for obj in job_dept_list]
 
                 context = {
                     'title' : '직무 관리', # 제목
@@ -3598,11 +3606,21 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'save' : "no", #저장 버튼 deactivate
                     'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
                     'radio_selected' : radio_selected,
+                    'job_dept_list' : job_dept_list,
                     'act_del' : "yes",
                     'job_type_selected' : "latter" # 직무유형 선택 전
                 }
 
             elif job_type == 'common': #job_type이 common일 경우
+
+                # BsJobDept 테이블로부터 해당 직무를 사용하는 오브젝트 목록을 가져온다.
+                job_dept_list = BsJobDept.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected)
+                # 가져온 목록으로부터 부서 코드 목록을 추출한다.
+                job_dept_list = [obj.dept_cd_id for obj in job_dept_list]
+                # 부서 코드 목록을 활용하여 BsDept 테이블을 이용해 부서명 목록을 만든다.
+                job_dept_list = BsDept.objects.filter(prd_cd_id=prd_selected, dept_cd__in=job_dept_list)
+                # 부서명 목록을 추출한다.
+                job_dept_list = [obj.dept_nm for obj in job_dept_list]
 
                 context = {
                     'title' : '직무 관리', # 제목
@@ -3615,12 +3633,22 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'save' : "yes", #저장 버튼 activate
                     'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
                     'radio_selected' : radio_selected,
+                    'job_dept_list' : job_dept_list,
                     'job_type_selected' : "latter", # 직무유형 선택 전
                     'act_del' : "yes" # 삭제 버튼 activate
                 }
 
             #job_type이 spec일 경우 해당 dept_cd에서 job_type이 고유인 bs_job 데이터만 모두 가져옴
             elif job_type == 'unique':
+
+                # BsJobDept 테이블로부터 해당 직무를 사용하는 오브젝트 목록을 가져온다.
+                job_dept_list = BsJobDept.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected)
+                # 가져온 목록으로부터 부서 코드 목록을 추출한다.
+                job_dept_list = [obj.dept_cd_id for obj in job_dept_list]
+                # 부서 코드 목록을 활용하여 BsDept 테이블을 이용해 부서명 목록을 만든다.
+                job_dept_list = BsDept.objects.filter(prd_cd_id=prd_selected, dept_cd__in=job_dept_list)
+                # 부서명 목록을 추출한다.
+                job_dept_list = [obj.dept_nm for obj in job_dept_list]
 
                 context = {
                     'title' : '직무 관리', # 제목
@@ -3633,6 +3661,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                     'save' : "yes", #저장 버튼 activate
                     'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
                     'radio_selected' : radio_selected,
+                    'job_dept_list' : job_dept_list,
                     'act_del' : "yes",
                     'job_type_selected' : "latter" # 직무유형 선택 전
                 }
@@ -3679,59 +3708,29 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                 # 삭제할 라디오 버튼 값(직무코드)을 받는다.
                 radio_value = request.POST['job_radio_102']
 
-                # 해당 회기에 해당 직무코드가 BsJobDept 테이블에 존재할 경우 삭제를 막고, 메시지를 보낸다. 없을 경우 삭제를 진행한다.
-                if BsJobDept.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_value).exists():
+                # 해당 직무코드를 가진 행 삭제
+                BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=radio_value).delete()
 
-                    messages.error(request, "해당 직무를 사용하고 있는 부서가 있어 삭제할 수 없습니다.")
+                # 업데이트된 직무 목록(job_list) 가져오기
+                job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
 
-                    # 업데이트된 직무 목록(job_list) 가져오기
-                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
+                # 고유 직무와 공통 직무에 따라 job_list 필터링
+                if job_type == "unique":
+                    job_list = job_list.filter(job_type="고유")
+                elif job_type == "common":
+                    job_list = job_list.filter(job_type="공통")
 
-                    # 고유 직무와 공통 직무에 따라 job_list 필터링
-                    if job_type == "unique":
-                        job_list = job_list.filter(job_type="고유")
-                    elif job_type == "common":
-                        job_list = job_list.filter(job_type="공통")
-
-                    context = {
-                        'title' : '직무 관리', # 제목
-                        'prd_list' : BsPrd.objects.all(), #회기 목록
-                        'prd_selected' : prd_selected,
-                        'job_list': job_list,
-                        'job_type' : job_type,
-                        'activate' : "activate",
-                        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
-                        'save' : "yes", #저장 버튼 activate
-                        'job_type_selected' : "latter" # 직무유형 선택 전
-                    }
-
-                    return render(request, 'jobs/BS106.html', context)
-                
-                else: # 해당 직무코드가 BsJobDept 테이블에 없을 경우 삭제 진행
-
-                    # 해당 직무코드를 가진 행 삭제
-                    BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=radio_value).delete()
-
-                    # 업데이트된 직무 목록(job_list) 가져오기
-                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
-
-                    # 고유 직무와 공통 직무에 따라 job_list 필터링
-                    if job_type == "unique":
-                        job_list = job_list.filter(job_type="고유")
-                    elif job_type == "common":
-                        job_list = job_list.filter(job_type="공통")
-
-                    context = {
-                        'title' : '직무 관리', # 제목
-                        'prd_list' : BsPrd.objects.all(), #회기 목록
-                        'prd_selected' : prd_selected,
-                        'job_list': job_list,
-                        'job_type' : job_type,
-                        'activate' : "activate",
-                        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
-                        'save' : "yes", #저장 버튼 activate
-                        'job_type_selected' : "latter" # 직무유형 선택 전
-                    }
+                context = {
+                    'title' : '직무 관리', # 제목
+                    'prd_list' : BsPrd.objects.all(), #회기 목록
+                    'prd_selected' : prd_selected,
+                    'job_list': job_list,
+                    'job_type' : job_type,
+                    'activate' : "activate",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                    'save' : "yes", #저장 버튼 activate
+                    'job_type_selected' : "latter" # 직무유형 선택 전
+                }
 
             elif action == 'action3': # action이 추가버튼 눌렀을 때(추가) - 입력할 수 있는 칸을 늘려주는 것. 고유와 공통일 때만 가능.
 
