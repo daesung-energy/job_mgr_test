@@ -3565,6 +3565,7 @@ def BS106_1(request): # 직무 관리에서 회기 및 직무 유형을 선택�
         # 공통 context 업데이트
         context.update({
             'prd_selected': prd_selected,
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
             'job_list': job_list,
             'job_type': job_type,
             'save': save,
@@ -3599,6 +3600,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                     'prd_selected' : prd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_list' : job_list, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
                     'job_type' : "all",
@@ -3626,6 +3628,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                     'prd_selected' : prd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_list' : job_list.filter(job_type="공통"), # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
                     'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
@@ -3654,6 +3657,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
                     'prd_selected' : prd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                     'job_list' : job_list.filter(job_type="고유"), # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
                     'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
@@ -3695,6 +3699,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     'title': '직무 관리',
                     'prd_list': BsPrd.objects.all(),
                     'prd_selected': prd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'job_list': job_list,
                     'job_type': job_type,
                     'activate': "activate",
@@ -3724,6 +3729,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all(), #회기 목록
                     'prd_selected' : prd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'job_list': job_list,
                     'job_type' : job_type,
                     'activate' : "activate",
@@ -3740,7 +3746,9 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     code_prefix = "JU" if job_type == "unique" else "JC"
 
                     # 새로운 코드 생성 로직
-                    char = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr).order_by('job_cd').last().job_cd
+                    # char = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr).order_by('job_cd').last().job_cd
+                    # 회기와 상관없이 가장 큰 문자를 가져와서 새로운 코드 생성
+                    char = BsJob.objects.filter(job_type=job_type_kr).order_by('job_cd').last().job_cd
                     new_code = code_prefix + f"{(int(char[2:6]) + 1):03d}"  # char의 마지막 세 글자(숫자)를 기준으로 새 코드 생성
 
                     # 직무 목록 필터링
@@ -3751,6 +3759,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                         'title': '직무 관리',  # 제목
                         'prd_list': BsPrd.objects.all(),  # 회기 목록
                         'prd_selected': prd_selected,
+                        'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                         'job_list': job_list,
                         'job_type': job_type,
                         'activate': "activate",
@@ -3774,6 +3783,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                         'title': '직무 관리',  # 제목
                         'prd_list': BsPrd.objects.all(),  # 회기 목록
                         'prd_selected': prd_selected,
+                        'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                         'job_list': job_list,
                         'job_type': job_type,
                         'activate': "activate",
@@ -3795,6 +3805,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     'title' : '직무 관리', # 제목
                     'prd_list' : BsPrd.objects.all(), #회기 목록
                     'prd_selected' : prd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                     'job_list' : job_list,
                     'job_type' : job_type,
                     'activate' : "activate",
@@ -3835,6 +3846,7 @@ def BS106_3(request): # 추가 후 저장 혹은 취소 버튼 누르기
             'title': '직무 관리',
             'prd_list': BsPrd.objects.all(),
             'prd_selected': prd_selected,
+            'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
             'job_list': job_list,
             'job_type': job_type,
             'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
@@ -3879,6 +3891,7 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
                 'title' : '직무 기본정보', # 제목
                 'prd_list' : BsPrd.objects.all(),
                 'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                 'job_list' : job_list,
                 'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
                 'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
@@ -3900,6 +3913,7 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
                 'title' : '직무 기본정보', # 제목
                 'prd_list' : BsPrd.objects.all(),
                 'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
                 'job_list' : job_list,
                 'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
                 'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
