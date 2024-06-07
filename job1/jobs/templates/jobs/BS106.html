@@ -58,7 +58,7 @@
       
       <!-- 박스1 : 직무코드, 직무명, 직무개요, 직무 수행자 표시 -->
       <div style="padding-bottom: 10px;">
-      <div id = "bs106_2_1" style="border:1px solid; border-radius: 5px; width:1400px; height:400px; padding: 20px;">
+      <div id = "bs106_2_1" style="border:1px solid; border-radius: 5px; width:1400px; height:370px; padding: 20px;">
         
         <!-- 텍스트 메뉴 -->
         <span class="label-text6" style="padding-left: 65px;">직무코드</span> 
@@ -74,7 +74,7 @@
           <!-- 박스1 : 직무코드, 직무명, 직무개요 표시 -->
           <div>
             <div id="bs106_2_2" data-index="0" style="display: block; overflow-y: scroll; white-space: nowrap; 
-            height: 240px; width: 1300px; border: 1px solid #ccc; margin-top:5px; margin-left:20px;">
+            height: 210px; width: 1300px; border: 1px solid #ccc; margin-top:5px; margin-left:20px;">
             <div style="padding-left:5px; padding-top:5px;">
               {% for item in job_list %}
               <!-- 각 입력 필드를 감싸는 div 대신 span 사용 -->
@@ -190,7 +190,7 @@
                 <!-- 삭제 버튼은 직무 코드 선택 라디오 버튼 체크를 해야 활성화됨 -->
                 {% if act_del == "yes" %}
                 <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
-                onclick="return confirm('해당 직무가 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+                onclick="return validateDelete();">삭제</button>
                 {% else %}
                 <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
                 {% endif %}
@@ -206,7 +206,7 @@
 
       <!-- 박스2 : 직무 성과책임 표시 -->
       <div style="display: flex;">
-        <div id="bs106_3_1" style="border:1px solid; border-radius: 5px; width:1100px; height:300px; padding: 20px;">
+        <div id="bs106_3_1" style="border:1px solid; border-radius: 5px; width:1100px; height:280px; padding: 20px;">
           <!-- 직무 성과책임 라벨 -->
           <span class="label-text6" style="padding-left: 65px;">직무 성과책임</span>
           <!-- 직무 성과책임 조회, 편집 form -->
@@ -250,10 +250,10 @@
 
         <div style="padding-left:10px;">
           <!-- 직무를 사용하고 있는 부서 목록을 띄운다. -->
-          <div id="bs106_4" style="border:1px solid; border-radius: 5px; width:290px; height:300px; padding: 20px;">
+          <div id="bs106_4" style="border:1px solid; border-radius: 5px; width:290px; height:280px; padding: 20px;">
             <span class="label-text6" style="padding-left: 65px;">직무 사용 부서</span>
             <div id="bs106_4_1" style="display: block; overflow-y: scroll; white-space: nowrap; 
-            height: 220px; width: 200px; border: 1px solid #ccc; margin-top:5px; margin-left:20px;">
+            height: 200px; width: 200px; border: 1px solid #ccc; margin-top:5px; margin-left:20px;">
               {% for item in job_dept_list %}
               <div style="padding-left: 5px;">
                 <input type="text" class="input-text3" name="job_dept_dept_name" value="{{ item }}" style="width:150px;" readonly>

@@ -3548,7 +3548,7 @@ def BS106_1(request): # 직무 관리에서 회기 및 직무 유형을 선택�
         job_type = request.POST['job_type']  # 직무 유형
 
         # 초기 job_list 설정
-        job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
+        job_list = BsJob.objects.filter(prd_cd_id=prd_selected).order_by('job_nm')
 
         # job_type에 따라 조건 분기
         if job_type == 'all':
@@ -3583,7 +3583,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
         if 'job_radio_102' in request.POST: # 직무 선택 시 (라디오 버튼 선택)
 
             radio_selected = request.POST['job_radio_102'] # 라디오 버튼(직무코드) value 가져옴
-            job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
+            job_list = BsJob.objects.filter(prd_cd_id=prd_selected).order_by('job_nm')
 
             if job_type == 'all': # job_type이 all일 경우 해당 dept_cd에 해당하는 bs_job 데이터를 모두 가져옴
                 # BsJobDept 테이블로부터 해당 직무를 사용하는 오브젝트 목록을 가져온다.
@@ -3682,7 +3682,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=code).update(job_nm=value, job_descrp=descrp)
 
                 # 업데이트된 직무 목록(job_list) 가져오기
-                job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
+                job_list = BsJob.objects.filter(prd_cd_id=prd_selected).order_by('job_nm')
 
                 # 고유 직무와 공통 직무에 따라 job_list 필터링
                 if job_type == "unique":
@@ -3712,7 +3712,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                 BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=radio_value).delete()
 
                 # 업데이트된 직무 목록(job_list) 가져오기
-                job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
+                job_list = BsJob.objects.filter(prd_cd_id=prd_selected).order_by('job_nm')
 
                 # 고유 직무와 공통 직무에 따라 job_list 필터링
                 if job_type == "unique":
@@ -3744,7 +3744,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     new_code = code_prefix + f"{(int(char[2:6]) + 1):03d}"  # char의 마지막 세 글자(숫자)를 기준으로 새 코드 생성
 
                     # 직무 목록 필터링
-                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr)
+                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr).order_by('job_nm')
 
                     # 공통 컨텍스트 설정
                     context = {
@@ -3767,7 +3767,7 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
                     new_code = code_prefix + "001"  # char의 마지막 세 글자(숫자)를 기준으로 새 코드 생성
 
                     # 직무 목록 필터링
-                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr)
+                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr).order_by('job_nm')
 
                     # 공통 컨텍스트 설정
                     context = {
@@ -3787,9 +3787,9 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임과 직
             elif action == 'action4':
 
                 if job_type == "unique":
-                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유")
+                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유").order_by('job_nm')
                 elif job_type == "common":
-                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통")
+                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통").order_by('job_nm')
 
                 context = {
                     'title' : '직무 관리', # 제목
@@ -3818,7 +3818,7 @@ def BS106_3(request): # 추가 후 저장 혹은 취소 버튼 누르기
         action = request.POST['action']
 
         # 공통으로 사용되는 job_list 설정(동작 후 조회)
-        job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr)
+        job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type=job_type_kr).order_by('job_nm')
 
         # 직무 추가 저장 로직
         if action == 'action1' and request.POST.get("new_y") == "new_member_yes":
@@ -3871,9 +3871,9 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
                 BsJobResp.objects.create(pk=prd_selected, job_cd_id=radio_selected, job_resp_ordr=i+1, job_resp=df1.iloc[i, 1])
 
             if job_type == "unique":
-                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유")
+                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유").order_by('job_nm')
             elif job_type == "common":
-                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통")
+                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통").order_by('job_nm')
 
             context = {
                 'title' : '직무 기본정보', # 제목
@@ -3892,9 +3892,9 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
         elif action == 'action2': # 취소 버튼 눌렀을 때 - 그냥 원상복구
 
             if job_type == "unique":
-                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유")
+                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유").order_by('job_nm')
             elif job_type == "common":
-                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통")
+                job_list = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통").order_by('job_nm')
 
             context = {
                 'title' : '직무 기본정보', # 제목
