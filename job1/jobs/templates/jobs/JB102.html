@@ -238,7 +238,7 @@
                       <button class="del_disabled" disabled>삭제</button>
                     {% else %}
                       <button style="display: inline;" type="submit" form="job_management" class="del" name="action" id="action2" value="action2"
-                      onclick="return confirm('해당 직무가 바로 삭제됩니다. 계속하시겠습니까?');">삭제</button>
+                      onclick="return confirmFirst();">삭제</button>
                     {% endif %}
                   {% else %}
                   <button style="display: inline; margin-left: 21px;" class="del_disabled" name="action" id="action4" disabled>삭제</button>
@@ -283,13 +283,22 @@
 
   <script>
 
+    function confirmFirst() {
+        var firstConfirm = confirm('※※※※※※※※※※※ 중 요 ※※※※※※※※※※※\n※※※※※※※※※※※※※※※※※※※※※※※※※\n※※※※※※※※※※※ 필 독 ※※※※※※※※※※※\n\n이 직무에 해당하는 모든 책무, 과업, 활동 정보가 모두 삭제됩니다.\n삭제된 직무는 직무 상세정보, 직무 정보조회에서도 확인할 수 없습니다.\n계속하시겠습니까?\n\n※ 삭제 전 반드시 직무 상세정보를 확인하시기 바랍니다.\n※※※※※※※※※※※ 중 요 ※※※※※※※※※※※\n※※※※※※※※※※※※※※※※※※※※※※※※※\n※※※※※※※※※※※ 필 독 ※※※※※※※※※※※');
+        if (firstConfirm) {
+            return confirm('※※※※※※※※※※※ 중 요 ※※※※※※※※※※※\n※※※※※※※※※※※ 필 독 ※※※※※※※※※※※\n\n직무 상세정보를 확인하셨습니까?\n\n삭제된 이 직무의 책무, 과업, 활동 데이터는 복구할 수 없습니다.\n\n직무 삭제를 진행하시겠습니까?\n\n※※※※※※※※※※※ 중 요 ※※※※※※※※※※※\n※※※※※※※※※※※ 필 독 ※※※※※※※※※※※\n');
+        } else {
+            return false;
+        }
+    }
+
     var messagesContainer = document.getElementById('messages');
-          if (messagesContainer) {
-            var messages = messagesContainer.getElementsByTagName('span');
-            for (var i = 0; i < messages.length; i++) {
-              alert(messages[i].textContent);
-            }
-          }
+      if (messagesContainer) {
+        var messages = messagesContainer.getElementsByTagName('span');
+        for (var i = 0; i < messages.length; i++) {
+          alert(messages[i].textContent);
+        }
+      }
 
     function validateForm() { // 빈 칸 검사하는 함수
       // 모든 input 요소를 가져옵니다.

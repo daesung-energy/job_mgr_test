@@ -1231,10 +1231,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.200.200', # 데이터베이스 주소
+            host='130.1.112.100', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='1234', # 데이터베이스 비밀번호
-            db='jobdb',
+            password='cdh0706**', # 데이터베이스 비밀번호
+            db='betadb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -3679,29 +3679,59 @@ def BS106_2(request): # 직무 선택하면 아래에 직무 성과책임을 띄
                 # 삭제할 라디오 버튼 값(직무코드)을 받는다.
                 radio_value = request.POST['job_radio_102']
 
-                # 해당 직무코드를 가진 행 삭제
-                BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=radio_value).delete()
+                # 해당 회기에 해당 직무코드가 BsJobDept 테이블에 존재할 경우 삭제를 막고, 메시지를 보낸다. 없을 경우 삭제를 진행한다.
+                if BsJobDept.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_value).exists():
 
-                # 업데이트된 직무 목록(job_list) 가져오기
-                job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
+                    messages.error(request, "해당 직무를 사용하고 있는 부서가 있어 삭제할 수 없습니다.")
 
-                # 고유 직무와 공통 직무에 따라 job_list 필터링
-                if job_type == "unique":
-                    job_list = job_list.filter(job_type="고유")
-                elif job_type == "common":
-                    job_list = job_list.filter(job_type="공통")
+                    # 업데이트된 직무 목록(job_list) 가져오기
+                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
 
-                context = {
-                    'title' : '직무 관리', # 제목
-                    'prd_list' : BsPrd.objects.all(), #회기 목록
-                    'prd_selected' : prd_selected,
-                    'job_list': job_list,
-                    'job_type' : job_type,
-                    'activate' : "activate",
-                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
-                    'save' : "yes", #저장 버튼 activate
-                    'job_type_selected' : "latter" # 직무유형 선택 전
-                }
+                    # 고유 직무와 공통 직무에 따라 job_list 필터링
+                    if job_type == "unique":
+                        job_list = job_list.filter(job_type="고유")
+                    elif job_type == "common":
+                        job_list = job_list.filter(job_type="공통")
+
+                    context = {
+                        'title' : '직무 관리', # 제목
+                        'prd_list' : BsPrd.objects.all(), #회기 목록
+                        'prd_selected' : prd_selected,
+                        'job_list': job_list,
+                        'job_type' : job_type,
+                        'activate' : "activate",
+                        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                        'save' : "yes", #저장 버튼 activate
+                        'job_type_selected' : "latter" # 직무유형 선택 전
+                    }
+
+                    return render(request, 'jobs/BS106.html', context)
+                
+                else: # 해당 직무코드가 BsJobDept 테이블에 없을 경우 삭제 진행
+
+                    # 해당 직무코드를 가진 행 삭제
+                    BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=radio_value).delete()
+
+                    # 업데이트된 직무 목록(job_list) 가져오기
+                    job_list = BsJob.objects.filter(prd_cd_id=prd_selected)
+
+                    # 고유 직무와 공통 직무에 따라 job_list 필터링
+                    if job_type == "unique":
+                        job_list = job_list.filter(job_type="고유")
+                    elif job_type == "common":
+                        job_list = job_list.filter(job_type="공통")
+
+                    context = {
+                        'title' : '직무 관리', # 제목
+                        'prd_list' : BsPrd.objects.all(), #회기 목록
+                        'prd_selected' : prd_selected,
+                        'job_list': job_list,
+                        'job_type' : job_type,
+                        'activate' : "activate",
+                        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                        'save' : "yes", #저장 버튼 activate
+                        'job_type_selected' : "latter" # 직무유형 선택 전
+                    }
 
             elif action == 'action3': # action이 추가버튼 눌렀을 때(추가) - 입력할 수 있는 칸을 늘려주는 것. 고유와 공통일 때만 가능.
 
@@ -7382,10 +7412,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7457,10 +7487,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
