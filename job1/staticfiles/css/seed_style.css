@@ -708,6 +708,18 @@ header {
   font-size : 12px;
 }
 
+.del_small_disabled {
+  margin-left: 10px;
+  padding: 1px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  border: 2px solid gray;
+  color: black;
+  font-family: "Seed-Medium";
+  font-size : 12px;
+}
+
 .del_small_2 {
   margin-left: 5px;
   padding: 1px 10px;
@@ -739,6 +751,18 @@ header {
   border: none;
   cursor: pointer;
   border: 2px solid #4de411;
+  color: black;
+  font-family: "Seed-Medium";
+  font-size : 12px;
+}
+
+.move_disabled {
+  margin-left: 10px;
+  padding: 1px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  border: 2px solid gray;
   color: black;
   font-family: "Seed-Medium";
   font-size : 12px;

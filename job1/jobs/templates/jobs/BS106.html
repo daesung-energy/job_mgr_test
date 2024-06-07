@@ -250,8 +250,13 @@
                 {% if job_type == "all" %} readonly {% endif %}>
                 {% if job_type == "all" %}
                 {% else %}
-                  <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
-                  <button type="button" class="move" onclick="moveUp(this)"> ▲ </button> <button type="button" class="move" onclick="moveDown(this)"> ▼ </button> 
+                  {% if prd_done == 'Y' %}
+                    <button type=button class="del_small_disabled"> - </button>
+                    <button type="button" class="move_disabled"> ▲ </button> <button type="button" class="move_disabled"> ▼ </button>
+                  {% else %}
+                    <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
+                    <button type="button" class="move" onclick="moveUp(this)"> ▲ </button> <button type="button" class="move" onclick="moveDown(this)"> ▼ </button>
+                  {% endif %}
                 {% endif %}
               </div>
               {% endfor %}

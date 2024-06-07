@@ -3879,7 +3879,6 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
             BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).delete()
 
             for i in range(0, len(df1)):
-                print(i)
                 BsJobResp.objects.create(pk=prd_selected, job_cd_id=radio_selected, job_resp_ordr=i+1, job_resp=df1.iloc[i, 1])
 
             if job_type == "unique":

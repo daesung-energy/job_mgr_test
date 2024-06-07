@@ -1766,6 +1766,25 @@
                         jsonData = jsonData.filter(item => !(item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask && item.act_nm === activity)); // 해당 활동 데이터를 제외하고 새로운 jsonData를 생성
                         activityDiv.removeChild(container); // 해당 활동 컨테이너를 삭제
                         updateActivitySequence(selectedJob, selectedDuty, selectedTask);
+
+                        // 과업의 연간 수행 시간을 다시 계산
+                        let totalAnnualTime = 0;
+                        jsonData.forEach(item => {
+                            if (item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask) {
+                                totalAnnualTime += item.act_prfrm_tm_ann;
+                            }
+                        });
+                        jsonData.forEach(item => {
+                            if (item.job_cd === selectedJob && item.duty_nm === selectedDuty && item.task_nm === selectedTask) {
+                                item.prfrm_tm_ann = totalAnnualTime;
+                            }
+                        });
+
+                        // 연간 수행 시간을 화면에 업데이트
+                        const taskInputText = document.querySelector(`input[name='task'][value='${selectedTask}']`).parentNode.querySelector("input[name='prfrm_tm_ann']");
+                        if (taskInputText) {
+                            taskInputText.value = totalAnnualTime.toFixed(1);
+                        }
                     }
                 };
 
