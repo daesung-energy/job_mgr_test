@@ -261,6 +261,9 @@ class BsDeptGrp(models.Model):
     dept_domain = models.ForeignKey('BsDeptGrpDomain', models.DO_NOTHING, related_name='BsDeptGrp_dept_domain', db_column='dept_domain', to_field='dept_domain')
     dept_grp_nm = models.ForeignKey('BsDeptGrpDomain', models.DO_NOTHING, related_name='BsDeptGrp_dept_grp_nm', db_column='dept_grp_nm', to_field='dept_grp_nm')
     dept_cd = models.ForeignKey(BsDept, models.DO_NOTHING, related_name='BsDeptGrp_dept_cd', db_column='dept_cd', to_field='dept_cd')
+    # domain_seq = models.IntegerField()
+    # grp_seq = models.IntegerField()
+    dept_seq = models.IntegerField()
 
     class Meta:
         managed = False
@@ -284,6 +287,8 @@ class BsDeptGrpDomain(models.Model):
     prd_cd = models.OneToOneField('BsPrd', models.DO_NOTHING, db_column='prd_cd', primary_key=True)
     dept_domain = models.CharField(max_length=50, unique=True)
     dept_grp_nm = models.CharField(max_length=50, unique=True)
+    domain_seq = models.IntegerField()
+    grp_seq = models.IntegerField()
 
     class Meta:
         managed = False

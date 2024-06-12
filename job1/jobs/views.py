@@ -1231,10 +1231,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.200.200', # 데이터베이스 주소
+            host='130.1.112.100', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='1234', # 데이터베이스 비밀번호
-            db='jobdb',
+            password='cdh0706**', # 데이터베이스 비밀번호
+            db='betadb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -2638,13 +2638,45 @@ def BS300_1(request): #BS300 회기 및 탭 선택 후 display
 
         elif span_name == 'span2': # 조직 그룹 탭을 선택했을 경우
             # 아직 아무일도 일어나지 않아야 함.
-
             context = {
+                'prd' : BsPrd.objects.all(),
                 'prd_cd_selected' : prd_cd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'tab' : "tab2",
                 'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
                 'title' : '조직 정보' # 제목
             }
+
+            #################### 여기서부터 새로 바꿔준 부분 ####################
+            # BsDeptGrp를 가져와서 json으로 변경시켜준다. JB103이랑 비슷하게 한다.
+            original_rows = BsDeptGrp.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list = [{'dept_domain': rows.dept_domain_id, 'dept_grp_nm' : rows.dept_grp_nm_id, 'dept_cd' : rows.dept_cd_id, 'dept_seq': rows.dept_seq} for rows in original_rows]
+            # df1 = pd.DataFrame(data_list).sort_values(by=['domain_seq', 'grp_seq', 'dept_seq']).reset_index(drop=True)
+            df1 = pd.DataFrame(data_list)
+            # dataframe을 json으로 변경시켜서 html로 보낸다. JB103이랑 비슷하게 한다.
+            df_json = df1.to_json(orient='records')
+            # json데이터 엑셀 저장
+            # df1.to_excel('dept_grp.xlsx', index=False)
+
+            original_rows2 = BsDeptGrpDomain.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list2 = [{'dept_domain': rows.dept_domain, 'dept_grp_nm' : rows.dept_grp_nm, 'domain_seq': rows.domain_seq,
+                           'grp_seq': rows.grp_seq } for rows in original_rows2]
+            df2 = pd.DataFrame(data_list2).sort_values(by=['domain_seq', 'grp_seq']).reset_index(drop=True)
+            df_json2 = df2.to_json(orient='records')
+            # 엑셀 저장
+            # df2.to_excel('dept_grp_domain.xlsx', index=False)
+
+            original_rows3 = BsDept.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list3 = [{'dept_cd' : rows.dept_cd, 'dept_nm' : rows.dept_nm} for rows in original_rows3]
+            df3 = pd.DataFrame(data_list3).sort_values(by=['dept_nm']).reset_index(drop=True)
+            df_json3 = df3.to_json(orient='records')
+            # 엑셀 저장
+            # df3.to_excel('dept.xlsx', index=False)
+
+            context.update({'data_bs_dept_grp' : df_json})
+            context.update({'data_bs_dept_grp_domain' : df_json2})
+            context.update({'data_bs_dept' : df_json3})
+            #################### 새로 바꿔준 부분 끝 ####################            
 
         elif span_name == 'span3': # 직위 관리 탭을 선택했을 경우
 
@@ -3027,7 +3059,7 @@ def BS300_4(request): # 부서 관리 탭에서 부서를 선택한 후 편집�
     return render(request, 'jobs/BS300.html', context)
 
 
-def BS300_5(request): # 부서 추가
+def BS300_5(request): # 부서 관리 탭에서 부서 추가
 
     if request.method == 'POST':
 
@@ -3069,6 +3101,115 @@ def BS300_5(request): # 부서 추가
                 'del_activate' : 'no', # 삭제 버튼 activate
                 'title' : '조직 정보' # 제목
             }
+
+    return render(request, 'jobs/BS300.html', context)
+
+######################################### 조직 그룹 탭 #########################################
+def BS300_6(request): # 조직 그룹 탭에서 저장, 취소
+
+    if 'action' in request.POST:
+            
+        # 선택한 회기를 input으로 받아옴.
+        prd_cd_selected = request.POST['prd_cd_selected']
+        tab = request.POST['tab_selected']
+        action = request.POST['action']
+
+        # 공통 context
+        context = {
+                    'prd' : BsPrd.objects.all(),
+                    'prd_cd_selected' : prd_cd_selected,
+                    'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
+                    'tab' : "tab2",
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                    'title' : '조직 정보' # 제목
+        }        
+
+        if action == 'action1': # 저장 버튼 눌렀을 때
+
+            # json 데이터들을 받아와서 dataframe으로 변환
+            json_data = request.POST.get('jsonData')
+            data = json.loads(json_data) # JSON 문자열을 Python 객체로 변환
+            df_domain_grp = pd.DataFrame(data) # Pandas DataFrame으로 변환. 도메인 테이블과 비교
+
+            deptGrpData = request.POST.get('deptGrpData')
+            data2 = json.loads(deptGrpData)
+            df_dept = pd.DataFrame(data2) # 그룹별 부서 테이블과 비교
+            print(df_dept)
+
+            # 먼저 BsDeptGrpDomain 테이블을 df_domain_grp와 비교하여 업데이트. JB103_3과 비슷한 로직
+            # 기존 데이터(해당 회기의 데이터)를 가져와서 비교한다.
+            original_rows1 = BsDeptGrpDomain.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list1 = [{'dept_domain': rows.dept_domain, 'dept_grp_nm' : rows.dept_grp_nm, 'domain_seq': rows.domain_seq,
+                           'grp_seq': rows.grp_seq } for rows in original_rows1]
+            df_1 = pd.DataFrame(data_list1).sort_values(by=['domain_seq', 'grp_seq']).reset_index(drop=True)
+                        
+            # 비교 하는 부분 - merge 기능을 이용해 추가된 행, 삭제된 행을 추출할 것이다. 수정은 삭제 후 추가로 볼 것이다.
+            # df_left_domain : df1(DB)에 있고 df_domain_grp(UI)에 없는 것. 즉, 삭제된 것
+            df_left_domain = pd.merge(df_1, df_domain_grp, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
+            # df_right_domain : df_task(UI)에 있고 df1(DB)에 없는 것. 즉, 추가된 것
+            df_right_domain = pd.merge(df_1, df_domain_grp, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
+            
+            # df_left_domain부터 다룬다. df_left_domain에 있는 것들은 삭제해야 하는 것들이다. DB에 접근해서 지워줌
+            for i in range(0, len(df_left_domain)):
+                BsDeptGrpDomain.objects.filter(prd_cd_id=prd_cd_selected, dept_domain=df_left_domain.iloc[i, 0], dept_grp_nm=df_left_domain.iloc[i, 1]).delete()
+
+            # df_right_domain 다룬다. df_right_domain에 있는 것들은 추가해야 하는 것들이다. DB에 접근해서 추가해줌
+            for i in range(0, len(df_right_domain)):
+                BsDeptGrpDomain.objects.create(prd_cd_id=prd_cd_selected, dept_domain=df_right_domain.iloc[i, 0], dept_grp_nm=df_right_domain.iloc[i, 1],
+                                                domain_seq=df_right_domain.iloc[i, 2], grp_seq=df_right_domain.iloc[i, 3])
+
+            # 그 다음은 BsDeptGrp 테이블을 df_dept와 비교하여 업데이트. JB103_3과 비슷한 로직
+            # 기존 데이터(해당 회기의 데이터)를 가져와서 비교한다.
+            original_rows2 = BsDeptGrp.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list2 = [{'dept_domain': rows.dept_domain_id, 'dept_grp_nm' : rows.dept_grp_nm_id, 'dept_cd':rows.dept_cd_id, 'dept_seq': rows.dept_seq } for rows in original_rows2]
+            df_2 = pd.DataFrame(data_list2)
+
+            # 비교 하는 부분 - merge 기능을 이용해 추가된 행, 삭제된 행을 추출할 것이다. 수정은 삭제 후 추가로 볼 것이다.
+            # df_left_dept : df2(DB)에 있고 df_dept(UI)에 없는 것. 즉, 삭제된 것
+            df_left_dept = pd.merge(df_2, df_dept, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
+            # df_right_dept : df_dept(UI)에 있고 df2(DB)에 없는 것. 즉, 추가된 것
+            df_right_dept = pd.merge(df_2, df_dept, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
+            print(df_right_dept)
+
+            # df_left_dept부터 다룬다. df_left_dept에 있는 것들은 삭제해야 하는 것들이다. DB에 접근해서 지워줌
+            for i in range(0, len(df_left_dept)):
+                BsDeptGrp.objects.filter(prd_cd_id=prd_cd_selected, dept_domain_id=df_left_dept.iloc[i, 0], dept_grp_nm_id=df_left_dept.iloc[i, 1], dept_cd_id=df_left_dept.iloc[i, 2]).delete()
+
+            # df_right_dept 다룬다. df_right_dept에 있는 것들은 추가해야 하는 것들이다. DB에 접근해서 추가해줌
+            for i in range(0, len(df_right_dept)):
+                BsDeptGrp.objects.create(prd_cd_id=prd_cd_selected, dept_domain_id=df_right_dept.iloc[i, 0], dept_grp_nm_id=df_right_dept.iloc[i, 1], dept_cd_id=df_right_dept.iloc[i, 2],
+                                          dept_seq=df_right_dept.iloc[i, 3])
+
+            # 편집을 다 끝내고 나면 다시 화면을 띄워준다.
+            # BsDeptGrp를 가져와서 json으로 변경시켜준다. JB103이랑 비슷하게 한다.
+            original_rows = BsDeptGrp.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list = [{'dept_domain': rows.dept_domain_id, 'dept_grp_nm' : rows.dept_grp_nm_id, 'dept_cd' : rows.dept_cd_id, 'dept_seq': rows.dept_seq} for rows in original_rows]
+            # df1 = pd.DataFrame(data_list).sort_values(by=['domain_seq', 'grp_seq', 'dept_seq']).reset_index(drop=True)
+            df1 = pd.DataFrame(data_list)
+            # dataframe을 json으로 변경시켜서 html로 보낸다. JB103이랑 비슷하게 한다.
+            df_json = df1.to_json(orient='records')
+            # json데이터 엑셀 저장
+            # df1.to_excel('dept_grp.xlsx', index=False)
+
+            original_rows2 = BsDeptGrpDomain.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list2 = [{'dept_domain': rows.dept_domain, 'dept_grp_nm' : rows.dept_grp_nm, 'domain_seq': rows.domain_seq,
+                           'grp_seq': rows.grp_seq } for rows in original_rows2]
+            df2 = pd.DataFrame(data_list2).sort_values(by=['domain_seq', 'grp_seq']).reset_index(drop=True)
+            df_json2 = df2.to_json(orient='records')
+            # 엑셀 저장
+            # df2.to_excel('dept_grp_domain.xlsx', index=False)
+
+            original_rows3 = BsDept.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list3 = [{'dept_cd' : rows.dept_cd, 'dept_nm' : rows.dept_nm} for rows in original_rows3]
+            df3 = pd.DataFrame(data_list3).sort_values(by=['dept_nm']).reset_index(drop=True)
+            df_json3 = df3.to_json(orient='records')
+            # 엑셀 저장
+            # df3.to_excel('dept.xlsx', index=False)
+
+            context.update({'data_bs_dept_grp' : df_json})
+            context.update({'data_bs_dept_grp_domain' : df_json2})
+            context.update({'data_bs_dept' : df_json3})
+
 
     return render(request, 'jobs/BS300.html', context)
 
@@ -7424,10 +7565,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7499,10 +7640,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',

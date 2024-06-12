@@ -39,7 +39,7 @@
                 <div style="padding-left: 20px;">
                     <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">부서 관리</span>
                     <span style="padding-right: 40px"></span>
-                    <span name="span2" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">조직 그룹</span>
+                    <span name="span2" onclick="submitForm('span2')" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">조직 그룹</span>
                     <span style="padding-right: 40px"></span>
                     <span name="span3" onclick="submitForm('span3')" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">직위 관리</span>
                     <span style="padding-right: 40px"></span>
@@ -288,6 +288,64 @@
                 {% endif %}
                 </div>
             </form>
+
+            <!-- span2 탭이 선택되었을 때 JSON 데이터를 표시할 div -->
+            {% if tab == "tab2" %}
+            <div id="json-data-container" style="padding-top: 20px; padding-left:20px; display: flex;">
+                
+                <div>
+                    <div style="display: flex;">
+                        <div>
+                            <p style="font-family: Seed-Medium;"><span>조직 도메인</span></p>
+                            <!-- dept_domain 라디오 버튼과 input text 추가 -->
+                            <div id="dept-domain-radio-buttons" style="width:250px; height:300px; border: 1px solid #ccc; padding-left: 5px;">
+                                <!-- 라디오 버튼과 input text가 여기에 동적으로 생성됩니다. -->
+                            </div>
+                            <button type="button" id="addDomain" {% if prd_done == "Y" %} class="add_3_disabled" disabled {% else %} class="add_3" {% endif %}>도메인 추가</button>
+                        </div>
+                        <div style="padding-left:10px;">
+                            <p style="font-family: Seed-Medium;"><span>부서 그룹명</span></p>
+                            <!-- dept_domain에 해당하는 dept_grp_nm 목록을 표시하는 div 추가 -->
+                            <div id="dept-grp-nm-list" style="width:350px; height:300px; border: 1px solid #ccc; padding-left: 5px;">
+                                <!-- dept_grp_nm 목록이 여기에 동적으로 생성됩니다. -->
+                            </div>
+                            <button type="button" id="addGroup" {% if prd_done == "Y" %} class="add_3_disabled" disabled {% else %} class="add_3" {% endif %}>그룹 추가</button>
+                        </div>
+                    </div>
+                    <div style="padding-left:260px; padding-top:10px;">
+                        <p style="font-family: Seed-Medium;"><span>부서명</span></p>
+                        <div id="dept-list" style="width:350px; height: 200px; border: 1px solid #ccc; overflow-y: scroll; padding-left: 5px;">
+                            <!-- 부서 목록이 여기에 동적으로 생성됩니다. -->
+                        </div>
+                    </div>
+                </div>
+                <div style="padding-left:10px;">
+                    <p style="font-family: Seed-Medium;"><span>부서 목록</span></p>
+                    <!-- 선택된 dept_grp_nm에 해당하는 팀 목록을 표시하는 div 추가 -->
+                    <div id="team-list" style="width: 250px; height: 510px; border: 1px solid #ccc; overflow-y: scroll; padding-left: 5px;">
+                        <!-- 팀 목록이 여기에 동적으로 생성됩니다. -->
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding-top:30px; padding-left:300px;">
+                <form action="{% url 'BS300_6' %}" method="POST" id="dataForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="jsonData" id="jsonData" value="">
+                    <input type="hidden" name="deptGrpData" id="deptGrpData" value="">
+                    <input type="hidden" name="prd_cd_selected" value={{ prd_cd_selected }}>
+                    <input type="hidden" name="tab_selected" value={{ tab }}>
+                    {% if prd_done == 'Y' %}
+                        <button class="del_disabled" disabled>저장</button>
+                        <button class="del_disabled" disabled>취소</button>
+                        {% else %}
+                        <button type="submit" class="save" name="action" value="action1" id="saveButton">저장</button>
+                        <button type="submit" class="cancel" name="action" value="action2" id="cancelButton">취소</button>
+                    {% endif %}
+                </form>
+            </div>
+            <input type="hidden" name="prd_done" value="{{ prd_done }}">
+            {% endif %}
         </div>
 
         <!-- 에러 메시지 -->
@@ -326,6 +384,7 @@
         return true;
         }
 
+
         function submitAndScroll(selectElement) {
             // 폼을 제출합니다.
             selectElement.form.submit();
@@ -336,6 +395,7 @@
             // 선택된 옵션을 최상단으로 스크롤합니다.
             selectElement.scrollTop = selectElement.options[selectedIndex].offsetTop;
         }
+
 
         window.addEventListener('load', function() {
             const selectElement = document.getElementById('dept_select');
@@ -398,6 +458,7 @@
             // 폼을 제출합니다.
             form.submit();
         }
+
 
         function addForm(tab) { // 행 추가 폼
 
@@ -501,11 +562,13 @@
             scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
         }
 
+
         function deleteForm(button) { // 행 삭제
             // Find the parent container and remove it
             const container = button.parentNode;
             container.remove();
         }
+
 
         // Function to move container Up
         function moveUp(button) {
@@ -520,6 +583,7 @@
         }
         }
 
+
         // Function to move container Down
         function moveDown(button) {
         const container = button.parentNode;
@@ -533,10 +597,589 @@
         }
         }
 
+
+        ///////////////////////////////////////////////////////// 조직 그룹 탭 script /////////////////////////////////////////////////////
+        document.addEventListener('DOMContentLoaded', function() { // DOM이 로드되면 실행. 페이지가 로드되면 실행되는 함수. DOM은 HTML 문서의 객체 모델을 의미함.
+            
+            // 서버에서 전달된 JSON 데이터를 JavaScript 변수로 가져오기
+            // // JSON 데이터를 HTML 요소에 표시하기
+            var jsonData = JSON.parse('{{ data_bs_dept_grp_domain|escapejs|safe }}'); // JSON 데이터 파싱
+            var deptGrpData = JSON.parse('{{ data_bs_dept_grp|escapejs|safe }}'); // BsDeptGrp 데이터 파싱
+            var deptData = JSON.parse('{{ data_bs_dept|escapejs|safe }}'); // BsDept 데이터 파싱
+
+            var prd_done = document.querySelector('input[name="prd_done"]').value;
+
+            function updateDeptDomainList() {
+                    
+                // dept_domain 라디오 버튼과 input text 생성
+                var deptDomainContainer = document.getElementById('dept-domain-radio-buttons');
+                deptDomainContainer.innerHTML = ''; // 기존 도메인 요소들을 지움
+                var deptDomains = [...new Set(jsonData.map(item => item.dept_domain))]; // 중복 제거된 dept_domain 목록
+                
+                deptDomains.forEach((domain, domainIndex) => { // dept_domain 목록을 순회하며 라디오 버튼과 input text 생성. domain값은 dept_domain이다.
+                    var container = document.createElement('div'); // 라디오 버튼과 input text를 묶을 div
+                    container.className = 'domain-container'; // 필요한 스타일 클래스 이름 지정
+                    
+                    var radio = document.createElement('input'); // dept_domain을 value로 하는 라디오 버튼 생성
+                    radio.type = 'radio';
+                    radio.name = 'dept_domain';
+                    radio.value = domain;
+                    radio.addEventListener('change', function() { // 라디오 버튼을 누르면 그 domain에 해당하는 group 목록 업데이트
+                        updateDeptGrpNmList(domain); // group 목록 업데이트. domain을 인자로 넘겨줌. domain값은 dept_domain
+                    });
+                    
+                    var inputText = document.createElement('input'); // domain을 value로 하는 input text 생성
+                    inputText.type = 'text';
+                    inputText.value = domain;
+                    inputText.className = 'input_text8';
+                    inputText.addEventListener('change', function() {
+                        updateDomainName(domain, inputText.value);
+                    });
+                    if (prd_done == 'Y') { // prd_done = 'Y' 이면 inputText를 읽기 전용으로 설정
+                    inputText.setAttribute('readonly', 'readonly');
+                    }
+
+                    var deleteButton = document.createElement('button'); // 삭제 버튼 생성
+                    deleteButton.textContent = '-';
+                        if (prd_done == 'Y') {
+                        deleteButton.disabled = true;
+                    }
+                    // prd_done = 'Y' 이면 className을 del_small_2_disalbed로 설정, 아니면 del_small_2로 설정
+                    deleteButton.className = prd_done == 'Y' ? 'del_small_2_disabled' : 'del_small_2';
+                    deleteButton.addEventListener('click', function() {
+                        deleteDomain(domain);
+                    });
+                    
+                    container.appendChild(radio);
+                    container.appendChild(inputText);
+                    container.appendChild(deleteButton); // 삭제 버튼 추가
+                    
+                    deptDomainContainer.appendChild(container);
+
+                    // 첫 번째 domain 라디오 버튼 체크 및 첫 번째 group 선택
+                    if (domainIndex === 0) {
+                        radio.checked = true;
+                        updateDeptGrpNmList(domain); // 첫 번째 domain에 해당하는 group 목록 업데이트 및 첫 번째 group 선택
+                    }
+                });
+            }
+
+            // 도메인명 업데이트하는 함수
+            function updateDomainName(oldDomain, newDomain) { 
+                if (jsonData.some(item => item.dept_domain === newDomain)) {
+                    alert('도메인명이 중복됩니다. 다른 도메인명을 입력하세요');
+                    updateDeptDomainList();
+                    document.querySelector(`input[name="dept_domain"][value="${oldDomain}"]`).checked = true; // 
+                    updateDeptGrpNmList(oldDomain);
+                    return;
+                }
+
+                jsonData.forEach(item => {
+                    if (item.dept_domain === oldDomain) {
+                        item.dept_domain = newDomain;
+                    }
+                });
+
+                deptGrpData.forEach(item => {
+                    if (item.dept_domain === oldDomain) {
+                        item.dept_domain = newDomain;
+                    }
+                });
+
+                updateDeptDomainList(); // 도메인 목록 업데이트
+                document.querySelector(`input[name="dept_domain"][value="${newDomain}"]`).checked = true; // 
+                updateDeptGrpNmList(newDomain);
+            }
+
+            // 도메인 추가 함수
+            document.getElementById('addDomain').addEventListener('click', function() {
+                var newDomain = '새 도메인';
+                var newGrpNm = '새 그룹';
+
+                // Check for duplicate domain names
+                if (jsonData.some(item => item.dept_domain === newDomain)) {
+                    alert('도메인 이름이 중복됩니다. 기존에 추가한 도메인명을 변경해주세요(새 도메인)');
+                    return;
+                }
+
+                // sequence number for the new domain
+                var lastDomainSeq = Math.max(...jsonData.map(item => item.domain_seq)) || 0;
+                var newDomainSeq = lastDomainSeq + 1;
+
+                // Update jsonData with the new domain and group
+                // jsonData.push({ dept_domain: newDomain, dept_grp_nm: newGrpNm });
+                jsonData.push({ dept_domain: newDomain, dept_grp_nm: newGrpNm, domain_seq: newDomainSeq, grp_seq: 1 });
+
+                // Sort jsonData by domain_seq, grp_seq, dept_seq
+                jsonData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq) || (a.dept_seq - b.dept_seq));
+
+                // Update the domain list and select the new domain
+                updateDeptDomainList();
+
+                // Automatically select the new domain and update the group list
+                document.querySelector(`input[name="dept_domain"][value="${newDomain}"]`).checked = true;
+                updateDeptGrpNmList(newDomain);
+            });
+
+            // 도메인 삭제 함수
+            function deleteDomain(domain) {
+                if (confirm('정말로 삭제하시겠습니까?')) {
+                    // jsonData와 deptGrpData에서 도메인 삭제
+                    jsonData = jsonData.filter(item => item.dept_domain !== domain);
+                    deptGrpData = deptGrpData.filter(item => item.dept_domain !== domain);
+
+                    // 도메인 삭제 후 jsonData의 domain_seq 업데이트
+                    let domainSeqMap = {};
+                    let newDomainSeq = 1;
+                    jsonData.forEach(item => {
+                        if (!domainSeqMap[item.dept_domain]) {
+                            domainSeqMap[item.dept_domain] = newDomainSeq++;
+                        }
+                        item.domain_seq = domainSeqMap[item.dept_domain];
+                    });
+                    deptGrpData.forEach(item => {
+                        item.domain_seq = domainSeqMap[item.dept_domain];
+                    });
+
+                    // Sort jsonData and deptGrpData by domain_seq, grp_seq, dept_seq
+                    jsonData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq));
+                    // deptGrpData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq) || (a.dept_seq - b.dept_seq));
+                    
+                    // 도메인 목록 업데이트
+                    updateDeptDomainList();
+                    
+                    // 첫 번째 도메인을 선택하여 그룹 목록 업데이트
+                    if (jsonData.length > 0) {
+                        var firstDomain = jsonData[0].dept_domain;
+                        document.querySelector(`input[name="dept_domain"][value="${firstDomain}"]`).checked = true;
+                        updateDeptGrpNmList(firstDomain);
+                    } else {
+                        document.getElementById('dept-grp-nm-list').innerHTML = '';
+                        document.getElementById('team-list').innerHTML = '';
+                        document.getElementById('dept-list').innerHTML = '';
+                    }
+                }
+            }
+
+            // dept_domain에 해당하는 dept_grp_nm 목록을 업데이트하는 함수
+            function updateDeptGrpNmList(domain) {
+
+                var deptGrpNmContainer = document.getElementById('dept-grp-nm-list');
+                deptGrpNmContainer.innerHTML = ''; // 기존 내용을 지움
+                
+                var filteredData = jsonData.filter(item => item.dept_domain === domain); // 선택된 domain에 해당하는 jsonData데이터(BsGrpDomain)만 필터링
+                filteredData.forEach((item, index) => { // 필터링된 데이터를 순회하며 라디오 버튼과 input text 생성. item은 filtering된 jsonData의 요소
+                    var container = document.createElement('div'); // 라디오 버튼과 input text를 묶을 div
+                    container.className = 'grp-container'; // 필요한 스타일 클래스 이름 지정
+
+                    var radio = document.createElement('input'); // dept_grp_nm을 value로 하는 라디오 버튼 생성
+                    radio.type = 'radio';
+                    radio.name = 'dept_grp_nm';
+                    radio.value = item.dept_grp_nm;
+                    radio.addEventListener('change', function() { // 라디오 버튼을 누르면 그 dept_grp_nm에 해당하는 팀 목록 업데이트
+                        updateTeamList(domain, item.dept_grp_nm); // 팀 목록 업데이트. dept_grp_nm을 인자로 넘겨줌. dept_grp_nm값은 dept_grp_nm
+                        updateDeptList(domain, item.dept_grp_nm); // 새로운 부서 목록 업데이트 함수 호출
+                    });
+
+                    var inputText = document.createElement('input'); // dept_grp_nm을 value로 하는 input text 생성
+                    inputText.type = 'text';
+                    inputText.value = item.dept_grp_nm;
+                    inputText.className = 'input_text8';
+                    inputText.addEventListener('change', function() {
+                        updateGroupName(domain, item.dept_grp_nm, inputText.value);
+                    });
+                    if (prd_done == 'Y') { // prd_done = 'Y' 이면 inputText를 읽기 전용으로 설정
+                    inputText.setAttribute('readonly', 'readonly');
+                    }
+
+                    var moveUpButton = document.createElement('button'); // 위로 이동 버튼 생성
+                    moveUpButton.textContent = '▲';
+                    // prd_done = 'Y' 이면 버튼 비활성화, prd_done은 html에서 가져와야 함
+                    if (prd_done == 'Y') {
+                        moveUpButton.disabled = true;
+                    }
+                    // prd_done = 'Y' 이면 className을 move_2_disalbed로 설정, 아니면 move_2로 설정
+                    moveUpButton.className = prd_done == 'Y' ? 'move_2_disabled' : 'move_2';
+                    moveUpButton.addEventListener('click', function() {
+                        moveGroupUp(domain, item.dept_grp_nm);
+                    });
+
+                    var moveDownButton = document.createElement('button'); // 아래로 이동 버튼 생성
+                    moveDownButton.textContent = '▼';
+                    // prd_done = 'Y' 이면 버튼 비활성화, prd_done은 html에서 가져와야 함
+                    if (prd_done == 'Y') {
+                        moveDownButton.disabled = true;
+                    }
+                    // prd_done = 'Y' 이면 className을 move_2_disalbed로 설정, 아니면 move_2로 설정
+                    moveDownButton.className = prd_done == 'Y' ? 'move_2_disabled' : 'move_2';
+                    moveDownButton.addEventListener('click', function() {
+                        moveGroupDown(domain, item.dept_grp_nm);
+                    });
+
+                    var deleteButton = document.createElement('button'); // 삭제 버튼 생성
+                    deleteButton.textContent = '-';
+                    if (prd_done == 'Y') {
+                        deleteButton.disabled = true;
+                    }
+                    // prd_done = 'Y' 이면 className을 del_small_2_disalbed로 설정, 아니면 del_small_2로 설정
+                    deleteButton.className = prd_done == 'Y' ? 'del_small_2_disabled' : 'del_small_2';
+                    deleteButton.addEventListener('click', function() {
+                        deleteGroup(domain, item.dept_grp_nm);
+                    });
+
+                    container.appendChild(radio);
+                    container.appendChild(inputText);
+                    container.appendChild(moveUpButton); // 위로 이동 버튼 추가
+                    container.appendChild(moveDownButton); // 아래로 이동 버튼 추가
+                    container.appendChild(deleteButton); // 삭제 버튼 추가
+                    
+                    deptGrpNmContainer.appendChild(container);
+
+                    // 첫 번째 라디오 버튼 체크
+                    if (index === 0) {
+                        radio.checked = true;
+                        updateTeamList(domain, item.dept_grp_nm); // 첫 번째 라디오 버튼에 해당하는 팀 목록 업데이트
+                        // updateTeamList(item.dept_grp_nm); // 첫 번째 라디오 버튼에 해당하는 팀 목록 업데이트
+                        updateDeptList(domain, item.dept_grp_nm); // 새로운 부서 목록 업데이트 함수 호출
+                    }
+                });
+            }
+
+            // 그룹명 업데이트하는 함수
+            function updateGroupName(domain, oldGrpNm, newGrpNm) { 
+                if (jsonData.some(item => item.dept_domain === domain && item.dept_grp_nm === newGrpNm)) {
+                    alert('그룹명이 중복됩니다. 다른 그룹명을 입력하세요');
+                    updateDeptGrpNmList(domain);
+                    document.querySelector(`input[name="dept_grp_nm"][value="${oldGrpNm}"]`).checked = true; 
+                    updateTeamList(domain, oldGrpNm);
+                    updateDeptList(domain, oldGrpNm);
+                    return;
+                }
+
+                jsonData.forEach(item => {
+                    if (item.dept_domain === domain && item.dept_grp_nm === oldGrpNm) {
+                        item.dept_grp_nm = newGrpNm;
+                    }
+                });
+
+                deptGrpData.forEach(item => {
+                    if (item.dept_domain === domain && item.dept_grp_nm === oldGrpNm) {
+                        item.dept_grp_nm = newGrpNm;
+                    }
+                });
+
+                updateDeptGrpNmList(domain); // 그룹 목록 업데이트
+                document.querySelector(`input[name="dept_grp_nm"][value="${newGrpNm}"]`).checked = true; 
+                updateTeamList(domain, newGrpNm);
+                updateDeptList(domain, newGrpNm);
+            }
+
+            // 그룹 추가 함수
+            document.getElementById('addGroup').addEventListener('click', function() {
+                var selectedDomain = document.querySelector('input[name="dept_domain"]:checked').value;
+                var newGrpNm = '새 그룹';
+
+                 // Check for duplicate group names within the same domain
+                if (jsonData.some(item => item.dept_domain === selectedDomain && item.dept_grp_nm === newGrpNm)) {
+                    alert('그룹 이름이 중복됩니다. 기존에 추가했던 그룹명을 변경해주세요(새 그룹)');
+                    return;
+                }
+
+                // sequence
+                var selectedDomainSeq = jsonData.find(item => item.dept_domain === selectedDomain).domain_seq;
+                var lastGrpSeq = Math.max(...jsonData.filter(item => item.dept_domain === selectedDomain).map(item => item.grp_seq)) || 0;
+                var newGrpSeq = lastGrpSeq + 1;
+
+                // Update jsonData with the new group
+                // jsonData.push({ dept_domain: selectedDomain, dept_grp_nm: newGrpNm });
+                jsonData.push({ dept_domain: selectedDomain, dept_grp_nm: newGrpNm, domain_seq: selectedDomainSeq, grp_seq: newGrpSeq });
+
+                // Sort jsonData by domain_seq, grp_seq, dept_seq
+                jsonData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq));
+
+                // Update the group list and select the new group
+                updateDeptGrpNmList(selectedDomain);
+
+                // Automatically select the new group and update the team and department lists
+                document.querySelector(`input[name="dept_grp_nm"][value="${newGrpNm}"]`).checked = true;
+                updateTeamList(selectedDomain, newGrpNm);
+                updateDeptList(selectedDomain, newGrpNm);
+            });
+
+            // 그룹 삭제 함수
+            function deleteGroup(domain, grpNm) {
+                if (confirm('정말로 삭제하시겠습니까?')) {
+                    // jsonData와 deptGrpData에서 그룹 삭제
+                    jsonData = jsonData.filter(item => !(item.dept_domain === domain && item.dept_grp_nm === grpNm));
+                    deptGrpData = deptGrpData.filter(item => !(item.dept_domain === domain && item.dept_grp_nm === grpNm));
+
+                    // 그룹 삭제 후 jsonData의 grp_seq 업데이트
+                    let grpSeqMap = {};
+                    let newGrpSeq = 1;
+                    jsonData.forEach(item => {
+                        if (item.dept_domain === domain) {
+                            if (!grpSeqMap[item.dept_grp_nm]) {
+                                grpSeqMap[item.dept_grp_nm] = newGrpSeq++;
+                            }
+                            item.grp_seq = grpSeqMap[item.dept_grp_nm];
+                        }
+                    });
+                    // deptGrpData.forEach(item => {
+                    //     if (item.dept_domain === domain) {
+                    //         item.grp_seq = grpSeqMap[item.dept_grp_nm];
+                    //     }
+                    // });
+
+                    // Sort jsonData and deptGrpData by domain_seq, grp_seq, dept_seq
+                    jsonData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq) || (a.dept_seq - b.dept_seq));
+                    // deptGrpData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq) || (a.dept_seq - b.dept_seq));
+                    
+                    // 그룹 목록 업데이트
+                    updateDeptGrpNmList(domain);
+                    
+                    // 첫 번째 그룹을 선택하여 팀 목록 업데이트
+                    var filteredData = jsonData.filter(item => item.dept_domain === domain);
+                    if (filteredData.length > 0) {
+                        var firstGrpNm = filteredData[0].dept_grp_nm;
+                        document.querySelector(`input[name="dept_grp_nm"][value="${firstGrpNm}"]`).checked = true;
+                        updateTeamList(domain, firstGrpNm);
+                        updateDeptList(domain, firstGrpNm);
+                    } else {
+                        document.getElementById('team-list').innerHTML = '';
+                        document.getElementById('dept-list').innerHTML = '';
+                    }
+                }
+            }
+
+            // 그룹 순서를 위로 이동시키는 함수
+            function moveGroupUp(domain, grpNm) {
+                var grpContainer = document.querySelector(`input[name="dept_grp_nm"][value="${grpNm}"]`).parentNode;
+                var previousContainer = grpContainer.previousElementSibling;
+                if (previousContainer) {
+                    grpContainer.parentNode.insertBefore(grpContainer, previousContainer);
+                    updateGrpSeq(domain);
+                } else {
+                    alert('가장 위에 있는 그룹입니다.');
+                }
+            }
+
+            // 그룹 순서를 아래로 이동시키는 함수
+            function moveGroupDown(domain, grpNm) {
+                var grpContainer = document.querySelector(`input[name="dept_grp_nm"][value="${grpNm}"]`).parentNode;
+                var nextContainer = grpContainer.nextElementSibling;
+                if (nextContainer) {
+                    grpContainer.parentNode.insertBefore(nextContainer, grpContainer);
+                    updateGrpSeq(domain);
+                } else {
+                    alert('가장 아래에 있는 그룹입니다.');
+                }
+            }
+
+            // 그룹 순서를 업데이트하는 함수
+            function updateGrpSeq(domain) {
+                var grpContainers = document.querySelectorAll('#dept-grp-nm-list .grp-container');
+                grpContainers.forEach((container, index) => {
+                    var grpNm = container.querySelector('input[name="dept_grp_nm"]').value;
+                    var grp = jsonData.find(item => item.dept_domain === domain && item.dept_grp_nm === grpNm);
+                    if (grp) {
+                        grp.grp_seq = index + 1; // seq 값을 인덱스 + 1로 설정
+                    }
+                });
+            }
+
+            // 선택된 dept_grp_nm에 해당하는 팀 목록을 업데이트하는 함수
+            function updateTeamList(domain, deptGrpNm) {
+                var teamListContainer = document.getElementById('team-list');
+                teamListContainer.innerHTML = ''; // 기존 내용을 지움
+                
+                deptData.forEach(item => { // deptData를 순회하며 체크박스와 input text 생성. deptData는 BsDept 데이터로, jsonData와 deptGrpData와는 별개다.
+                    // deptGrpData는 체크박스를 선택하거나 선택 해제함으로써 변하는 데이터이다.
+                    var container = document.createElement('div'); // 체크박스와 input text를 묶을 div
+                    container.className = 'team-container'; // 필요한 스타일 클래스 이름 지정
+
+                    var checkbox = document.createElement('input'); // dept_cd를 value로 하는 체크박스 생성
+                    checkbox.type = 'checkbox';
+                    checkbox.name = 'team';
+                    checkbox.value = item.dept_cd;
+                    // deptGrpData를 참고하여 체크박스 체크 여부 결정
+                    checkbox.checked = deptGrpData.some(grp => grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm && grp.dept_cd === item.dept_cd);
+                    // prd_done = 'Y' 이면 disabled
+                    if (prd_done == 'Y') {
+                        checkbox.disabled = true;
+                    }
+
+                    // 체크박스 클릭 이벤트 추가
+                    checkbox.addEventListener('change', function() {
+                        if (checkbox.checked) { // 체크가 안되어있는 것을 체크한 경우
+                            
+                            // 중복 확인
+                            var isDuplicate = deptGrpData.some(grp => grp.dept_domain === domain && grp.dept_cd === item.dept_cd && grp.dept_grp_nm !== deptGrpNm);
+                            if (isDuplicate) {
+                                alert('해당 팀은 이미 다른 그룹에 속해 있습니다.');
+                                checkbox.checked = false;
+                                return;
+                            }
+                            
+                            // 중복 아닌 경우 deptGrpData에 데이터 추가.
+                            var selectedDomainSeq = jsonData.find(d => d.dept_domain === domain).domain_seq;
+                            var selectedGrpSeq = jsonData.find(g => g.dept_domain === domain && g.dept_grp_nm === deptGrpNm).grp_seq;
+                            var deptSeqArray = deptGrpData.filter(grp => grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm).map(grp => grp.dept_seq);
+                            // 빈 배열이면 Math.max는 -Infinity를 반환하므로 0으로 설정
+                            var lastDeptSeq = deptSeqArray.length > 0 ? Math.max(...deptSeqArray) : 0;
+                            var newDeptSeq = lastDeptSeq + 1;
+
+                            // deptGrpData, 즉 BsDeptGrp데이터는, 체크박스의 체크와 해제에 따라서만 변한다. 왜냐하면 도메인과 그룹은 있어도 소속 부서가 없을 수 있기 때문이다.
+                            // deptGrpData.push({ dept_domain: domain, dept_grp_nm: deptGrpNm, dept_cd: item.dept_cd }); // deptGrpData에 추가
+                            // deptGrpData.push({ dept_domain: domain, dept_grp_nm: deptGrpNm, dept_cd: item.dept_cd, domain_seq: selectedDomainSeq, grp_seq: selectedGrpSeq, dept_seq: newDeptSeq });
+                            deptGrpData.push({ dept_domain: domain, dept_grp_nm: deptGrpNm, dept_cd: item.dept_cd, dept_seq: newDeptSeq });
+                            
+                            // Sort deptGrpData by domain_seq, grp_seq, dept_seq
+                            // deptGrpData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq) || (a.dept_seq - b.dept_seq));
+
+                        } else { // 체크가 되어있는 것을 체크 해제한 경우
+                            deptGrpData = deptGrpData.filter(grp => !(grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm && grp.dept_cd === item.dept_cd)); // deptGrpData에서 제거
+
+                            // deptGrpData에서 dept_seq 업데이트
+                            let deptSeqMap = {};
+                            let newDeptSeq = 1;
+                            deptGrpData.forEach(grp => {
+                                if (grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm) {
+                                    if (!deptSeqMap[grp.dept_cd]) {
+                                        deptSeqMap[grp.dept_cd] = newDeptSeq++;
+                                    }
+                                    grp.dept_seq = deptSeqMap[grp.dept_cd];
+                                }
+                            });
+                        }
+
+                        // deptGrpData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq) || (a.dept_seq - b.dept_seq));
+
+                        // 업데이트된 부서 목록 다시 표시
+                        updateTeamList(domain, deptGrpNm);
+                        updateDeptList(domain, deptGrpNm); // 새로운 부서 목록 업데이트 함수 호출
+                    });
+
+                    var inputText = document.createElement('input'); // dept_nm을 value로 하는 input text 생성
+                    inputText.type = 'text';
+                    inputText.value = item.dept_nm;
+                    inputText.className = 'input_text8';
+                    inputText.readOnly = true;
+
+                    container.appendChild(checkbox);
+                    container.appendChild(inputText);
+
+                    teamListContainer.appendChild(container);
+                });
+            }
+
+            // 선택된 dept_grp_nm에 해당하는 부서만을 띄워주는 함수
+            function updateDeptList(domain, deptGrpNm) {
+                var deptListContainer = document.getElementById('dept-list');
+                deptListContainer.innerHTML = ''; // 기존 내용을 지움
+
+                var filteredDeptGrpData = deptGrpData.filter(grp => grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm);
+
+                // // dept_seq 순으로 sorting
+                filteredDeptGrpData.sort((a, b) => a.dept_seq - b.dept_seq);
+
+                filteredDeptGrpData.forEach(grp => {
+                    var container = document.createElement('div'); // 부서 이름을 표시할 div
+                    container.className = 'dept-container'; // 필요한 스타일 클래스 이름 지정
+                    container.setAttribute('data-dept-cd', grp.dept_cd); // data-dept-cd 속성 추가
+
+                    var inputText = document.createElement('input');
+                    inputText.type = 'text';
+                    inputText.value = grp.dept_cd;
+                    inputText.className = 'input_text8';
+                    inputText.style.width = '50px';
+                    inputText.readOnly = true;
+
+                    var inputText2 = document.createElement('input'); // 부서명. 부서명은 deptGrpData에 없다. 그래서 deptData에서 찾아서 넣어줘야 한다.
+                    inputText2.type = 'text';
+                    // deptGrpData에는 부서명이 없기 때문에, deptData에서 찾아서 넣어줌
+                    var deptNm = deptData.find(dept => dept.dept_cd === grp.dept_cd).dept_nm;
+                    inputText2.value = deptNm;
+                    inputText2.className = 'input_text8';
+                    inputText2.readOnly = true;
+
+                    var moveUpButton = document.createElement('button'); // 위로 이동 버튼 생성
+                    moveUpButton.textContent = '▲';
+                    // prd_done = 'Y' 이면 버튼 비활성화, prd_done은 html에서 가져와야 함
+                    if (prd_done == 'Y') {
+                        moveUpButton.disabled = true;
+                    }
+                    // prd_done = 'Y' 이면 className을 move_2_disalbed로 설정, 아니면 move_2로 설정
+                    moveUpButton.className = prd_done == 'Y' ? 'move_2_disabled' : 'move_2';
+                    moveUpButton.addEventListener('click', function() {
+                        moveContainerUp(container, domain, deptGrpNm);
+                    });
+
+                    var moveDownButton = document.createElement('button'); // 아래로 이동 버튼 생성
+                    moveDownButton.textContent = '▼';
+                    // prd_done = 'Y' 이면 버튼 비활성화, prd_done은 html에서 가져와야 함
+                    if (prd_done == 'Y') {
+                        moveDownButton.disabled = true;
+                    }
+                    // prd_done = 'Y' 이면 className을 move_2_disalbed로 설정, 아니면 move_2로 설정
+                    moveDownButton.className = prd_done == 'Y' ? 'move_2_disabled' : 'move_2';
+                    moveDownButton.addEventListener('click', function() {
+                        moveContainerDown(container, domain, deptGrpNm);
+                    });
+
+                    container.appendChild(inputText);
+                    container.appendChild(inputText2)
+                    container.appendChild(moveUpButton); // 위로 이동 버튼 추가
+                    container.appendChild(moveDownButton); // 아래로 이동 버튼 추가;
+                    deptListContainer.appendChild(container);
+                });
+            }
+
+            // 컨테이너를 위로 이동시키는 함수
+            function moveContainerUp(container, domain, deptGrpNm) {
+                var previousContainer = container.previousElementSibling;
+                if (previousContainer) {
+                    container.parentNode.insertBefore(container, previousContainer);
+                    updateDeptSeq(domain, deptGrpNm);
+                } else {
+                    alert('가장 위에 있는 부서입니다.');
+                }
+            }
+
+            // 컨테이너를 아래로 이동시키는 함수
+            function moveContainerDown(container, domain, deptGrpNm) {
+                var nextContainer = container.nextElementSibling;
+                if (nextContainer) {
+                    container.parentNode.insertBefore(nextContainer, container);
+                    updateDeptSeq(domain, deptGrpNm);
+                } else {
+                    alert('가장 아래에 있는 부서입니다.');
+                }
+            }
+
+            // deptGrpData 내에서 dept_seq를 업데이트하는 함수
+            function updateDeptSeq(domain, deptGrpNm) {
+                var deptContainers = document.querySelectorAll('.dept-container');
+                deptContainers.forEach((container, index) => {
+                    var deptCd = container.getAttribute('data-dept-cd');
+                    var grp = deptGrpData.find(grp => grp.dept_cd === deptCd && grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm);
+                    if (grp) {
+                        grp.dept_seq = index + 1; // seq 값을 인덱스 + 1로 설정
+                    }
+                });
+            }
+
+            document.getElementById('dataForm').onsubmit = function() { // 폼 제출 시 실행되는 함수. 서버로 데이터 전송 전에 실행됨. 
+                // jsonData와 deptGrpData를 문자열로 변환하여 hidden input 필드에 설정
+                document.getElementById('jsonData').value = JSON.stringify(jsonData);
+                document.getElementById('deptGrpData').value = JSON.stringify(deptGrpData);
+            };
+
+            updateDeptDomainList();
+        });
+        ////////////////////////////////////////////////////////// 조직 그룹 탭 script ///////////////////////////////////////////////////////////
+
     </script>
 
 </body>
-
-
 
 {% endblock %}

@@ -73,6 +73,7 @@ urlpatterns = [
     path('BS300_3/', views.BS300_3, name='BS300_3'),
     path('BS300_4/', views.BS300_4, name='BS300_4'),
     path('BS300_5/', views.BS300_5, name='BS300_5'),
+    path('BS300_6/', views.BS300_6, name='BS300_6'),
     path('BS301_1/', views.BS301_1, name='BS301_1'),
     path('BS301_2/', views.BS301_2, name='BS301_2'),
     path('BS302_1/', views.BS302_1, name='BS302_1'),
