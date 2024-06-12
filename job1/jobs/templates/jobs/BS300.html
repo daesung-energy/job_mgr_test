@@ -868,6 +868,9 @@
                     }
                 });
 
+                // 변경된 그룹명을 반영하여 jsonData 정렬
+                jsonData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq));
+
                 updateDeptGrpNmList(domain); // 그룹 목록 업데이트
                 document.querySelector(`input[name="dept_grp_nm"][value="${newGrpNm}"]`).checked = true; 
                 updateTeamList(domain, newGrpNm);
