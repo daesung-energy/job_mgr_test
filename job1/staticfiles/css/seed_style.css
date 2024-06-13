@@ -507,8 +507,9 @@ header {
   display: flex;
   padding: 20px;
   font-family: "Seed-Medium";
-  font-size: 16px;
-  line-height: 5px;
+  /* font-size: 16px; */
+  font-size: 14px;
+  line-height: 15px;
 }
 
 .list-box-prd {

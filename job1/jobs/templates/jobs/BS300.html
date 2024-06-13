@@ -296,18 +296,18 @@
                         <div>
                             <p style="font-family: Seed-Medium;"><span>조직 그룹</span></p>
                             <!-- dept_domain 라디오 버튼과 input text 추가 -->
-                            <div id="dept-domain-radio-buttons" style="width:250px; height:300px; border: 1px solid #ccc; padding-left: 5px;">
+                            <div id="dept-domain-radio-buttons" style="width:250px; height:300px; border: 1px solid #ccc; padding-left: 5px; overflow-y: scroll;">
                                 <!-- 라디오 버튼과 input text가 여기에 동적으로 생성됩니다. -->
                             </div>
-                            <button type="button" id="addDomain" {% if prd_done == "Y" %} class="add_3_disabled" disabled {% else %} class="add_3" {% endif %}>도메인 추가</button>
+                            <button type="button" id="addDomain" {% if prd_done == "Y" %} class="add_3_disabled" disabled {% else %} class="add_3" {% endif %}>조직 그룹 추가</button>
                         </div>
                         <div style="padding-left:10px;">
                             <p style="font-family: Seed-Medium;"><span>부서 그룹명</span></p>
                             <!-- dept_domain에 해당하는 dept_grp_nm 목록을 표시하는 div 추가 -->
-                            <div id="dept-grp-nm-list" style="width:350px; height:300px; border: 1px solid #ccc; padding-left: 5px;">
+                            <div id="dept-grp-nm-list" style="width:350px; height:300px; border: 1px solid #ccc; padding-left: 5px; overflow-y: scroll;">
                                 <!-- dept_grp_nm 목록이 여기에 동적으로 생성됩니다. -->
                             </div>
-                            <button type="button" id="addGroup" {% if prd_done == "Y" %} class="add_3_disabled" disabled {% else %} class="add_3" {% endif %}>그룹 추가</button>
+                            <button type="button" id="addGroup" {% if prd_done == "Y" %} class="add_3_disabled" disabled {% else %} class="add_3" {% endif %}>부서 그룹 추가</button>
                         </div>
                     </div>
                     <div style="padding-left:260px; padding-top:10px;">

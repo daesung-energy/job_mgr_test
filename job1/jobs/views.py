@@ -1231,10 +1231,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.112.100', # 데이터베이스 주소
+            host='130.1.200.200', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='cdh0706**', # 데이터베이스 비밀번호
-            db='betadb',
+            password='1234', # 데이터베이스 비밀번호
+            db='jobdb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -7216,6 +7216,20 @@ def JB109_2(request): # 업무량 분석화면 - 탭 선택 후 선택한 탭을
                 'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
+        if span_name == 'span2': # 업무량 구성비 탭 선택했을 때
+
+            # 일단 넘겨줘
+
+            context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '업무량 분석', # 제목
+                'prd_cd_selected' : prd_cd_selected,
+                'tab' : 'tab2',
+                'dept_selected_key' : 'former',
+                'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+            }
+
     return render(request, 'jobs/JB109.html', context)
 
 
@@ -7227,87 +7241,181 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
         tab = request.POST['tab']
         dept_selected = request.POST['dept_selected']
 
-        std_wrk_tm = float(BsStdWrkTm.objects.get(prd_cd=prd_cd_selected).std_wrk_tm)
-        # print('std', type(std_wrk_tm))
+        if tab == 'tab1': # 업무량 분석 탭 선택했을 때
 
-        work_grade_list = ['G1', 'G2', 'G3', 'G4', 'G5'] # 업무등급 리스트
+            std_wrk_tm = float(BsStdWrkTm.objects.get(prd_cd=prd_cd_selected).std_wrk_tm)
+            # print('std', type(std_wrk_tm))
 
-        mbr_of_dept = BsMbr.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected) # 해당 부서의 부서원 목록
+            work_grade_list = ['G1', 'G2', 'G3', 'G4', 'G5'] # 업무등급 리스트
 
-        analysis = pd.DataFrame({'work_grade':work_grade_list})
+            mbr_of_dept = BsMbr.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected) # 해당 부서의 부서원 목록
 
-        task_target = JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
-        data_list = [{'task_nm' : rows.task_nm, 'work_grade' : rows.work_grade_id, 'prfrm_tm_ann':rows.prfrm_tm_ann} for rows in task_target]
-        df1 = pd.DataFrame(data_list)
+            analysis = pd.DataFrame({'work_grade':work_grade_list})
 
-        task_count = [] # 과업수
-        prfrm_tm_ann = [] # 연간 수행 시간
-        m_result = [] # 인력 산정 결과
-        po = [] #po
-        workload = BsWorkGrade.objects.filter(prd_cd=prd_cd_selected) # 업무량 가중치 object
-        workload_wt = [float(n.workload_wt) for n in workload ] # 업무량 가중치 list(float)
+            task_target = JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
+            data_list = [{'task_nm' : rows.task_nm, 'work_grade' : rows.work_grade_id, 'prfrm_tm_ann':rows.prfrm_tm_ann} for rows in task_target]
+            df1 = pd.DataFrame(data_list)
 
-        for grade in work_grade_list: # 업무등급 각각에 대하여 작업.
+            task_count = [] # 과업수
+            prfrm_tm_ann = [] # 연간 수행 시간
+            m_result = [] # 인력 산정 결과
+            po = [] #po
+            workload = BsWorkGrade.objects.filter(prd_cd=prd_cd_selected) # 업무량 가중치 object
+            workload_wt = [float(n.workload_wt) for n in workload ] # 업무량 가중치 list(float)
 
-            cnt = len(df1.loc[df1['work_grade'] == grade])
-            task_count.append(cnt)
+            for grade in work_grade_list: # 업무등급 각각에 대하여 작업.
 
-            df2 = df1[df1['work_grade'] == grade]
-            prfrm_tm_ann.append(float(df2['prfrm_tm_ann'].sum()))
+                cnt = len(df1.loc[df1['work_grade'] == grade])
+                task_count.append(cnt)
 
-            # 인력 산정
-            m_result.append(round(float(df2['prfrm_tm_ann'].sum())/std_wrk_tm, 1))
+                df2 = df1[df1['work_grade'] == grade]
+                prfrm_tm_ann.append(float(df2['prfrm_tm_ann'].sum()))
 
-            # 그 grade에 해당하는 pos_nm 리스트를 만든다.
-            pos_nm_of_grade = BsPosGrade.objects.filter(prd_cd=prd_cd_selected, work_grade_id=grade).values_list('pos_nm', flat=True)
+                # 인력 산정
+                m_result.append(round(float(df2['prfrm_tm_ann'].sum())/std_wrk_tm, 1))
 
-            cnt_grade = 0 # 그 grade에 해당하는 po
+                # 그 grade에 해당하는 pos_nm 리스트를 만든다.
+                pos_nm_of_grade = BsPosGrade.objects.filter(prd_cd=prd_cd_selected, work_grade_id=grade).values_list('pos_nm', flat=True)
 
-            # 위에서 만들어준 pos_nm 리스트를 갖고 Mbr에 접근
-            for row in mbr_of_dept:
+                cnt_grade = 0 # 그 grade에 해당하는 po
 
-                if row.pos_nm in pos_nm_of_grade: # 직위 이름이 pos_nm_gr_grade(그 grade에 해당하는 pos_nm 리스트)에 있으면
-                    cnt_grade = cnt_grade+1 # PO를 1 늘려준다.
+                # 위에서 만들어준 pos_nm 리스트를 갖고 Mbr에 접근
+                for row in mbr_of_dept:
+
+                    if row.pos_nm in pos_nm_of_grade: # 직위 이름이 pos_nm_gr_grade(그 grade에 해당하는 pos_nm 리스트)에 있으면
+                        cnt_grade = cnt_grade+1 # PO를 1 늘려준다.
+                
+                po.append(cnt_grade)
+
+            analysis['task_count'] = task_count # 과업수
+            analysis['prfrm_tm_ann'] = prfrm_tm_ann # 연간 업무량
+            analysis['po_result'] = m_result # 인력 산정
+            analysis['po'] = po # 업무등급별 PO
+            analysis['workload_wt'] = workload_wt # 업무량 가중치
+            analysis['po_cal'] = round(analysis['po'] * analysis['workload_wt'], 2) # 환산 PO
+            analysis['prfrm_tm_ann_cal'] = round(analysis['prfrm_tm_ann'] * analysis['workload_wt'], 1) # 환산 업무량
+            analysis['po_right'] = round(analysis['prfrm_tm_ann_cal']/std_wrk_tm, 1) # 적정 인력 산정
+            analysis['overless'] = round(analysis['po_cal']-analysis['po_right'], 1)
+
+            sum_1 = analysis['task_count'].sum()
+            sum_2 = round(analysis['prfrm_tm_ann'].sum(), 1)
+            sum_3 = round(analysis['po_result'].sum(), 1)
+            sum_4 = round(analysis['po'].sum(), 1)
+            sum_5 = round(analysis['po_cal'].sum(), 2)
+            sum_6 = round(analysis['prfrm_tm_ann_cal'].sum(), 1)
+            sum_7 = round(analysis['po_right'].sum(), 1)
+            sum_8 = round(analysis['overless'].sum(), 1)
+
+            if sum_8 > BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_max:
+                overless = "여유"
+            elif sum_8 <= BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_max and sum_8 >= BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_min:
+                overless = "적정"
+            elif sum_8:
+                overless = "부족"
+
+            context = {
+                    'prd_list' : BsPrd.objects.all(),
+                    'title' : '업무량 분석', # 제목
+                    'prd_cd_selected' : prd_cd_selected,
+                    'tab' : tab,
+                    'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
+                    'dept_selected' : dept_selected,
+                    'dept_selected_nm' : BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_selected).dept_nm,
+                    'analysis' : analysis,
+                    # 'sum' : sum,
+                    'dept_selected_key' : 'latter',
+                    'sum_1' : sum_1,
+                    'sum_2' : sum_2,
+                    'sum_3' : sum_3,
+                    'sum_4' : sum_4,
+                    'sum_5' : sum_5,
+                    'sum_6' : sum_6,
+                    'sum_7' : sum_7,
+                    'sum_8' : sum_8,
+                    'overless' : overless,
+                    'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                }
+        
+        if tab == 'tab2': # 업무량 구성비 탭 선택했을 때
+
+            # JobTask 테이블을 이용해 해당 회기의 해당 부서에 대한 dataframe 생성
+            job_task = JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
+            data_list = [{'job_cd' : rows.job_cd_id, 'duty_nm' : rows.duty_nm, 'task_nm' : rows.task_nm,
+                          'work_lv_imprt' : rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 
+                           'work_lv_sum' : rows.work_lv_sum, 'work_grade' : rows.work_grade_id, 'prfrm_tm_ann':rows.prfrm_tm_ann, 
+                             'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq } for rows in job_task]
             
-            po.append(cnt_grade)
+            df1 = pd.DataFrame(data_list) # JobTask 테이블에서 필요한 rough data를 가져왔다.
 
-        analysis['task_count'] = task_count # 과업수
-        analysis['prfrm_tm_ann'] = prfrm_tm_ann # 연간 업무량
-        analysis['po_result'] = m_result # 인력 산정
-        analysis['po'] = po # 업무등급별 PO
-        analysis['workload_wt'] = workload_wt # 업무량 가중치
-        analysis['po_cal'] = round(analysis['po'] * analysis['workload_wt'], 2) # 환산 PO
-        analysis['prfrm_tm_ann_cal'] = round(analysis['prfrm_tm_ann'] * analysis['workload_wt'], 1) # 환산 업무량
-        analysis['po_right'] = round(analysis['prfrm_tm_ann_cal']/std_wrk_tm, 1) # 적정 인력 산정
-        analysis['overless'] = round(analysis['po_cal']-analysis['po_right'], 1)
+            # job_cd, duty_nm, job_seq, duty_seq열을 가져와서 중복을 제거한 후, job_seq, duty_seq 순으로 정렬한다. 이후 인덱스 리셋한다.
+            df2 = df1[['job_cd', 'duty_nm', 'job_seq', 'duty_seq']].drop_duplicates().sort_values(['job_seq', 'duty_seq']).reset_index(drop=True)
+            
+            # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행 수를 센다. 그러면 task의 개수이다. 이를 task_cnt 열로 추가한다.
+            # df2에 대해서 for문을 활용하여 task_cnt열 데이터를 추가해준다. 먼저 task_cnt열부터 만들어놓고 시작해야 한다.
+            df2['task_cnt'] = 0
+            for i in range(len(df2)):
+                df2.loc[i, 'task_cnt'] = len(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])])
 
-        # # 합계 처리
-        # sum = list(analysis.sum())
-        # del sum[0]
-        # sum[1] = round(sum[1], 1)
-        # sum[2] = round(sum[2], 2)
-        # sum[5] = round(sum[5], 1)
-        # sum[6] = round(sum[6], 1)
-        # sum[7] = round(sum[7], 2)
-        # sum[8] = round(sum[8], 2)
-        # sum[4] = ''
-        sum_1 = analysis['task_count'].sum()
-        sum_2 = round(analysis['prfrm_tm_ann'].sum(), 1)
-        sum_3 = round(analysis['po_result'].sum(), 1)
-        sum_4 = round(analysis['po'].sum(), 1)
-        sum_5 = round(analysis['po_cal'].sum(), 2)
-        sum_6 = round(analysis['prfrm_tm_ann_cal'].sum(), 1)
-        sum_7 = round(analysis['po_right'].sum(), 1)
-        sum_8 = round(analysis['overless'].sum(), 1)
+            # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구해서 그 값을 job_prfrm_tm_ann 열로 추가한다.
+            # 우선 df1의 prfrm_tm_ann열 중에서 Null값을 0으로 치환한다.
+            df1['prfrm_tm_ann'] = df1['prfrm_tm_ann'].fillna(0)
+            # 그 후 df2에 대해서 for문을 활용하여 duty_tm_ann열 데이터를 추가해준다. 먼저 duty_tm_ann열 만들어놓고 시작해야 한다.
+            df2['duty_tm_ann'] = 0
+            for i in range(len(df2)):
+                df2.loc[i, 'duty_tm_ann'] = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum()
 
-        if sum_8 > BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_max:
-            overless = "여유"
-        elif sum_8 <= BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_max and sum_8 >= BsWlOvSht.objects.get(prd_cd=prd_cd_selected).ov_sht_min:
-            overless = "적정"
-        elif sum_8:
-            overless = "부족"
+            # df2의 duty_tm_ann열의 합을 구한 후, 그 값을 sum_duty_tm_ann이라는 변수에 저장한다.
+            sum_duty_tm_ann = df2['duty_tm_ann'].sum()
 
-        context = {
+            # df2에 각 duty의 ratio열인 duty_ratio을 추가한다. for문을 활용한다.
+            df2['duty_ratio'] = 0
+            for i in range(len(df2)):
+                df2.loc[i, 'duty_ratio'] = round((df2.loc[i, 'duty_tm_ann']/sum_duty_tm_ann)*100, 1)
+
+            # 리스트를 만드는데, 앞에서는 duty_ratio를 반올림해서 만들었다. 이번에는 반올림하지 않고 만든다.
+            duty_ratio_list = [(x/sum_duty_tm_ann)*100 for x in df2['duty_tm_ann']]
+
+            # 이 리스트의 합을 구한다. 나중에 sum값으로 사용할 값이다.
+            sum_duty_ratio = round(sum(duty_ratio_list), 1)
+
+            # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_imprt 평균의 소수 첫째자리까지 반올림을 구해서 duty_imprt열로 추가한다.
+            # 우선 df1의 work_lv_imprt열 중에서 Null값을 0으로 치환한다.
+            df1['work_lv_imprt'] = df1['work_lv_imprt'].fillna(0)
+            # 그 후 df2에 대해서 for문을 활용하여 duty_imprt열 데이터를 추가해준다. 먼저 duty_imprt열 만들어놓고 시작해야 한다.
+            df2['duty_imprt'] = 0
+            for i in range(len(df2)):
+                df2.loc[i, 'duty_imprt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].mean(), 1)
+
+            # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_dfclt 평균의 소수 첫째자리까지 반올림을 구해서 duty_dfclt열로 추가한다.
+            # 우선 df1의 work_lv_dfclt열 중에서 Null값을 0으로 치환한다.
+            df1['work_lv_dfclt'] = df1['work_lv_dfclt'].fillna(0)
+            # 그 후 df2에 대해서 for문을 활용하여 duty_dfclt열 데이터를 추가해준다. 먼저 duty_dfclt열 만들어놓고 시작해야 한다.
+            df2['duty_dfclt'] = 0
+            for i in range(len(df2)):
+                df2.loc[i, 'duty_dfclt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_dfclt'].mean(), 1)
+
+            # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_prfcn 평균의 소수 첫째자리까지 반올림을 구해서 duty_prfcn열로 추가한다.
+            # 우선 df1의 work_lv_prfcn열 중에서 Null값을 0으로 치환한다.
+            df1['work_lv_prfcn'] = df1['work_lv_prfcn'].fillna(0)
+            # 그 후 df2에 대해서 for문을 활용하여 duty_prfcn열 데이터를 추가해준다. 먼저 duty_prfcn열 만들어놓고 시작해야 한다.
+            df2['duty_prfcn'] = 0
+            for i in range(len(df2)):
+                df2.loc[i, 'duty_prfcn'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_prfcn'].mean(), 1)
+
+            # work_lv_mean열 추가. duty_imprt, duty_dfclt, duty_prfcn의 평균을 구해서 추가한다.
+            df2['work_lv_mean'] = round((df2['duty_imprt'] + df2['duty_dfclt'] + df2['duty_prfcn'])/3, 1)
+
+            # BsJob 테이블을 이용해 해당 job_cd의 job_nm 열을 추가할 것이다.
+            job_nm_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm for x in df2['job_cd']]
+            df2['job_nm'] = job_nm_list
+
+            # job_nm열을 job_cd열 뒤로 이동
+            cols = df2.columns.tolist()
+            cols = cols[:1] + cols[-1:] + cols[1:-1]
+            df2 = df2[cols]
+
+            context = {
+
                 'prd_list' : BsPrd.objects.all(),
                 'title' : '업무량 분석', # 제목
                 'prd_cd_selected' : prd_cd_selected,
@@ -7315,20 +7423,13 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
                 'dept_list': BsDept.objects.filter(prd_cd=prd_cd_selected),
                 'dept_selected' : dept_selected,
                 'dept_selected_nm' : BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_selected).dept_nm,
-                'analysis' : analysis,
-                # 'sum' : sum,
                 'dept_selected_key' : 'latter',
-                'sum_1' : sum_1,
-                'sum_2' : sum_2,
-                'sum_3' : sum_3,
-                'sum_4' : sum_4,
-                'sum_5' : sum_5,
-                'sum_6' : sum_6,
-                'sum_7' : sum_7,
-                'sum_8' : sum_8,
-                'overless' : overless,
                 'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                'analysis' : df2,
+                'sum_duty_tm_ann' : sum_duty_tm_ann,
+                'sum_duty_ratio' : sum_duty_ratio,
             }
+            
 
     return render(request, 'jobs/JB109.html', context)
 
@@ -7596,10 +7697,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7671,10 +7772,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',

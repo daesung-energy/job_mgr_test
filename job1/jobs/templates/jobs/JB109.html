@@ -35,9 +35,13 @@
             <div style="padding-left: 20px;">
                 <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">업무량 분석</span>
                 <span style="padding-right: 40px"></span>
-                <span name="span2" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">업무량 구성비</span>
+                <span name="span2" onclick="submitForm('span2')" {% if tab == "tab2" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">업무량 구성비</span>
                 <span style="padding-right: 40px"></span>
                 <span name="span3" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">적정인력 산정</span>
+                <span style="padding-right: 40px"></span>
+                <span name="span4" {% if tab == "span4" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">인력산정 결과</span>
+                <span style="padding-right: 40px"></span>
+                <span name="span5" {% if tab == "span5" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">연간 비교</span>
             </div>
         </form>
 
@@ -51,7 +55,7 @@
                 {% csrf_token %}
                 <!-- 회기, 탭 선택값 -->
                 <input type="hidden" name="prd_cd_selected" value="{{ prd_cd_selected }}">
-                <input type="hidden" name="tab" value="tab1">
+                <input type="hidden" name="tab" value="{{ tab }}">
                 <span class="label-text2">부서</span>
                 <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
                 <select name="dept_selected" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
@@ -64,8 +68,14 @@
                 </select>
                 {% if dept_selected_key == "latter" %}
                 <span style="margin-left: 795px;">
+                    {% if tab == "tab1" %}
                     <button class="save" onclick="printTableContent('job_analysis', '{{ prd_cd_selected }}', '{{ dept_selected_nm }}')">인쇄</button>
-                    <button class="save" onclick="exportToExcel('job_analysis')">다운로드</button> 
+                    <button class="save" onclick="exportToExcel('job_analysis')">다운로드</button>
+                    {% endif %}
+                    {% if tab == "tab2" %}
+                    <button class="save" onclick="printTableContent('analysis_by_duty', '{{ prd_cd_selected }}', '{{ dept_selected_nm }}')">인쇄</button>
+                    <button class="save" onclick="exportToExcel('analysis_by_duty')">다운로드</button>
+                    {% endif %} 
                 </span>
                 {% else %}
                 <span style="margin-left: 795px;">
@@ -76,129 +86,22 @@
             </form>
             </p>
         </div>
-        {% if tab == 'tab1' %}
-        {% if dept_selected_key == "former" %}
-        <div id="JB109_3" style="width:1300px;">
-            <!-- <span style="padding-left:1130px;"><input type="text" class="input-text2" readonly value={{ overless }}></span> -->
-            <span style="padding-left:1150px;"><label style="background-color: beige; font-family: Seed-Medium;"></label></span>
-        <div id="업무량분석" class="list-box">
-        <table id="job_analysis_former">
-            <thead>                
-                <tr>
-                    <th colspan=4><p>업무량 분석 결과</p></th>
-                    <th colspan=3><p>환산 PO 계산</p></th>
-                    <th colspan=2><p>적정 인력 산정</p><br><br><br><p>(※ G3 기준 환산)</p></th>
-                    <th rowspan=2><p>과부족 여부</p><br><br><br><p>(ⓒ=ⓐ-ⓑ)</p></th>
-                </tr>
-                <tr>
-                    <th><p>업무등급</p></th>
-                    <th><p>과업수</p></th>
-                    <th><p>연간 업무량</p></th>
-                    <th><p>인력 산정</p></th>
-                    <th><p>PO</p></th>
-                    <th><p>업무량 가중치</p></th>
-                    <th><p>환산PO(ⓐ)</p></th>
-                    <th><p>환산 업무량</p></th>
-                    <th><p>적정 인력 산정</p><br><br><br><p>(ⓑ)</p></th>
-                </tr>
-            </thead>
-            <tbody>
-            <tr style="height: 50px;">
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-            </tr>
-            <tr style="height: 50px;">
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-              </tr>
-              <tr style="height: 50px;">
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-              </tr>
-              <tr style="height: 50px;">
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-              </tr>
-              <tr style="height: 50px;">
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-              </tr>
-             <tr style="height: 50px;">
-              <td style="text-align: center;"><p>합계</p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-              <td style="text-align: center;"><p></p></td>
-             </tr>
-            </tbody>
-            </table>
-        </div>
-        </div>
-        {% endif %}
 
-        {% if dept_selected_key == "latter" %}
-        <div style="margin-top:20px; margin-bottom:20px; margin-left:1035px; background-color: yellow;">
-            
-        </div>
-        <!-- 업무량 분석 div -->
-        <div id="JB109_3" style="width:1300px;">
-            <span style="padding-left:1185px;">
-                <label style="background-color: ivory; font-family: Seed-Medium; font-size: 20px;  border: 1px solid #1c7293;
-                 border-radius: 1px; border-color: black; padding: 15px;">{{ overless }}</label>
-            </span>
+        <!-- 탭 선택에 따라 다르게 보여줌 -->
+        <!-- 1. 업무량 분석 탭 -->
+        {% if tab == 'tab1' %}
+            {% if dept_selected_key == "former" %}
+            <div id="JB109_3" style="width:1300px;">
+                <!-- <span style="padding-left:1130px;"><input type="text" class="input-text2" readonly value={{ overless }}></span> -->
+                <span style="padding-left:1150px;"><label style="background-color: beige; font-family: Seed-Medium;"></label></span>
             <div id="업무량분석" class="list-box">
-                <table id="job_analysis">
+            <table id="job_analysis_former">
                 <thead>                
                     <tr>
                         <th colspan=4><p>업무량 분석 결과</p></th>
                         <th colspan=3><p>환산 PO 계산</p></th>
-                        <th colspan=2><p>적정 인력 산정(※ G3 기준 환산)</th>
-                        <th rowspan=2><p>과부족 여부</p><p style="padding-top:12px;">(ⓒ=ⓐ-ⓑ)</p></th>
+                        <th colspan=2><p>적정 인력 산정</p><br><br><br><p>(※ G3 기준 환산)</p></th>
+                        <th rowspan=2><p>과부족 여부</p><br><br><br><p>(ⓒ=ⓐ-ⓑ)</p></th>
                     </tr>
                     <tr>
                         <th><p>업무등급</p></th>
@@ -209,45 +112,204 @@
                         <th><p>업무량 가중치</p></th>
                         <th><p>환산PO(ⓐ)</p></th>
                         <th><p>환산 업무량</p></th>
-                        <th><p>적정 인력 산정</p><p style="padding-top:10px;">(ⓑ)</p></th>
+                        <th><p>적정 인력 산정</p><br><br><br><p>(ⓑ)</p></th>
                     </tr>
                 </thead>
                 <tbody>
-                {% for index, row in analysis.iterrows %}
-                <tr style="height: 50px; text-align: center;">
-                <td><p>{{ row.work_grade }}</p></td>
-                <td><p>{{ row.task_count }}</p></td>
-                <td class="number-format"><p>{{ row.prfrm_tm_ann }}</p></td>
-                <td><p>{{ row.po_result }}</p></td>
-                <td><p>{{ row.po }}</p></td>
-                <td><p>{{ row.workload_wt }}</p></td>
-                <td style="background-color: rgba(235, 238, 177, 0.984);"><p>{{ row.po_cal }}</p></td>
-                <td class="number-format"><p>{{ row.prfrm_tm_ann_cal }}</p></td>
-                <td style="background-color: rgb(177, 211, 225);"><p>{{ row.po_right }}</p></td>
-                <td><p>{{ row.overless }}</p></td>
+                <tr style="height: 50px;">
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
                 </tr>
-                {% endfor %}
+                <tr style="height: 50px;">
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                </tr>
+                <tr style="height: 50px;">
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                </tr>
+                <tr style="height: 50px;">
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                </tr>
+                <tr style="height: 50px;">
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
+                    <td style="text-align: center;"><p></p></td>
+                </tr>
                 <tr style="height: 50px;">
                 <td style="text-align: center;"><p>합계</p></td>
-                <!-- {% for item in sum %}
-                <td style="text-align: center;"><p> {{ item }}</p></td>
-                {% endfor %} -->
-                <td style="text-align: center;"><p> {{ sum_1 }}</p></td>
-                <td class="number-format" style="text-align: center;"><p> {{ sum_2 }}</p></td>
-                <td style="text-align: center;"><p> {{ sum_3 }}</p></td>
-                <td style="text-align: center;"><p> {{ sum_4 }}</p></td>
-                <td style="text-align: center;"><p> </p></td>
-                <td style="text-align: center;"><p> {{ sum_5 }}</p></td>
-                <td class="number-format" style="text-align: center;"><p> {{ sum_6 }}</p></td>
-                <td style="text-align: center;"><p> {{ sum_7 }}</p></td>
-                <td style="text-align: center;"><p> {{ sum_8 }}</p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
+                <td style="text-align: center;"><p></p></td>
                 </tr>
                 </tbody>
                 </table>
             </div>
-        </div>
+            </div>
+            {% endif %}
+
+            {% if dept_selected_key == "latter" %}
+            <div style="margin-top:20px; margin-bottom:20px; margin-left:1035px; background-color: yellow;">
+                
+            </div>
+            <!-- 업무량 분석 div -->
+            <div id="JB109_3" style="width:1300px;">
+                <span style="padding-left:1185px;">
+                    <label style="background-color: ivory; font-family: Seed-Medium; font-size: 20px;  border: 1px solid #1c7293;
+                    border-radius: 1px; border-color: black; padding: 15px;">{{ overless }}</label>
+                </span>
+                <div id="업무량분석" class="list-box">
+                    <table id="job_analysis">
+                    <thead>                
+                        <tr>
+                            <th colspan=4><p>업무량 분석 결과</p></th>
+                            <th colspan=3><p>환산 PO 계산</p></th>
+                            <th colspan=2><p>적정 인력 산정(※ G3 기준 환산)</th>
+                            <th rowspan=2><p>과부족 여부</p><p style="padding-top:12px;">(ⓒ=ⓐ-ⓑ)</p></th>
+                        </tr>
+                        <tr>
+                            <th><p>업무등급</p></th>
+                            <th><p>과업수</p></th>
+                            <th><p>연간 업무량</p></th>
+                            <th><p>인력 산정</p></th>
+                            <th><p>PO</p></th>
+                            <th><p>업무량 가중치</p></th>
+                            <th><p>환산PO(ⓐ)</p></th>
+                            <th><p>환산 업무량</p></th>
+                            <th><p>적정 인력 산정</p><p style="padding-top:10px;">(ⓑ)</p></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for index, row in analysis.iterrows %}
+                    <tr style="height: 50px; text-align: center;">
+                    <td><p>{{ row.work_grade }}</p></td>
+                    <td><p>{{ row.task_count }}</p></td>
+                    <td class="number-format"><p>{{ row.prfrm_tm_ann }}</p></td>
+                    <td><p>{{ row.po_result }}</p></td>
+                    <td><p>{{ row.po }}</p></td>
+                    <td><p>{{ row.workload_wt }}</p></td>
+                    <td style="background-color: rgba(235, 238, 177, 0.984);"><p>{{ row.po_cal }}</p></td>
+                    <td class="number-format"><p>{{ row.prfrm_tm_ann_cal }}</p></td>
+                    <td style="background-color: rgb(177, 211, 225);"><p>{{ row.po_right }}</p></td>
+                    <td><p>{{ row.overless }}</p></td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="height: 50px;">
+                    <td style="text-align: center;"><p>합계</p></td>
+                    <td style="text-align: center;"><p> {{ sum_1 }}</p></td>
+                    <td class="number-format" style="text-align: center;"><p> {{ sum_2 }}</p></td>
+                    <td style="text-align: center;"><p> {{ sum_3 }}</p></td>
+                    <td style="text-align: center;"><p> {{ sum_4 }}</p></td>
+                    <td style="text-align: center;"><p> </p></td>
+                    <td style="text-align: center;"><p> {{ sum_5 }}</p></td>
+                    <td class="number-format" style="text-align: center;"><p> {{ sum_6 }}</p></td>
+                    <td style="text-align: center;"><p> {{ sum_7 }}</p></td>
+                    <td style="text-align: center;"><p> {{ sum_8 }}</p></td>
+                    </tr>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
         {% endif %}
-        {% endif %}
+
+        <!-- 2. 업무량 구성비 탭 -->
+
+        <!-- {% if tab == 'tab2' %}
+            <input type="hidden" id="tab-value" value="{{ tab }}">
+            {% if dept_selected_key == "latter" %}
+            
+            <div style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1320px;">        
+            <div id="analysis" class="list-box" style="padding-top:20px; width:1300px;" >
+                <table id="analysis_by_duty">
+                    <thead>                
+                        <tr>
+                            <th style="height: 40px;"><p>직무명</p></th>
+                            <th style="height: 40px;"><p>책무명</p></th>
+                            <th style="height: 40px;"><p>과업수</p></th>
+                            <th style="height: 40px;"><p>연간 수행시간</p></th>
+                            <th style="height: 40px;"><p>업무량 구성비(%)</p></th>
+                            <th style="height: 40px;"><p>중요도</p></th>
+                            <th style="height: 40px;"><p>난이도</p></th>                           
+                            <th style="height: 40px;"><p>숙련도</p></th>
+                            <th style="height: 40px;"><p>업무 등급</p></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for index, row in analysis.iterrows %}
+                            <tr style="height: 40px; text-align: center;">
+                                <td><p>{{ row.job_nm }}</p></td>
+                                <td><p>{{ row.duty_nm }}</p></td>
+                                <td><p>{{ row.task_cnt }}</p></td>
+                                <td><p>{{ row.duty_tm_ann }}</p></td>
+                                <td><p>{{ row.duty_ratio }}</p></td>
+                                <td><p>{{ row.duty_imprt }}</p></td>
+                                <td><p>{{ row.duty_dfclt }}</p></td>
+                                <td><p>{{ row.duty_prfcn }}</p></td>
+                                <td><p>{{ row.work_lv_mean }}</p></td>
+                            </tr>
+                        {% endfor %}
+                        <tr style="height: 40px; text-align: center;">
+                            <td colspan="3"><p>합계</p></td>
+                            <td><p>{{ sum_duty_tm_ann }}</p></td>
+                            <td><p>{{ sum_duty_ratio }}</p></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>                            
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        {% endif %} -->
+
     </div>
     </wrap>
     
@@ -334,6 +396,7 @@
 
             const prd_cd_selected = document.querySelector("input[name='prd_cd_selected']").value;
             const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
+            // const tabValue = document.getElementById('tab-value').value;
 
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Sheet 1');
@@ -377,6 +440,26 @@
 
                 currentExcelRow++;
             });
+
+            // if (tabValue === 'tab2') {
+            //     const rows = worksheet.getRows(3, worksheet.rowCount - 2);
+            //     let previousJobName = null;
+            //     let startRow = 3;
+
+            //     rows.forEach((row, index) => {
+            //         const currentRowIndex = 3 + index;
+            //         const cell = row.getCell(1);  // 첫 번째 셀 (직무명)
+
+            //         if (cell.value === previousJobName) {
+            //             worksheet.mergeCells(startRow, 1, currentRowIndex, 1);
+            //         } else {
+            //             if (index > 0) {
+            //                 startRow = currentRowIndex;
+            //             }
+            //             previousJobName = cell.value;
+            //         }
+            //     });
+            // }
 
             worksheet.columns.forEach(column => {
                 column.width = 20;
@@ -469,6 +552,41 @@
                 });
                 element.innerText = formattedNumber;
             });
+
+            // 분석 테이블의 모든 셀을 찾습니다.
+            const tableCells = document.querySelectorAll('#analysis_by_duty td p');
+
+            // 각 셀에 대해 작업을 수행합니다.
+            tableCells.forEach(cell => {
+                if (cell.innerText.trim() === "0.0" || cell.innerText.trim() === "0") {
+                    // "0"인 경우 빈 문자열로 설정합니다.
+                    cell.innerText = "";
+                }
+            });
+
+            // // 직무명이 같은 경우 셀 병합
+            // const table = document.getElementById('analysis_by_duty');
+            // const tabValue = document.getElementById('tab-value').value;
+            // if (tabValue === 'tab2') {
+            //     let previousJobName = "";
+            //     let rowspanCount = 1;
+            //     let firstCell;
+
+            //     for (let row of table.rows) {
+            //         let currentCell = row.cells[0];
+
+            //         if (currentCell.innerText === previousJobName) {
+            //             rowspanCount++;
+            //             firstCell.rowSpan = rowspanCount;
+            //             currentCell.style.display = 'none';
+            //         } else {
+            //             previousJobName = currentCell.innerText;
+            //             firstCell = currentCell;
+            //             rowspanCount = 1;
+            //         }
+            //     }
+            // }
+
         });
 
         function submitForm(spanName) { // submit하는 폼
@@ -487,12 +605,9 @@
         // 폼을 제출합니다.
         form.submit();
         }
+    
     </script>
 
-
 </body>
-
-
-
 
 {% endblock %}
