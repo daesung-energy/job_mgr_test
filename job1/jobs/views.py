@@ -3210,6 +3210,37 @@ def BS300_6(request): # 조직 그룹 탭에서 저장, 취소
             context.update({'data_bs_dept_grp_domain' : df_json2})
             context.update({'data_bs_dept' : df_json3})
 
+        if action == 'action2': # 취소 버튼 눌렀을 때
+
+            # 그냥 다시 화면을 띄워준다.
+            # BsDeptGrp를 가져와서 json으로 변경시켜준다. JB103이랑 비슷하게 한다.
+            original_rows = BsDeptGrp.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list = [{'dept_domain': rows.dept_domain_id, 'dept_grp_nm' : rows.dept_grp_nm_id, 'dept_cd' : rows.dept_cd_id, 'dept_seq': rows.dept_seq} for rows in original_rows]
+            # df1 = pd.DataFrame(data_list).sort_values(by=['domain_seq', 'grp_seq', 'dept_seq']).reset_index(drop=True)
+            df1 = pd.DataFrame(data_list)
+            # dataframe을 json으로 변경시켜서 html로 보낸다. JB103이랑 비슷하게 한다.
+            df_json = df1.to_json(orient='records')
+            # json데이터 엑셀 저장
+            # df1.to_excel('dept_grp.xlsx', index=False)
+
+            original_rows2 = BsDeptGrpDomain.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list2 = [{'dept_domain': rows.dept_domain, 'dept_grp_nm' : rows.dept_grp_nm, 'domain_seq': rows.domain_seq,
+                           'grp_seq': rows.grp_seq } for rows in original_rows2]
+            df2 = pd.DataFrame(data_list2).sort_values(by=['domain_seq', 'grp_seq']).reset_index(drop=True)
+            df_json2 = df2.to_json(orient='records')
+            # 엑셀 저장
+            # df2.to_excel('dept_grp_domain.xlsx', index=False)
+
+            original_rows3 = BsDept.objects.filter(prd_cd_id=prd_cd_selected)
+            data_list3 = [{'dept_cd' : rows.dept_cd, 'dept_nm' : rows.dept_nm} for rows in original_rows3]
+            df3 = pd.DataFrame(data_list3).sort_values(by=['dept_nm']).reset_index(drop=True)
+            df_json3 = df3.to_json(orient='records')
+            # 엑셀 저장
+            # df3.to_excel('dept.xlsx', index=False)
+
+            context.update({'data_bs_dept_grp' : df_json})
+            context.update({'data_bs_dept_grp_domain' : df_json2})
+            context.update({'data_bs_dept' : df_json3})
 
     return render(request, 'jobs/BS300.html', context)
 

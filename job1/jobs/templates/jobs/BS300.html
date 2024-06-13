@@ -55,7 +55,7 @@
             {% if tab == "tab3" %}
             <div style="padding-top: 40px;">
                 <span style="font-family: Seed-Medium; padding-left: 65px;"> 직위 </span>
-                <span style="font-family: Seed-Medium; padding-left: 85px;"> 업무 등급 </span>
+                <span style="font-family: Seed-Medium; padding-left: 65px;"> 업무 등급 </span>
             </div>
             {% endif %}
             {% if tab == "tab4" %}
@@ -215,15 +215,13 @@
                             {% for index, row in pos_grade_list.iterrows %}
                             <div class="container">
                                 <input type="text" class="input-text2" name="pos_nm" value="{{ row.pos_nm }}">
-                                <select class="select-combox" name="work_grade" style="margin-left: 35px;">
+                                <select class="select-combox" name="work_grade" style="margin-left: 10px;">
                                 <!-- dept_list는 BsDept 테이블에서 마지막 prd_cd의 부서들이다. -->
                                     {% for item2 in work_grade_list %}
                                         <option value= {{ item2.work_grade }} {% if item2.work_grade == row.work_grade %} selected {% endif %}> {{ item2.work_grade }} </option>
                                     {% endfor %}
                                 </select>
                                 <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
-                                <!-- <button type="button" class="move" onclick="moveUp(this)"> ▲ </button>
-                                <button type="button" class="move" onclick="moveDown(this)"> ▼ </button>  -->
                             </div>
                             {% endfor %}
                         </div>
@@ -235,9 +233,9 @@
                             {% for index, row in ttl_list.iterrows %}
                             <div class="container">
                                 <input type="text" class="input-text2" name="ttl_nm" value="{{ row.ttl_nm }}">
-                                <button type=button class="del_small" onclick="deleteForm(this)"> - </button>
-                                <button type="button" class="move" onclick="moveUp(this)"> ▲ </button>
-                                <button type="button" class="move" onclick="moveDown(this)"> ▼ </button> 
+                                <button type=button class="del_small_2" onclick="deleteForm(this)"> - </button>
+                                <button type="button" class="move_2" onclick="moveUp(this)"> ▲ </button>
+                                <button type="button" class="move_2" onclick="moveDown(this)"> ▼ </button> 
                             </div>
                             {% endfor %}
                         </div>
@@ -322,13 +320,13 @@
                 <div style="padding-left:10px;">
                     <p style="font-family: Seed-Medium;"><span>부서 목록</span></p>
                     <!-- 선택된 dept_grp_nm에 해당하는 팀 목록을 표시하는 div 추가 -->
-                    <div id="team-list" style="width: 250px; height: 510px; border: 1px solid #ccc; overflow-y: scroll; padding-left: 5px;">
+                    <div id="team-list" style="width: 250px; height: 565px; border: 1px solid #ccc; overflow-y: scroll; padding-left: 5px;">
                         <!-- 팀 목록이 여기에 동적으로 생성됩니다. -->
                     </div>
                 </div>
             </div>
 
-            <div style="padding-top:30px; padding-left:300px;">
+            <div style="padding-top:20px; padding-left:300px;">
                 <form action="{% url 'BS300_6' %}" method="POST" id="dataForm">
                     {% csrf_token %}
                     <input type="hidden" name="jsonData" id="jsonData" value="">
@@ -446,7 +444,9 @@
             // 폼을 가져옵니다.
             var form = document.getElementById("BS300");
 
-            // 추가 작업이 필요하다면 여기에서 수행합니다.
+            // 로컬 스토리지 값 삭제
+            localStorage.removeItem('selectedDomain');
+            localStorage.removeItem('selectedGroup');
 
             // spanName을 폼에 추가하거나 다른 처리를 수행할 수 있습니다.
             var input = document.createElement("input");
@@ -1175,9 +1175,48 @@
                 // jsonData와 deptGrpData를 문자열로 변환하여 hidden input 필드에 설정
                 document.getElementById('jsonData').value = JSON.stringify(jsonData);
                 document.getElementById('deptGrpData').value = JSON.stringify(deptGrpData);
+
+                // 선택한 도메인과 그룹 값을 로컬 스토리지에 저장
+                var selectedDomain = document.querySelector('input[name="dept_domain"]:checked').value;
+                var selectedGroup = document.querySelector('input[name="dept_grp_nm"]:checked').value;
+                localStorage.setItem('selectedDomain', selectedDomain);
+                localStorage.setItem('selectedGroup', selectedGroup);
+
             };
 
+            var storedDomain = localStorage.getItem('selectedDomain');
+            var storedGroup = localStorage.getItem('selectedGroup');
             updateDeptDomainList();
+            if (storedDomain) {
+                var domainRadio = document.querySelector(`input[name="dept_domain"][value="${storedDomain}"]`);
+                if (domainRadio) {
+                    domainRadio.checked = true;
+                    updateDeptGrpNmList(storedDomain);
+
+                    // 그룹 목록을 업데이트한 후 저장된 그룹 선택
+                    if (storedGroup) {
+                        var groupRadio = document.querySelector(`input[name="dept_grp_nm"][value="${storedGroup}"]`);
+                        if (groupRadio) {
+                            groupRadio.checked = true;
+                            updateTeamList(storedDomain, storedGroup);
+                            updateDeptList(storedDomain, storedGroup);
+                        }
+                    }
+                }
+            }
+
+            // 로그아웃 시 로컬 스토리지 삭제
+            document.getElementById('logoutButton').addEventListener('click', function() {
+                localStorage.removeItem('selectedDomain');
+                localStorage.removeItem('selectedGroup');
+            });
+
+            // 회기를 바꿀 때 로컬 스토리지 삭제
+            document.getElementById('selectOptions').addEventListener('change', function() {
+                localStorage.removeItem('selectedDomain');
+                localStorage.removeItem('selectedGroup');
+            });
+
         });
         ////////////////////////////////////////////////////////// 조직 그룹 탭 script ///////////////////////////////////////////////////////////
 
