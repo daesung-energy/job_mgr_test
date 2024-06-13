@@ -294,7 +294,7 @@
                 <div>
                     <div style="display: flex;">
                         <div>
-                            <p style="font-family: Seed-Medium;"><span>조직 도메인</span></p>
+                            <p style="font-family: Seed-Medium;"><span>조직 그룹</span></p>
                             <!-- dept_domain 라디오 버튼과 input text 추가 -->
                             <div id="dept-domain-radio-buttons" style="width:250px; height:300px; border: 1px solid #ccc; padding-left: 5px;">
                                 <!-- 라디오 버튼과 input text가 여기에 동적으로 생성됩니다. -->
@@ -723,6 +723,14 @@
 
             // 도메인 삭제 함수
             function deleteDomain(domain) {
+
+                // 도메인이 하나만 남아 있으면 알람을 띄우고 삭제하지 못하게 함
+                var remainingDomains = [...new Set(jsonData.map(item => item.dept_domain))];
+                if (remainingDomains.length <= 1) {
+                    alert('도메인은 최소 하나 이상 있어야 합니다.');
+                    return;
+                }
+
                 if (confirm('정말로 삭제하시겠습니까?')) {
                     // jsonData와 deptGrpData에서 도메인 삭제
                     jsonData = jsonData.filter(item => item.dept_domain !== domain);
@@ -911,6 +919,14 @@
 
             // 그룹 삭제 함수
             function deleteGroup(domain, grpNm) {
+                
+                // 해당 도메인 내에 하나만 그룹이 있으면 알람을 띄우고 삭제하지 못하게 함
+                var remainingGroups = jsonData.filter(item => item.dept_domain === domain).length;
+                if (remainingGroups <= 1) {
+                    alert('도메인 내에는 최소 하나 이상의 그룹이 있어야 합니다.');
+                    return;
+                }
+
                 if (confirm('정말로 삭제하시겠습니까?')) {
                     // jsonData와 deptGrpData에서 그룹 삭제
                     jsonData = jsonData.filter(item => !(item.dept_domain === domain && item.dept_grp_nm === grpNm));
