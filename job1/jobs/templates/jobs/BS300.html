@@ -727,7 +727,7 @@
                 // 도메인이 하나만 남아 있으면 알람을 띄우고 삭제하지 못하게 함
                 var remainingDomains = [...new Set(jsonData.map(item => item.dept_domain))];
                 if (remainingDomains.length <= 1) {
-                    alert('도메인은 최소 하나 이상 있어야 합니다.');
+                    alert('조직 그룹은 최소 하나 이상 있어야 합니다.');
                     return;
                 }
 
@@ -1061,17 +1061,15 @@
                             // deptGrpData에서 dept_seq 업데이트
                             let deptSeqMap = {};
                             let newDeptSeq = 1;
-                            deptGrpData.forEach(grp => {
-                                if (grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm) {
-                                    if (!deptSeqMap[grp.dept_cd]) {
-                                        deptSeqMap[grp.dept_cd] = newDeptSeq++;
+                            document.querySelectorAll('#dept-list .dept-container').forEach(container => { // dept-container를 순회하며 dept_seq 업데이트
+                                let deptCd = container.getAttribute('data-dept-cd');
+                                deptGrpData.forEach(grp => {
+                                    if (grp.dept_domain === domain && grp.dept_grp_nm === deptGrpNm && grp.dept_cd === deptCd) {
+                                        grp.dept_seq = newDeptSeq++;
                                     }
-                                    grp.dept_seq = deptSeqMap[grp.dept_cd];
-                                }
+                                });
                             });
                         }
-
-                        // deptGrpData.sort((a, b) => (a.domain_seq - b.domain_seq) || (a.grp_seq - b.grp_seq) || (a.dept_seq - b.dept_seq));
 
                         // 업데이트된 부서 목록 다시 표시
                         updateTeamList(domain, deptGrpNm);
