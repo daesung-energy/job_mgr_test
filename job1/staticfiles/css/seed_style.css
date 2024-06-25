@@ -630,8 +630,14 @@ header {
 .analysis_table td {
   border: 1px solid black;
   height: 5px;
-  font-size:12px;
+}
+
+.analysis_table input {
+  font-size: 14px;
   font-family: "Seed-Regular";
+  text-align: center;
+  border: none;
+  width: 80px;
 }
 
 /* ============================================  button  ================================================= */
