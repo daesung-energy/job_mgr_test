@@ -39,16 +39,18 @@
                 <span style="padding-right: 40px"></span>
                 <span name="span3" onclick="submitForm('span3')" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">적정인력 산정</span>
                 <span style="padding-right: 40px"></span>
-                <span name="span4" {% if tab == "span4" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">인력산정 결과</span>
+                <span name="span4" onclick="submitForm('span4')" {% if tab == "tab4" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">인력산정 결과</span>
                 <span style="padding-right: 40px"></span>
                 <span name="span5" {% if tab == "span5" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">연간 비교</span>
             </div>
         </form>
 
+        <!-- 탭이 tab1 혹은 tab2일 때 부서 선택을 할 수 있도록 한다-->
+        {% if tab == 'tab1' or tab == 'tab2' %}
         <!-- 부서 선택 div -->
         <div style="padding-top:20px;">
             
-            <!-- 부서 정보 선택 -->
+            <!-- 부서 선택 -->
             <p> 
                 <!-- 부서 선택 form -->
                 <form method="POST" id="JB109_3" action="{% url 'JB109_3' %}">
@@ -86,114 +88,52 @@
             </form>
             </p>
         </div>
+        {% endif %}
+
+        <!-- 탭이 tab3, tab4일 경우 조직 그룹을 선택할 수 있도록 한다. -->
+        {% if tab == 'tab3' or tab == 'tab4' %}
+        <!-- 조직 그룹 선택 div -->
+        <div style="padding-top:20px;">
+            
+            <!-- 부서 선택 -->
+            <p> 
+                <!-- 부서 선택 form -->
+                <form method="POST" id="JB109_4" action="{% url 'JB109_4' %}">
+                {% csrf_token %}
+                <!-- 회기, 탭 선택값 -->
+                <input type="hidden" name="prd_cd_selected" value="{{ prd_cd_selected }}">
+                <input type="hidden" name="tab" value="{{ tab }}">
+                <span class="label-text2">조직그룹</span>
+                <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
+                <select name="domain_selected" class="select-combox" style="margin-left: 40px;" onchange="this.form.submit()">
+                    {% if domain_selected_key == "former" %}
+                    <option>조직그룹 선택</option>
+                    {% endif %}
+                    {% for item in domain_list %}
+                    <option value="{{ item }}" {%if domain_selected == item %} selected {% endif %} > {{ item }} </option>
+                    {% endfor %}
+                </select>
+                {% if domain_selected_key == "latter" %}
+                    {% if tab == 'tab3' %}
+                        <span style="margin-left: 795px;">
+                            <button class="save" onclick="printTableContent('man_analysis', '{{ prd_cd_selected }}', '{{ domain_selected }}')">인쇄</button>
+                            <button class="save" onclick="exportToExcel('man_analysis')">다운로드</button>
+                        </span>
+                    {% endif %}
+                {% else %}
+                <span style="margin-left: 795px;">
+                    <button class="del_disabled" disabled>인쇄</button>
+                    <button class="del_disabled" disabled>다운로드</button> 
+                </span>
+                {% endif %}
+            </form>
+            </p>
+        </div>
+        {% endif %}
 
         <!-- 탭 선택에 따라 다르게 보여줌 -->
         <!-- 1. 업무량 분석 탭 -->
         {% if tab == 'tab1' %}
-            {% if dept_selected_key == "former" %}
-            <div id="JB109_3" style="width:1300px;">
-                <!-- <span style="padding-left:1130px;"><input type="text" class="input-text2" readonly value={{ overless }}></span> -->
-                <span style="padding-left:1150px;"><label style="background-color: beige; font-family: Seed-Medium;"></label></span>
-            <div id="업무량분석" class="list-box">
-            <table id="job_analysis_former">
-                <thead>                
-                    <tr>
-                        <th colspan=4><p>업무량 분석 결과</p></th>
-                        <th colspan=3><p>환산 PO 계산</p></th>
-                        <th colspan=2><p>적정 인력 산정</p><p>(※ G3 기준 환산)</p></th>
-                        <th rowspan=2><p>과부족 여부</p><p>(ⓒ=ⓐ-ⓑ)</p></th>
-                    </tr>
-                    <tr>
-                        <th><p>업무등급</p></th>
-                        <th><p>과업수</p></th>
-                        <th><p>연간 업무량</p></th>
-                        <th><p>인력 산정</p></th>
-                        <th><p>PO</p></th>
-                        <th><p>업무량 가중치</p></th>
-                        <th><p>환산PO(ⓐ)</p></th>
-                        <th><p>환산 업무량</p></th>
-                        <th><p>적정 인력 산정</p><p>(ⓑ)</p></th>
-                    </tr>
-                </thead>
-                <tbody>
-                <tr style="height: 50px;">
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                </tr>
-                <tr style="height: 50px;">
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                </tr>
-                <tr style="height: 50px;">
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                </tr>
-                <tr style="height: 50px;">
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                </tr>
-                <tr style="height: 50px;">
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgba(235, 238, 177, 0.984);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                    <td style="text-align: center; background-color: rgb(177, 211, 225);"><p></p></td>
-                    <td style="text-align: center;"><p></p></td>
-                </tr>
-                <tr style="height: 50px;">
-                <td style="text-align: center;"><p>합계</p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                <td style="text-align: center;"><p></p></td>
-                </tr>
-                </tbody>
-                </table>
-            </div>
-            </div>
-            {% endif %}
-
             {% if dept_selected_key == "latter" %}
             <div style="margin-top:20px; margin-bottom:20px; margin-left:1035px; background-color: yellow;">
                 
@@ -263,7 +203,7 @@
 
         {% if tab == 'tab2' %}
             {% if dept_selected_key == "latter" %}
-            
+
             <div style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1320px;">        
             <div id="analysis" class="list-box" style="padding-top:20px; width:1300px;" >
                 <table id="analysis_by_duty">
@@ -306,6 +246,61 @@
                     </tbody>
                 </table>
             </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- 3. 적정인력 산정 탭 -->
+        {% if tab == 'tab3' %}
+            {% if domain_selected_key == "latter" %}
+            <div style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1320px;">
+            <div id="analysis" class="list-box" style="padding-top:20px; width:1300px;">
+                <table id="man_analysis">
+                    <thead>                
+                        <tr>
+                            <th colspan=2><p>{{ domain_selected }}</p></th>
+                            <th><p>PO</p></th>
+                            <th colspan=2><p>업무량 분석 결과</p></th>
+                            <th colspan=4><p>적정인력 산정 결과</p></th>
+                        </tr>
+                        <tr>
+                            <th><p>그룹명</p></th>
+                            <th><p>부서명</p></th>
+                            <th><p>팀장 제외</p></th>
+                            <th><p>연간 업무량</p></th>
+                            <th><p>소요 인원</p></th>
+                            <th><p>환산 업무량</p></th>
+                            <th><p>환산 PO</p></th>
+                            <th><p>적정 인력 산정</p></th>
+                            <th><p>과부족</p></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for index, row in analysis.iterrows %}
+                            <tr style="height: 40px; text-align: center;">
+                                <td class="dept-grp-cell-class"><p>{{ row.dept_grp_nm }}</p></td>
+                                <td><p>{{ row.dept_nm }}</p></td>
+                                <td><p>{{ row.dept_po }}</p></td>
+                                <td><p>{{ row.prfrm_tm_ann }}</p></td>
+                                <td><p>{{ row.po_nec }}</p></td>
+                                <td><p>{{ row.tm_cal }}</p></td>
+                                <td><p>{{ row.po_cal }}</p></td>
+                                <td><p>{{ row.po_appr }}</p></td>
+                                <td><p>{{ row.overless }}</p></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- 4. 인력산정 결과 탭 -->
+        {% if tab == 'tab3' %}
+            {% if domain_selected_key == "latter" %}
+            
+            
+
             {% endif %}
         {% endif %}
 
@@ -396,21 +391,31 @@
             }
 
             const prd_cd_selected = document.querySelector("input[name='prd_cd_selected']").value; // 회기를 직접 가져오기
-            const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
             const tabValue = document.getElementById('tab-value').value;
+
+            // const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
+
+            let selectedInfo;
+            if (tabValue === 'tab3') {
+                selectedInfo = document.querySelector("select[name='domain_selected']").selectedOptions[0].text; // 도메인명을 직접 가져오기
+            } else {
+                selectedInfo = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
+            }
             
             const workbook = new ExcelJS.Workbook(); // ExcelJS workbook 생성
             const worksheet = workbook.addWorksheet('Sheet 1'); // 시트 생성
 
             const headerRow = worksheet.getRow(1); // 첫 번째 행에 헤더 추가
             headerRow.getCell(1).value = "회기: " + prd_cd_selected; // 회기 정보 추가
-            headerRow.getCell(2).value = "부서: " + dept_selected; // 부서 정보 추가
+            // headerRow.getCell(2).value = "부서: " + dept_selected; // 부서 정보 추가
+            headerRow.getCell(2).value = tabValue === 'tab3' ? "도메인: " + selectedInfo : "부서: " + selectedInfo; // 도메인 또는 부서 정보 추가
+
             headerRow.commit(); // 행에 대한 변경 사항을 저장
 
             let currentExcelRow = 3; // 엑셀 행 인덱스. 3번째 행부터 내용을 넣을 것이다.
             let mergeMap = []; // 엑셀 셀 병합 정보를 저장할 배열
 
-            // console.log(table.rows);
+            // console.log(table.rows); 
 
             if (tabValue === 'tab1') { // 업무량 분석 탭
 
@@ -449,6 +454,31 @@
             }
 
             if (tabValue === 'tab2') { // 업무량 구성비 탭
+                let currentExcelRow = 3;
+                Array.from(table.rows).forEach((htmlRow) => {
+                    const excelRow = worksheet.getRow(currentExcelRow);
+                    let currentExcelColumn = 1;
+
+                    Array.from(htmlRow.cells).forEach(htmlCell => {
+                        const excelCell = excelRow.getCell(currentExcelColumn);
+                        excelCell.value = htmlCell.innerText;
+                        applyStylesToCell(excelCell, htmlCell);
+
+                        const colSpan = htmlCell.colSpan || 1;
+                        const rowSpan = htmlCell.rowSpan || 1;
+
+                        if (colSpan > 1 || rowSpan > 1) {
+                            let mergeEndColumn = currentExcelColumn + colSpan - 1;
+                            let mergeEndRow = currentExcelRow + rowSpan - 1;
+                            worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn);
+                        }
+                        currentExcelColumn += colSpan;
+                    });
+                    currentExcelRow++;
+                });
+            }
+
+            if (tabValue === 'tab3') {
                 let currentExcelRow = 3;
                 Array.from(table.rows).forEach((htmlRow) => {
                     const excelRow = worksheet.getRow(currentExcelRow);
@@ -584,28 +614,88 @@
                 }
             });
 
-            // // 직무명이 같은 경우 셀 병합
-            if (tabValue === 'tab2') {
-                const table = document.getElementById('analysis_by_duty');
+            // // // 직무명이 같은 경우 셀 병합
+            // if (tabValue === 'tab2') {
+
+            //     const table = document.getElementById('analysis_by_duty');
+
+            //     let previousJobName = "";
+            //     let rowspanCount = 1;
+            //     let firstCell;
+
+            //     // if (tabValue === 'tab2') {
+            //     for (let row of table.rows) {
+            //         let currentCell = row.cells[0];
+
+            //         if (currentCell.innerText === previousJobName) {
+            //             rowspanCount++;
+            //             firstCell.rowSpan = rowspanCount;
+            //             currentCell.style.display = 'none';
+            //         } else {
+            //             previousJobName = currentCell.innerText;
+            //             firstCell = currentCell;
+            //             rowspanCount = 1;
+            //         }
+            //     }
+            // }
+
+            // // tab3의 man_analysis 테이블을 위한 rowspan 처리
+            // if (tabValue === 'tab3') {
+            //     const table = document.getElementById('man_analysis');
+
+            //     let previousDeptGrpName = "";
+            //     let rowspanCount = 1;
+            //     let firstCell;
+
+            //     for (let row of table.rows) {
+            //         let currentCell = row.cells[0];
+
+            //         if (currentCell.innerText === previousDeptGrpName) {
+            //             rowspanCount++;
+            //             firstCell.rowSpan = rowspanCount;
+            //             currentCell.style.display = 'none';
+            //         } else {
+            //             previousDeptGrpName = currentCell.innerText;
+            //             firstCell = currentCell;
+            //             rowspanCount = 1;
+            //         }
+            //     }
+            // }
             
-                let previousJobName = "";
+            function mergeCellsByColumn(tableId, columnIndex) {
+                const table = document.getElementById(tableId);
+
+                if (!table) {
+                    return;
+                }
+
+                let previousText = "";
                 let rowspanCount = 1;
                 let firstCell;
 
-                // if (tabValue === 'tab2') {
                 for (let row of table.rows) {
-                    let currentCell = row.cells[0];
+                    let currentCell = row.cells[columnIndex];
 
-                    if (currentCell.innerText === previousJobName) {
+                    if (currentCell.innerText === previousText) {
                         rowspanCount++;
                         firstCell.rowSpan = rowspanCount;
                         currentCell.style.display = 'none';
                     } else {
-                        previousJobName = currentCell.innerText;
+                        previousText = currentCell.innerText;
                         firstCell = currentCell;
                         rowspanCount = 1;
                     }
                 }
+            }
+
+            // const tabValue = document.getElementById('tab-value').value;
+
+            if (tabValue === 'tab2') {
+                mergeCellsByColumn('analysis_by_duty', 0); // 직무명 컬럼 인덱스 0
+            }
+
+            if (tabValue === 'tab3') {
+                mergeCellsByColumn('man_analysis', 0); // 그룹명 컬럼 인덱스 0
             }
         });
 

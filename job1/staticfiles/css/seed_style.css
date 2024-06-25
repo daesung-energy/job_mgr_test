@@ -617,7 +617,22 @@ header {
   font-size: 16px;
 }
 
+.analysis_table,
 
+.analysis_table table,
+.analysis_table tr,
+.analysis_table th,
+
+.analysis_table {
+  border-collapse: collapse;
+}
+
+.analysis_table td {
+  border: 1px solid black;
+  height: 5px;
+  font-size:12px;
+  font-family: "Seed-Regular";
+}
 
 /* ============================================  button  ================================================= */
 .add,
@@ -1152,6 +1167,31 @@ header {
   font-weight: bold;
 }
 
+/* =========================================== 업무량 조정 ================================================== */
+
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.task-table, .task-table th, .task-table td {
+  border: 1px solid #ddd;
+}
+.task-table th, .task-table td {
+  padding: 8px;
+  text-align: left;
+}
+.task-table th {
+  background-color: #f2f2f2;
+
+}
+.task-table input[type="text"] {
+  width: 100%;
+  border: none;
+  outline: none;
+}
+.task-table input[type="text"][readonly] {
+  background-color: #f9f9f9;
+}
 
 /* =========================================== ag grid ================================================== */
 @media print {

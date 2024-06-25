@@ -545,6 +545,28 @@ class JobTask(models.Model):
         unique_together = (('prd_cd', 'dept_cd', 'job_cd', 'duty_nm', 'task_nm'),)
 
 
+class JobTaskAdj(models.Model):
+    prd_cd = models.OneToOneField(BsJobDept, models.DO_NOTHING, db_column='prd_cd', primary_key=True)
+    dept_cd = models.ForeignKey(BsDept, models.DO_NOTHING, related_name='BsDept_dept_cd_JTA', db_column='dept_cd', to_field='dept_cd')
+    job_cd = models.ForeignKey(BsJob, models.DO_NOTHING, related_name='BsJob_job_cd3', db_column='job_cd', to_field='job_cd')
+    duty_nm = models.CharField(max_length=100)
+    task_nm = models.CharField(max_length=200)
+    work_lv_imprt = models.IntegerField(blank=True, null=True)
+    work_lv_dfclt = models.IntegerField(blank=True, null=True)
+    work_lv_prfcn = models.IntegerField(blank=True, null=True)
+    work_lv_sum = models.IntegerField(blank=True, null=True)
+    work_grade = models.ForeignKey(BsWorkGrade, models.DO_NOTHING, related_name='BsWorkGrade_work_grade_JTA', db_column='work_grade', to_field='work_grade', blank=True, null=True)
+    prfrm_tm_ann = models.DecimalField(max_digits=6, decimal_places=1, blank=True, null=True)
+    job_seq = models.IntegerField()
+    duty_seq = models.IntegerField()
+    task_seq = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'job_task_adj'
+        unique_together = (('prd_cd', 'dept_cd', 'job_cd', 'duty_nm', 'task_nm'),)
+
+
 class VJb110F(models.Model):
     prd_cd = models.CharField(max_length=5, primary_key=True)
     dept_cd = models.CharField(max_length=4, blank=True, null=True)

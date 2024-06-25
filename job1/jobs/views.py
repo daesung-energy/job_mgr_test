@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import HttpResponse
 #BsPrd 메시지 끌고옴
-from .models import BsPrd, CcCdDetail, CcCdHeader, BsJob, BsDept, BsJobDept, BsMbr, BsWorkGrade, MbrJobGrp, MbrJobGrpDetail, JobTask, JobActivity, BsPrd, BsAcnt, BsJobResp, JobSpcfc, BsStdWrkTm, BsWlOvSht, BsPosGrade, BsPosList, BsDeptGrp, BsDeptResp, BsDeptGrpDomain, BsTtlList, BsTtlCnt, BsMbrGrp, BsMbrGrpNm, VJb110F
+from .models import BsPrd, CcCdDetail, CcCdHeader, BsJob, BsDept, BsJobDept, BsMbr, BsWorkGrade, MbrJobGrp, MbrJobGrpDetail, JobTask, JobTaskAdj, JobActivity, BsPrd, BsAcnt, BsJobResp, JobSpcfc, BsStdWrkTm, BsWlOvSht, BsPosGrade, BsPosList, BsDeptGrp, BsDeptResp, BsDeptGrpDomain, BsTtlList, BsTtlCnt, BsMbrGrp, BsMbrGrpNm, VJb110F
 #확인하는 메시지 끌고옴
 #from .models import TextConfirm
 from datetime import datetime
@@ -27,9 +27,13 @@ from decimal import Decimal
 from django.contrib.auth.hashers import check_password
 import os #추가
 from pathlib import Path #추가
-
+from decimal import Decimal, ROUND_HALF_UP
 
 now = dt.datetime.now() #지금 날짜를 가져옴
+
+def round_half_up(number, decimals=1):
+    multiplier = 10 ** decimals
+    return int(number * multiplier + 0.5) / multiplier
 
 # Create your views here.
 def index(request):
@@ -1231,10 +1235,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.200.200', # 데이터베이스 주소
+            host='130.1.112.100', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='1234', # 데이터베이스 비밀번호
-            db='jobdb',
+            password='cdh0706**', # 데이터베이스 비밀번호
+            db='betadb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -2416,6 +2420,325 @@ def JB110(request): # 부서 업무량 분석화면 초기 화면 + 회기 선�
             }
 
     return render(request, 'jobs/JB110.html', context)
+
+
+def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경영기획팀만 사용한다. 회기 선택화면이다.
+
+    last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
+
+    dept_list = BsDept.objects.filter(prd_cd=last_prd_cd) # 마지막 회기의 부서 리스트
+
+    dept_selected = get_dept_code(request.user.username) # 로그인한 부서의 부서코드(경영기획팀)
+
+    std_wrk_tm = BsStdWrkTm.objects.get(prd_cd=last_prd_cd).std_wrk_tm
+
+    # job_task 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+    original_rows=JobTask.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+    data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                   'work_lv_imprt': rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                     'work_grade': rows.work_grade_id, 'prfrm_tm_ann': rows.prfrm_tm_ann, 'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq } for rows in original_rows]
+    df1 = pd.DataFrame(data_list)
+
+    # df1에 prfrm_tm_ann_cal 열을 추가해준다. 초기값은 null이다.
+    df1['prfrm_tm_ann_cal'] = None
+
+    # df1에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+    # work_grade가 null일 경우 prfrm_tm_ann_cal열도 null값으로 한다.
+    # df1의 각 행에 대하여 수행해준다. for문을 활용한다.
+    for i in range(len(df1)):
+        if df1.loc[i, 'work_grade'] == 'G1':
+            if df1['prfrm_tm_ann'][i] == None:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G1').workload_wt)
+        elif df1.loc[i, 'work_grade'] == 'G2':
+            if df1['prfrm_tm_ann'][i] == None:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G2').workload_wt)
+        elif df1.loc[i, 'work_grade'] == 'G3':
+            if df1['prfrm_tm_ann'][i] == None:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G3').workload_wt)
+        elif df1.loc[i, 'work_grade'] == 'G4':
+            if df1['prfrm_tm_ann'][i] == None:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G4').workload_wt)
+        elif df1.loc[i, 'work_grade'] == 'G5':
+            if df1['prfrm_tm_ann'][i] == None:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G5').workload_wt)
+        else:
+            df1.loc[i, 'prfrm_tm_ann_cal'] = None
+    
+    # df1['prfrm_tm_ann_cal']의 자료형을 float으로 변경
+    df1['prfrm_tm_ann_cal'] = df1['prfrm_tm_ann_cal'].astype(float)
+    # print(df1)
+
+    # job_task_adj 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+    original_rows_2=JobTaskAdj.objects.filter(prd_cd=last_prd_cd, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+    data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                     'work_lv_imprt_adj': rows.work_lv_imprt, 'work_lv_dfclt_adj': rows.work_lv_dfclt, 'work_lv_prfcn_adj': rows.work_lv_prfcn, 'work_lv_sum_adj': rows.work_lv_sum,
+                       'work_grade_adj': rows.work_grade_id, 'prfrm_tm_ann_adj': rows.prfrm_tm_ann } for rows in original_rows_2]
+    df2 = pd.DataFrame(data_list_2)
+
+    # df2에 prfrm_tm_ann_cal_adj열을 추가해준다. 초기값은 null이다.
+    df2['prfrm_tm_ann_cal_adj'] = None
+
+    # df2에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal_adj)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade_adj가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+    # work_grade_adj가 null일 경우 prfrm_tm_ann_cal_adj열도 null값으로 한다.
+    # df2의 각 행에 대하여 수행해준다. for문을 활용한다.
+    for i in range(len(df2)):
+        if df2['work_grade_adj'][i] == 'G1':
+            if df2['prfrm_tm_ann_adj'][i] == None:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+            else:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G1').workload_wt)
+        elif df2['work_grade_adj'][i] == 'G2':
+            if df2['prfrm_tm_ann_adj'][i] == None:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+            else:    
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G2').workload_wt)
+        elif df2['work_grade_adj'][i] == 'G3':
+            if df2['prfrm_tm_ann_adj'][i] == None:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+            else:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G3').workload_wt)
+        elif df2['work_grade_adj'][i] == 'G4':
+            if df2['prfrm_tm_ann_adj'][i] == None:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+            else:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G4').workload_wt)
+        elif df2['work_grade_adj'][i] == 'G5':
+            if df2['prfrm_tm_ann_adj'][i] == None:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+            else:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=last_prd_cd, work_grade='G5').workload_wt)
+        else:
+            df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+
+    # df2['prfrm_tm_ann_cal_adj']의 자료형을 float으로 변경
+    df2['prfrm_tm_ann_cal_adj'] = df2['prfrm_tm_ann_cal_adj'].astype(float)
+
+    try:
+        df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq']) # job_task와 job_activity merge, 순서는 job_seq, duty_seq, task_seq, act_seq 순
+
+        # job_nm 찾기
+        original_rows_3 = BsJob.objects.filter(prd_cd=last_prd_cd)
+        data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
+        df4 = pd.DataFrame(data_list_3)
+
+        df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+
+        # df3.to_excel('df3.xlsx')
+        df_json = df3.to_json(orient='records')
+
+        # BsWorkGrade에서 데이터를 가져와서, json으로 만들어서 넘겨준다.
+        original_rows_4 = BsWorkGrade.objects.filter(prd_cd=last_prd_cd)
+        data_list_4 = [{'work_grade': rows.work_grade, 'work_lv_min': rows.work_lv_min, 'work_lv_max': rows.work_lv_max, 'workload_wt': rows.workload_wt} for rows in original_rows_4]
+        df5 = pd.DataFrame(data_list_4)
+        df_json_2 = df5.to_json(orient='records')
+
+        # df3의 prfrm_tm_ann_cal 열의 합을 구한다. None일 경우 0으로 처리한다. 소숫점 1자리까지 표시한다.
+        # sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum()+1e-15, 1)
+        sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+
+        # round는 소숫점 1자리까지 표시한다. 반올림은 round를 사용한다. 
+
+        # sum_prfrm_tm_ann_cal을 BsStdWrkTm 테이블에서 가져온 std_wrk_tm으로 나누어서, 소숫점 1자리까지 표시한다. 이 값이 적정 인원이다.
+        po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)
+
+        context = {
+            'prd_list' : BsPrd.objects.all(),
+            'title' : '분석 기초자료', # 제목
+            'prd_selected' : last_prd_cd,
+            'prd_done' : BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn,
+            'dept_list' : dept_list,
+            'dept_cd_selected' : dept_selected,
+            'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
+            'data' : df_json,
+            'standard': df_json_2,
+            'std_wrk_tm': std_wrk_tm,
+            'sum_prfrm_tm_ann_cal': sum_prfrm_tm_ann_cal,
+            'po_right': po_right,
+        }
+    except pd.errors.MergeError as e:
+
+        messages.error(request, '해당 회기에 분석 정보 기초자료가 없습니다.')
+
+        # 버튼 컨트롤 다 막아야 함
+        context.update({'data' : 'null'})
+
+        context = {
+            'prd_list' : BsPrd.objects.all(),
+            'title' : '분석 기초자료', # 제목
+            'prd_selected' : last_prd_cd,
+            'prd_done' : BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn,
+            'dept_list' : dept_list,
+            'dept_cd_selected' : dept_selected,
+            'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
+            'data' : 'null',
+        }
+
+    if request.method == 'POST':
+            
+        prd_selected = request.POST["prd_selected"]
+        dept_list = BsDept.objects.filter(prd_cd=prd_selected) # 변경한 회기의 부서 리스트
+
+        dept_selected = get_dept_code(request.user.username) # 로그인한 부서의 부서코드(경영기획팀)
+        std_wrk_tm = BsStdWrkTm.objects.get(prd_cd=prd_selected).std_wrk_tm
+
+        # job_task 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+        original_rows=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                    'work_lv_imprt': rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                        'work_grade': rows.work_grade_id, 'prfrm_tm_ann': rows.prfrm_tm_ann,
+                          'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq } for rows in original_rows]
+        df1 = pd.DataFrame(data_list)
+        
+        # df1에 prfrm_tm_ann_cal 열을 추가해준다. 초기값은 null이다.
+        df1['prfrm_tm_ann_cal'] = None
+
+        # df1에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+        # work_grade가 null일 경우 prfrm_tm_ann_cal열도 null값으로 한다.
+        # df1의 각 행에 대하여 수행해준다. for문을 활용한다.
+        for i in range(len(df1)):
+            if df1['work_grade'][i] == 'G1':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G1').workload_wt)
+            elif df1['work_grade'][i] == 'G2':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G2').workload_wt)
+            elif df1['work_grade'][i] == 'G3':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G3').workload_wt)
+            elif df1['work_grade'][i] == 'G4':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G4').workload_wt)
+            elif df1['work_grade'][i] == 'G5':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G5').workload_wt)
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+        
+        # df1['prfrm_tm_ann_cal']의 자료형을 float으로 변경
+        df1['prfrm_tm_ann_cal'] = df1['prfrm_tm_ann_cal'].astype(float)
+
+        # job_task_adj 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+        original_rows_2=JobTaskAdj.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+        data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                        'work_lv_imprt_adj': rows.work_lv_imprt, 'work_lv_dfclt_adj': rows.work_lv_dfclt, 'work_lv_prfcn_adj': rows.work_lv_prfcn, 'work_lv_sum_adj': rows.work_lv_sum,
+                        'work_grade_adj': rows.work_grade_id, 'prfrm_tm_ann_adj': rows.prfrm_tm_ann} for rows in original_rows_2]
+        df2 = pd.DataFrame(data_list_2)
+        
+        # df2에 prfrm_tm_ann_cal_adj열을 추가해준다. 초기값은 null이다.
+        df2['prfrm_tm_ann_cal_adj'] = None
+
+        # df2에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal_adj)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade_adj가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+        # work_grade_adj가 null일 경우 prfrm_tm_ann_cal_adj열도 null값으로 한다.
+        # df2의 각 행에 대하여 수행해준다. for문을 활용한다.
+        for i in range(len(df2)):
+            if df2['work_grade_adj'][i] == 'G1':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G1').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G2':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:    
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G2').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G3':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G3').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G4':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G4').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G5':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G5').workload_wt)
+            else:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+        
+
+        # df2['prfrm_tm_ann_cal_adj']의 자료형을 float으로 변경
+        df2['prfrm_tm_ann_cal_adj'] = df2['prfrm_tm_ann_cal_adj'].astype(float)
+
+        try:
+            df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq']) # job_task와 job_activity merge, 순서는 job_seq, duty_seq, task_seq, act_seq 순
+
+            # job_nm 찾기
+            original_rows_3 = BsJob.objects.filter(prd_cd=prd_selected)
+            data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
+            df4 = pd.DataFrame(data_list_3)
+
+            df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+
+            # df3.to_excel('df3.xlsx')
+            df_json = df3.to_json(orient='records')
+
+            # BsWorkGrade에서 데이터를 가져와서, json으로 만들어서 넘겨준다.
+            original_rows_4 = BsWorkGrade.objects.filter(prd_cd=prd_selected)
+            data_list_4 = [{'work_grade': rows.work_grade, 'work_lv_min': rows.work_lv_min, 'work_lv_max': rows.work_lv_max, 'workload_wt': rows.workload_wt} for rows in original_rows_4]
+            df5 = pd.DataFrame(data_list_4)
+            df_json_2 = df5.to_json(orient='records')
+
+            # df3의 prfrm_tm_ann_cal 열의 합을 구한다. None일 경우 0으로 처리한다. 소숫점 1자리까지 반올림한다.
+            # sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum()+1e-15, 1)
+            sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+
+            # sum_prfrm_tm_ann_cal을 BsStdWrkTm 테이블에서 가져온 std_wrk_tm으로 나누어서, 소숫점 1자리까지 표시한다. 이 값이 적정 인원이다.
+            po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)
+
+            context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '분석 기초자료', # 제목
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                'dept_list' : dept_list,
+                'dept_cd_selected' : dept_selected,
+                'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
+                'data' : df_json,
+                'standard': df_json_2,
+                'std_wrk_tm': std_wrk_tm,
+                'sum_prfrm_tm_ann_cal': sum_prfrm_tm_ann_cal,
+                'po_right': po_right,
+            }
+        except pd.errors.MergeError as e:
+
+            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+
+            context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '분석 기초자료', # 제목
+                'prd_selected' : last_prd_cd,
+                'prd_done' : BsPrd.objects.get(prd_cd=last_prd_cd).prd_done_yn,
+                'dept_list' : dept_list,
+                'dept_cd_selected' : dept_selected,
+                'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
+                'data' : 'null',
+            }
+
+    return render(request, 'jobs/JB200.html', context)
 
 
 def BS200_1(request): #BS200에서 탭 선택 후 display
@@ -7245,66 +7568,35 @@ def JB109_2(request): # 업무량 분석화면 - 탭 선택 후 선택한 탭을
                 'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
-        if span_name == 'span3': # 업무량 구성비 탭 선택했을 때
+        if span_name == 'span3': # 적정인력 산정 탭 선택했을 때
+
+            # 해당 회기의 dept_domain 리스트를 만들어준다. 해당 회기의 BsDeptGrpDomain 테이블에서 dept_domain값들을 가져오고 중복 제거한다.
+            domain_list = BsDeptGrpDomain.objects.filter(prd_cd=prd_cd_selected).values_list('dept_domain', flat=True).distinct()
 
             context = {
                 'prd_list' : BsPrd.objects.all(),
                 'title' : '업무량 분석', # 제목
                 'prd_cd_selected' : prd_cd_selected,
                 'tab' : 'tab3',
+                'domain_selected_key' : 'former',
+                'domain_list' : domain_list,
                 'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             }
 
-            # # 바로 dataframe 만들어준다.
-            # # BsDeptGrpDomain 테이블로부터 dept_domain, dept_grp_nm, domain_seq, grp_seq를 가져온다.
-            # # BsDeptGrp 테이블로부터 dept_domain, dept_grp_nm, dept_cd, dept_seq를 가져온다.
-            # # 가져와서 dataframe 각각 만들어주고 merge한다.
-            # target = BsDeptGrpDomain.objects.filter(prd_cd_id=prd_cd_selected)
-            # data_list = [{'dept_domain' : rows.dept_domain, 'dept_grp_nm' : rows.dept_grp_nm, 'domain_seq': rows.domain_seq,
-            #             'grp_seq': rows.grp_seq} for rows in target]
-            # df1 = pd.DataFrame(data_list)
-            # target2 = BsDeptGrp.objects.filter(prd_cd_id=prd_cd_selected)
-            # data_list2 = [{'dept_domain' : rows.dept_domain_id, 'dept_grp_nm' : rows.dept_grp_nm_id, 'dept_cd': rows.dept_cd_id,
-            #             'dept_seq': rows.dept_seq} for rows in target2]
-            # df2 = pd.DataFrame(data_list2)
-            # df3 = pd.merge(df1, df2)
+        if span_name == 'span4':
 
-            # # df3에 dept_po 열을 추가한다. dept_po 데이터는 BsDept 테이블에서 해당 부서코드의 dept_po 값을 가져온다.
-            # df3['dept_po'] = df3['dept_cd'].apply(lambda x: BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=x).dept_po)
+            # 해당 회기의 dept_domain 리스트를 만들어준다. 해당 회기의 BsDeptGrpDomain 테이블에서 dept_domain값들을 가져오고 중복 제거한다.
+            domain_list = BsDeptGrpDomain.objects.filter(prd_cd=prd_cd_selected).values_list('dept_domain', flat=True).distinct()
 
-            # # df3에 prfrm_tm_ann 열을 추가한다. df3의 각 행에 대하여(for문 활용), 그 행으 dept_cd에 해당하는 JobTask 테이블의 prfrm_tm_ann 값을 가져온다.
-            # # JobTask object들의 prfrm_tm_ann 값을 더해주면 그 행의 prfrm_tm_ann이다.
-            # for i in range(len(df3)):
-
-            #     sum_prfrm_tm_ann = 0
-
-            #     sum_target = JobTask.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=df3.iloc[i]['dept_cd'])
-
-            #     for rows in sum_target:
-            #         if rows.prfrm_tm_ann == None:
-            #             rows.prfrm_tm_ann = 0
-            #         sum_prfrm_tm_ann = sum_prfrm_tm_ann + rows.prfrm_tm_ann
-
-            #     df3.loc[i, 'prfrm_tm_ann'] = float(sum_prfrm_tm_ann)
-
-            # #df3에 po_nec 열을 추가한다. df3의 prfrm_tm_ann열을 BsStdWrkTm 테이블의 std_wrk_tm으로 나눈 값을 넣어준다.
-            # std_wrk_tm = float(BsStdWrkTm.objects.get(prd_cd=prd_cd_selected).std_wrk_tm)
-
-            # df3['po_nec'] = round(df3['prfrm_tm_ann']/std_wrk_tm, 1)
-
-            # print(df3)
-
-            # # df3에 환산 업무량 열을 추가한다. df3의 각 행에 대해서 계산해준다. for문 활용한다.
-            # for i in range(len(df3)):
-            #     task_list = JobTask.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=df3.iloc[i]['dept_cd'])
-            #     sum_tm_cal = 0
-
-            #     # task_list의 work_grade를 보고, 각 work_grade 에 따른 업무량 가중치를 .....
-
-            
-
-
-
+            context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '업무량 분석', # 제목
+                'prd_cd_selected' : prd_cd_selected,
+                'tab' : 'tab4',
+                'domain_selected_key' : 'former',
+                'domain_list' : domain_list,                
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+            }
 
     return render(request, 'jobs/JB109.html', context)
 
@@ -7320,7 +7612,6 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
         if tab == 'tab1': # 업무량 분석 탭 선택했을 때
 
             std_wrk_tm = float(BsStdWrkTm.objects.get(prd_cd=prd_cd_selected).std_wrk_tm)
-            # print('std', type(std_wrk_tm))
 
             work_grade_list = ['G1', 'G2', 'G3', 'G4', 'G5'] # 업무등급 리스트
 
@@ -7372,6 +7663,8 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
             analysis['prfrm_tm_ann_cal'] = round(analysis['prfrm_tm_ann'] * analysis['workload_wt'], 1) # 환산 업무량
             analysis['po_right'] = round(analysis['prfrm_tm_ann_cal']/std_wrk_tm, 1) # 적정 인력 산정
             analysis['overless'] = round(analysis['po_cal']-analysis['po_right'], 1)
+
+            # print(analysis['prfrm_tm_ann_cal'])
 
             sum_1 = analysis['task_count'].sum()
             sum_2 = round(analysis['prfrm_tm_ann'].sum(), 1)
@@ -7506,6 +7799,173 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후
                 'sum_duty_ratio' : sum_duty_ratio,
             }
             
+
+    return render(request, 'jobs/JB109.html', context)
+
+
+def JB109_4(request):
+
+    if request.method == 'POST':
+
+        prd_cd_selected = request.POST['prd_cd_selected']
+        tab = request.POST['tab']
+        domain_selected = request.POST['domain_selected']
+
+        # 해당 회기의 dept_domain 리스트를 만들어준다. 해당 회기의 BsDeptGrpDomain 테이블에서 dept_domain값들을 가져오고 중복 제거한다.
+        domain_list = BsDeptGrpDomain.objects.filter(prd_cd=prd_cd_selected).values_list('dept_domain', flat=True).distinct()
+
+        # BsDeptGrpDomain 테이블로부터 dept_domain, dept_grp_nm, domain_seq, grp_seq를 가져온다.
+        # BsDeptGrp 테이블로부터 dept_domain, dept_grp_nm, dept_cd, dept_seq를 가져온다.
+        # 가져와서 dataframe 각각 만들어주고 merge한다.
+        target = BsDeptGrpDomain.objects.filter(prd_cd_id=prd_cd_selected, dept_domain=domain_selected)
+        data_list = [{'dept_domain' : rows.dept_domain, 'dept_grp_nm' : rows.dept_grp_nm, 'domain_seq': rows.domain_seq,
+                    'grp_seq': rows.grp_seq} for rows in target]
+        df1 = pd.DataFrame(data_list)
+        target2 = BsDeptGrp.objects.filter(prd_cd_id=prd_cd_selected, dept_domain_id=domain_selected)
+        data_list2 = [{'dept_domain' : rows.dept_domain_id, 'dept_grp_nm' : rows.dept_grp_nm_id, 'dept_cd': rows.dept_cd_id,
+                    'dept_seq': rows.dept_seq} for rows in target2]
+        df2 = pd.DataFrame(data_list2)
+        df3 = pd.merge(df1, df2)
+        
+        if tab == 'tab3': # 업무량 분석 탭 선택했을 때
+
+            # df3에 dept_po 열을 추가한다. dept_po 데이터는 BsDept 테이블에서 해당 부서코드의 dept_po 값을 가져온다.
+            df3['dept_po'] = df3['dept_cd'].apply(lambda x: BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=x).dept_po)
+
+            work_grade_list = ['G1', 'G2', 'G3', 'G4', 'G5'] # 업무등급 리스트
+
+            # df3에 prfrm_tm_ann 열을 추가한다. df3의 각 행에 대하여(for문 활용), 그 행으 dept_cd에 해당하는 JobTask 테이블의 prfrm_tm_ann 값을 가져온다.
+            # JobTask object들의 prfrm_tm_ann 값을 더해주면 그 행의 prfrm_tm_ann이다.
+            for i in range(len(df3)):
+
+                sum_prfrm_tm_ann = 0
+
+                sum_target = JobTask.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=df3.iloc[i]['dept_cd'])
+
+                for rows in sum_target:
+                    if rows.prfrm_tm_ann == None:
+                        rows.prfrm_tm_ann = 0
+                    sum_prfrm_tm_ann = sum_prfrm_tm_ann + rows.prfrm_tm_ann
+
+                df3.loc[i, 'prfrm_tm_ann'] = float(sum_prfrm_tm_ann)
+
+            #df3에 po_nec 열을 추가한다. df3의 prfrm_tm_ann열을 BsStdWrkTm 테이블의 std_wrk_tm으로 나눈 값을 넣어준다.
+            std_wrk_tm = float(BsStdWrkTm.objects.get(prd_cd=prd_cd_selected).std_wrk_tm)
+
+            df3['po_nec'] = round(df3['prfrm_tm_ann']/std_wrk_tm, 1)
+
+            # df3에 환산 업무량, 환산 PO, 적정인력 산정, 과부족 열을 추가한다.
+            for i in range(len(df3)): # 각 부서에 대해서
+                task_list = JobTask.objects.filter(prd_cd_id=prd_cd_selected, dept_cd_id=df3.iloc[i]['dept_cd']) # 그 부서의 task_list를 가져온다.
+                sum_tm_cal = 0 # 그 부서의 환산 업무량 초기값을 0으로 설정한다.
+                sum_po_cal = 0 # 그 부서의 환산 PO 초기값을 0으로 설정한다.
+
+                mbr_of_dept = BsMbr.objects.filter(prd_cd=prd_cd_selected, dept_cd=df3.iloc[i]['dept_cd']) # 해당 부서의 부서원 목록
+
+                # 각 task_list의 행에 대하여, task_list의 work_grade를 보고, work_grade 에 따른 업무량 가중치를 prfrm_tm_ann에 곱한다. 그리고 그 값을 sum_tm_cal에 더해준다.
+                for rows in task_list:
+
+                    if rows.work_grade_id == None:
+                        weight = 0.0
+                    elif rows.work_grade_id == 'G1':
+                        weight = 1.25
+                    elif rows.work_grade_id == 'G2':
+                        weight = 1.125
+                    elif rows.work_grade_id == 'G3':
+                        weight = 1.0
+                    elif rows.work_grade_id == 'G4':
+                        weight = 0.875
+                    elif rows.work_grade_id == 'G5':
+                        weight = 0.75
+
+                    if rows.prfrm_tm_ann == None:
+                        rows.prfrm_tm_ann = 0.0
+                        sum_tm_cal = sum_tm_cal + rows.prfrm_tm_ann * weight
+
+                    else:
+                        sum_tm_cal = sum_tm_cal + float(rows.prfrm_tm_ann) * float(weight)
+
+                # 환산 업무량 열 추가
+                df3.loc[i, 'tm_cal'] = sum_tm_cal
+
+                # 환산 PO열 추가. 환산 PO = PO * 업무량 가중치
+                # 그 팀 내의 G1, G2, G3, G4, G5에 해당하는 사람 수를 가져옴
+                for grade in work_grade_list: # 업무등급 각각에 대하여 작업.
+                    # 그 grade에 해당하는 pos_nm 리스트를 만든다.
+                    pos_nm_of_grade = BsPosGrade.objects.filter(prd_cd=prd_cd_selected, work_grade_id=grade).values_list('pos_nm', flat=True)
+
+                    cnt_grade = 0 # 그 grade에 해당하는 po
+
+                    # 위에서 만들어준 pos_nm 리스트를 갖고 Mbr에 접근
+                    for row in mbr_of_dept:
+
+                        if row.pos_nm in pos_nm_of_grade: # 직위 이름이 pos_nm_gr_grade(그 grade에 해당하는 pos_nm 리스트)에 있으면
+                            cnt_grade = cnt_grade+1 # PO를 1 늘려준다.
+
+                    if grade == 'G1':
+                        sum_po_cal = sum_po_cal + cnt_grade * 1.25
+                    elif grade == 'G2':
+                        sum_po_cal = sum_po_cal + cnt_grade * 1.125
+                    elif grade == 'G3':
+                        sum_po_cal = sum_po_cal + cnt_grade * 1.0
+                    elif grade == 'G4':
+                        sum_po_cal = sum_po_cal + cnt_grade * 0.875
+                    elif grade == 'G5':
+                        sum_po_cal = sum_po_cal + cnt_grade * 0.75
+
+                # 환산 PO열 추가
+                df3.loc[i, 'po_cal'] = round(sum_po_cal, 2)
+
+                # 적정인력 산정 열 추가
+                df3.loc[i, 'po_appr'] = round(df3.loc[i, 'tm_cal']/std_wrk_tm, 1)
+
+                # 과부족 열 추가
+                df3.loc[i, 'overless'] = round(df3.loc[i, 'po_cal'] - df3.loc[i, 'po_appr'], 1)
+
+                # 부서명 열 추가
+                df3['dept_nm'] = df3['dept_cd'].apply(lambda x: BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=x).dept_nm)
+
+                # 환산 업무량 열 소숫점 첫째자리까지 반올림
+                df3['tm_cal'] = df3['tm_cal'].round(1)
+
+            # df3를 domain_seq, grq_seq, dept_seq 순으로 정렬한다.
+            df3 = df3.sort_values(['domain_seq', 'grp_seq', 'dept_seq']).reset_index(drop=True)
+
+        if tab == 'tab4': # 인력 산정 결과 탭일 때
+
+            # BsTtlList 테이블로부터 해당 회기의 직책 리스트를 가져오고 그 가져온 리스트 수 만큼 df3의 열을 만들어준다.
+            ttl_list = BsTtlList.objects.filter(prd_cd=prd_cd_selected)
+            
+            for rows in ttl_list:
+                df3[rows.ttl_nm] = 0
+            
+            # df3의 각 행(부서)에 대하여, BsTtlCnt 테이블로부터 해당 부서의 직책별 인원수를 가져온다.
+            # 이 때, 가져온 인원수를 df3의 해당 직책 열에 넣어준다.
+            for i in range(len(df3)): # 각 부서에 대하여
+                for rows in ttl_list:
+                    df3.loc[i, rows.ttl_nm] = BsTtlCnt.objects.get(prd_cd=prd_cd_selected, dept_cd=df3.iloc[i]['dept_cd'], ttl_nm=rows.ttl_nm).ttl_cnt
+
+            # BsTtlList 테이블로부터 해당 회기의 직책 리스트를 가져오고 그 가져온 리스트 수 만큼 df3의 열을 만들어준다. 기존 열과 중복되지 않게 하기 위해 ttl_nm 뒤에 '_now'를 붙여준다.
+            ttl_list = BsTtlList.objects.filter(prd_cd=prd_cd_selected)
+
+            for rows in ttl_list:
+                df3[rows.ttl_nm+'_now'] = 0
+
+            
+            print(df3)
+
+
+        context = {
+            'prd_list' : BsPrd.objects.all(),
+            'title' : '업무량 분석', # 제목
+            'prd_cd_selected' : prd_cd_selected,
+            'tab' : tab,
+            'domain_selected' : domain_selected,
+            'domain_selected_key' : 'latter',
+            'domain_list' : domain_list,
+            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+            'analysis' : df3,
+        }
 
     return render(request, 'jobs/JB109.html', context)
 
@@ -7686,6 +8146,175 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
     return render(request, 'jobs/JB110.html', context)
 
 
+def JB200_1(request): # 업무량 분석 기초 자료 화면 - 부서 변경 시
+
+    if request.method == 'POST':
+        prd_selected = request.POST['prd_selected']
+        dept_selected = request.POST['dept_cd_selected']
+        dept_list = BsDept.objects.filter(prd_cd=prd_selected)
+        std_wrk_tm = BsStdWrkTm.objects.get(prd_cd=prd_selected).std_wrk_tm
+
+        # job_task 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+        original_rows=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                    'work_lv_imprt': rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                        'work_grade': rows.work_grade_id, 'prfrm_tm_ann': rows.prfrm_tm_ann,
+                          'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq } for rows in original_rows]
+        df1 = pd.DataFrame(data_list)
+        
+        # df1에 prfrm_tm_ann_cal 열을 추가해준다. 초기값은 null이다.
+        df1['prfrm_tm_ann_cal'] = None
+
+        # df1에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+        # work_grade가 null일 경우 prfrm_tm_ann_cal열도 null값으로 한다.
+        # df1의 각 행에 대하여 수행해준다. for문을 활용한다.
+        for i in range(len(df1)):
+            if df1['work_grade'][i] == 'G1':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G1').workload_wt)
+            elif df1['work_grade'][i] == 'G2':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G2').workload_wt)
+            elif df1['work_grade'][i] == 'G3':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G3').workload_wt)
+            elif df1['work_grade'][i] == 'G4':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G4').workload_wt)
+            elif df1['work_grade'][i] == 'G5':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G5').workload_wt)
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+        
+        # df1['prfrm_tm_ann_cal']의 자료형을 float으로 변경
+        df1['prfrm_tm_ann_cal'] = df1['prfrm_tm_ann_cal'].astype(float)
+
+        # job_task_adj 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+        original_rows_2=JobTaskAdj.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+        data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                        'work_lv_imprt_adj': rows.work_lv_imprt, 'work_lv_dfclt_adj': rows.work_lv_dfclt, 'work_lv_prfcn_adj': rows.work_lv_prfcn, 'work_lv_sum_adj': rows.work_lv_sum,
+                        'work_grade_adj': rows.work_grade_id, 'prfrm_tm_ann_adj': rows.prfrm_tm_ann} for rows in original_rows_2]
+        df2 = pd.DataFrame(data_list_2)
+        
+        # df2에 prfrm_tm_ann_cal_adj열을 추가해준다. 초기값은 null이다.
+        df2['prfrm_tm_ann_cal_adj'] = None
+
+        # df2에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal_adj)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade_adj가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+        # work_grade_adj가 null일 경우 prfrm_tm_ann_cal_adj열도 null값으로 한다.
+        # df2의 각 행에 대하여 수행해준다. for문을 활용한다.
+        for i in range(len(df2)):
+            if df2['work_grade_adj'][i] == 'G1':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G1').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G2':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:    
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G2').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G3':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G3').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G4':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G4').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G5':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G5').workload_wt)
+            else:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+
+        # df2['prfrm_tm_ann_cal_adj']의 자료형을 float으로 변경
+        df2['prfrm_tm_ann_cal_adj'] = df2['prfrm_tm_ann_cal_adj'].astype(float)
+
+        try:
+            df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq']) # job_task와 job_activity merge, 순서는 job_seq, duty_seq, task_seq, act_seq 순
+
+            # job_nm 찾기
+            original_rows_3 = BsJob.objects.filter(prd_cd=prd_selected)
+            data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
+            df4 = pd.DataFrame(data_list_3)
+
+            df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+
+            # df3.to_excel('df3.xlsx')
+            df_json = df3.to_json(orient='records')
+
+             # BsWorkGrade에서 데이터를 가져와서, json으로 만들어서 넘겨준다.
+            original_rows_4 = BsWorkGrade.objects.filter(prd_cd=prd_selected)
+            data_list_4 = [{'work_grade': rows.work_grade, 'work_lv_min': rows.work_lv_min, 'work_lv_max': rows.work_lv_max, 'workload_wt': rows.workload_wt} for rows in original_rows_4]
+            df5 = pd.DataFrame(data_list_4)
+            df_json_2 = df5.to_json(orient='records')
+
+            # df3의 prfrm_tm_ann_cal 열의 합을 구한다. None일 경우 0으로 처리한다. 소숫점 1자리까지 표시한다.
+            # sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum()+1e-13, 1)
+            # sum_prfrm_tm_ann_cal = round(decimal.Decimal(df3['prfrm_tm_ann_cal'].sum()), 1)
+            sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+
+            # print(df3['prfrm_tm_ann_cal'].sum())
+
+            # sum_prfrm_tm_ann_cal을 BsStdWrkTm 테이블에서 가져온 std_wrk_tm으로 나누어서, 소숫점 1자리까지 표시한다. 이 값이 적정 인원이다.
+            po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)
+
+            print(round(1.15, 1))
+            print(round(1.05, 1))
+
+            context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '분석 기초자료', # 제목
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                'dept_list' : dept_list,
+                'dept_cd_selected' : dept_selected,
+                'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
+                'data' : df_json,
+                'standard' : df_json_2,
+                'std_wrk_tm' : std_wrk_tm,
+                'sum_prfrm_tm_ann_cal' : sum_prfrm_tm_ann_cal,
+                'po_right' : po_right,
+            }
+        except pd.errors.MergeError as e:
+
+            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+
+            context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '분석 기초자료', # 제목
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                'dept_list' : dept_list,
+                'dept_cd_selected' : dept_selected,
+                'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
+                'data' : 'null',
+            }
+
+
+    return render(request, 'jobs/JB200.html', context)
+
+
+def JB200_2(request): # 업무량 분석 기초 자료 화면- 저장/취소 버튼 누를 시
+
+    return render(request, 'jobs/JB200.html')
+
+
 def main(request):
 
     context = {
@@ -7773,10 +8402,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -7848,10 +8477,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
@@ -7915,15 +8544,6 @@ def get_dept_code(user_id):
         return account.dept_cd_id
     except:
         return None  # 부서 코드가 없는 경우에 대한 처리
-
-
-# def get_dept_code_new(user_id, prd_cd):
-#     prd_cd_id = prd_cd
-#     try:
-#         account = BsAcnt.objects.get(dept_id=user_id, prd_cd_id=prd_cd_id)
-#         return account.dept_cd_id
-#     except:
-#         return None  # 부서 코드가 없는 경우에 대한 처리
 
 
 def get_dept_mgr_yn(user_id):

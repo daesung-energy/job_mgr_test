@@ -12,6 +12,7 @@
     <script>
       document.addEventListener("DOMContentLoaded", function() {
         const restrictedLinks = [
+          "분석 기초자료",
           "직무 분류 체계",
           "업무 분장표",
           "업무량 분석",
@@ -127,8 +128,9 @@
                 </div>
               </div>
               <div class="management">
-                <div class="fakeimg" style="height: 170px">
+                <div class="fakeimg" style="height: 200px">
                   <p>직무 분석</p>
+                  <a href="{% url 'JB200' %}">분석 기초자료</a>
                   <a href="#">직무 분류 체계</a>
                   <a href="#">업무 분장표</a>
                   <a href="{% url 'JB109' %}">업무량 분석</a>
