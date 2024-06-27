@@ -1369,7 +1369,7 @@
                         });
                         updateActivityList(selectedJob, selectedDuty, selectedTask) // 활동 목록을 다시 생성하여 변경사항을 반영
 
-                        setTimeout(() => {
+                        setTimeout(() => { // 활동명이 업데이트된 후에 포커스를 활동명 입력 필드로 이동
                             var activityDiv = document.getElementById('activityDiv');
                             var updatedField = activityDiv.querySelector(`input[value="${newActivityName}"]`);
                             if (updatedField) {

@@ -113,10 +113,10 @@
                         <div class="analysis_table" style="padding-left:5px;">
                             <table>
                                 <tr>
-                                    <td><input id="sum_prfrm_tm_ann_cal_adj" name="sum_prfrm_tm_ann_cal_adj" readonly></td>
+                                    <td><input id="sum_prfrm_tm_ann_cal_adj" name="sum_prfrm_tm_ann_cal_adj" value="{{ sum_prfrm_tm_ann_cal_adj }}" readonly></td>
                                 </tr>
                                 <tr>
-                                    <td><input id="po_right_adj" name="po_right_adj" readonly></td>
+                                    <td><input id="po_right_adj" name="po_right_adj" value="{{ po_right_adj }}" readonly></td>
                                 </tr>
                             </table>
                         </div>
@@ -126,15 +126,32 @@
                 <p style="font-family: Seed-Medium; margin-top: 10px; font-size: 14px;"><span>과업</span><span style="margin-left:205px;">중요도</span>
                     <span style="margin-left:35px;">난이도</span><span style="margin-left:40px;">숙련도</span><span style="margin-left:35px;">업무수준</span>
                     <span style="margin-left:20px;">업무등급</span><span style="margin-left:35px;">연간 업무량</span><span style="margin-left:30px;">환산 업무량</span>
-                    <span style="margin-left:30px;">중요도</span><span style="margin-left:40px;">난이도</span><span style="margin-left:40px;">숙련도</span>
-                    <span style="margin-left:30px;">업무수준</span><span style="margin-left:25px;">업무등급</span><span style="margin-left:35px;">연간 업무량</span>
+                    <span style="margin-left:15px;">|(조정)</span>
+                    <span style="margin-left:1px;">중요도</span><span style="margin-left:40px;">난이도</span><span style="margin-left:40px;">숙련도</span>
+                    <span style="margin-left:30px;">업무수준</span><span style="margin-left:25px;">업무등급</span><span style="margin-left:30px;">연간 업무량</span>
                     <span style="margin-left:30px;">환산 업무량</span></p>
                 <div id="task" style="padding-left: 10px; padding-top:10px; border: 1px solid #ccc; overflow-y: scroll;
-                height:450px; width:1500px; flex-wrap: wrap; margin-top:5px;">
+                height:400px; width:1500px; flex-wrap: wrap; margin-top:5px;">
                     <div id="taskDiv">
                         <!-- 선택된 직무와 책무에 따라 과업 목록이 동적으로 생성 -->
                     </div>
                 </div>
+            </div>
+
+            <div style="padding-top:20px; padding-left:600px;">
+                <form action="{% url 'JB200_2' %}" method="POST" id="dataForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="jsonData" id="jsonData" value="">
+                    <input type="hidden" name="prd_selected" value={{ prd_selected }}>
+                    <input type="hidden" name="dept_cd_selected" value={{ dept_cd_selected }}>
+                    {% if prd_done == 'Y' %}
+                        <button class="del_disabled" disabled>저장</button>
+                        <button class="del_disabled" disabled>취소</button>
+                        {% else %}
+                        <button type="submit" class="save" name="action" value="action1" id="saveButton">저장</button>
+                        <button type="submit" class="cancel" name="action" value="action2" id="cancelButton">취소</button>
+                    {% endif %}
+                </form>
             </div>
 
         </div>
@@ -174,8 +191,6 @@
                     const jobData = jsonData.find(data => data.job_cd === jobCd);
                     const jobName = jobData ? jobData.job_nm : ''; // 직무명 가져오기, 없으면 빈 문자열 처리
 
-                    // var prd_done = document.querySelector('input[name="prd_done"]').value; // prd_done 가져오기
-
                     const container = document.createElement('div'); // 책무와 버튼을 담을 컨테이너
 
                     const radioInput = document.createElement('input'); // 라디오 버튼 생성
@@ -194,25 +209,33 @@
                     jobDiv.appendChild(container); // 위의 컨테이너를 직무 목록 div에 추가
 
                     radioInput.addEventListener('change', function() { // 직무 목록 라디오 버튼 누르면(change) 책무 목록을 띄운다.
-                        
                         updateDutyList(this.value); // 선택된 직무에 따라 책무 목록을 업데이트하는 함수 호출
-
-                        // // 직무를 변경하면 첫 번째 책무 선택 및 첫 번째 과업 선택
-                        // var firstDutyRadio = document.querySelector('input[name="duty"]');
-                        // if (firstDutyRadio) {
-                        //     firstDutyRadio.checked = true;
-                        //     var selectedDuty = firstDutyRadio.value;
-                        //     updateTaskList(this.value, selectedDuty);
-                        //     var firstTaskRadio = document.querySelector('input[name="task"]');
-                        //     if (firstTaskRadio) {
-                        //         firstTaskRadio.checked = true;
-                        //         updateActivityList(this.value, selectedDuty, firstTaskRadio.value);
-                        //     }
-                        // }
+                        // 첫 번째 책무 선택하고 그에 해당하는 과업 리스트 띄우기
+                        var firstDutyRadio = dutyDiv.querySelector('input[name="duty"]');
+                        if (firstDutyRadio) {
+                            firstDutyRadio.checked = true;
+                            updateTaskList(this.value, firstDutyRadio.value);
+                        }
                     });
                 });
-                // 추가된 부분: 계산 및 표시 함수 호출
-                calculateAndDisplayValue();
+
+                // 로컬 스토리지에서 직무 선택 값 로드
+                var selectedJob = localStorage.getItem('selectedJob');
+                if (selectedJob) {
+                    var selectedJobRadio = jobDiv.querySelector(`input[name="job"][value="${selectedJob}"]`);
+                    if (selectedJobRadio) {
+                        selectedJobRadio.checked = true;
+                        updateDutyList(selectedJob);
+                    }
+                } else if (jobs.length > 0) {
+                    var firstJobRadio = jobDiv.querySelector('input[name="job"]');
+                    if (firstJobRadio) {
+                        firstJobRadio.checked = true;
+                        updateDutyList(firstJobRadio.value);
+                    }
+                }
+
+                // 환산 업무량과 적정 인원 차이 계산
                 calculateDifferences();
             }
 
@@ -253,15 +276,25 @@
 
                     radioInput.addEventListener('change', function() { // 책무 라디오 선택 시 과업 목록 띄움
                         updateTaskList(selectedJob, this.value); // 선택된 책무에 따라 과업 목록을 업데이트하는 함수 호출
-                        // // 책무를 변경하면 첫 번째 과업 선택 및 활동 목록 업데이트
-                        // var firstTaskRadio = document.querySelector('input[name="task"]');
-                        // if (firstTaskRadio) { // 첫 번째 과업 라디오 버튼이 있으면
-                        //     firstTaskRadio.checked = true; // 첫번째 과업 check처리
-                        //     updateActivityList(selectedJob, duty, firstTaskRadio.value); // 첫번째 과업에 대한 활동 목록 업데이트
-                        // }
                     });
                     
                 });
+
+                // 로컬 스토리지에서 책무 선택 값 로드
+                var selectedDuty = localStorage.getItem('selectedDuty');
+                if (selectedDuty) {
+                    var selectedDutyRadio = dutyDiv.querySelector(`input[name="duty"][value="${selectedDuty}"]`);
+                    if (selectedDutyRadio) {
+                        selectedDutyRadio.checked = true;
+                        updateTaskList(selectedJob, selectedDuty);
+                    }
+                } else if (duties.length > 0) {
+                    var firstDutyRadio = dutyDiv.querySelector('input[name="duty"]');
+                    if (firstDutyRadio) {
+                        firstDutyRadio.checked = true;
+                        updateTaskList(selectedJob, firstDutyRadio.value);
+                    }
+                }
 
                 dutyDiv.style.display = 'block'; // 책무 div의 display 속성을 block으로 변경하여 표시
             } // 책무 목록 업데이트 함수 끝
@@ -291,97 +324,189 @@
                 const inputText2 = document.createElement('input'); // 중요도 입력 필드 생성
                 inputText2.setAttribute('type', 'text');
                 inputText2.setAttribute('name', 'work_lv_imprt');
-                inputText2.setAttribute('value', taskData.work_lv_imprt);
                 inputText2.setAttribute('class', 'input_text_num');
                 inputText2.setAttribute('readonly', true);
+                if (selectedJob === 'JC001') {
+                    inputText2.setAttribute('value', '');
+                } else {
+                    inputText2.setAttribute('value', taskData.work_lv_imprt);
+                }
+                // backgroundcolor 회색
+                inputText2.style.backgroundColor = '#f0f0f0';
+                
 
                 const inputText3 = document.createElement('input'); // 난이도 입력 필드 생성
                 inputText3.setAttribute('type', 'text');
                 inputText3.setAttribute('name', 'work_lv_dfclt');
                 inputText3.setAttribute('class', 'input_text_num');
-                inputText3.setAttribute('value', taskData.work_lv_dfclt);
+                // inputText3.setAttribute('value', taskData.work_lv_dfclt ? taskData.work_lv_dfclt.toString() : ''); // 난이도 입력값이 없으면 빈 문자열로 설정
+                // taskData의 jobCd가 JC001이면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText3.setAttribute('value', '');
+                } else {
+                    inputText3.setAttribute('value', taskData.work_lv_dfclt);
+                }
                 inputText3.setAttribute('readonly', true);
+                inputText3.style.backgroundColor = '#f0f0f0';
 
                 const inputText4 = document.createElement('input'); // 숙련도 입력 필드 생성
                 inputText4.setAttribute('type', 'text');
                 inputText4.setAttribute('name', 'work_lv_prfcn');
                 inputText4.setAttribute('class', 'input_text_num');
-                inputText4.setAttribute('value', taskData.work_lv_prfcn);
+                // inputText4.setAttribute('value', taskData.work_lv_prfcn ? taskData.work_lv_prfcn.toString() : ''); // 숙련도 입력값이 없으면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText4.setAttribute('value', '');
+                } else {
+                    inputText4.setAttribute('value', taskData.work_lv_prfcn);
+                }
                 inputText4.setAttribute('readonly', true);
+                inputText4.style.backgroundColor = '#f0f0f0';
 
                 const inputText5 = document.createElement('input'); // 업무수준 입력 필드 생성
                 inputText5.setAttribute('type', 'text');
                 inputText5.setAttribute('name', 'work_lv_sum');
                 inputText5.setAttribute('class', 'input_text_num');
-                inputText5.setAttribute('value', taskData.work_lv_sum);
+                // inputText5.setAttribute('value', taskData.work_lv_sum ? taskData.work_lv_sum.toString() : ''); // 업무수준 입력값이 없으면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText5.setAttribute('value', '');
+                } else {
+                    inputText5.setAttribute('value', taskData.work_lv_sum);
+                }
                 inputText5.setAttribute('readonly', true);
+                inputText5.style.backgroundColor = '#f0f0f0';
 
                 const inputText6 = document.createElement('input'); // 업무등급 입력 필드 생성
                 inputText6.setAttribute('type', 'text');
                 inputText6.setAttribute('name', 'work_grade');
                 inputText6.setAttribute('class', 'input_text_num');
-                inputText6.setAttribute('value', taskData.work_grade);
+                // inputText6.setAttribute('value', taskData.work_grade ? taskData.work_grade.toString() : ''); // 업무등급 입력값이 없으면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText6.setAttribute('value', '');
+                } else {
+                    inputText6.setAttribute('value', taskData.work_grade);
+                }
                 inputText6.setAttribute('readonly', true);
+                inputText6.style.backgroundColor = '#f0f0f0';
 
                 const inputText7 = document.createElement('input'); // 연간 수행시간 입력 필드 생성
                 inputText7.setAttribute('type', 'text');
                 inputText7.setAttribute('name', 'prfrm_tm_ann');
                 inputText7.setAttribute('class', 'input_text_num2');
-                inputText7.setAttribute('value', parseFloat(taskData.prfrm_tm_ann).toFixed(1));
+                // inputText7.setAttribute('value', parseFloat(taskData.prfrm_tm_ann).toFixed(1) || ''); // 연간 수행시간 입력값이 없으면 빈 문자열로 설정
+                // inputText7.setAttribute('value', taskData.prfrm_tm_ann ? parseFloat(taskData.prfrm_tm_ann).toFixed(1) : ''); // 연간 수행시간 입력값이 없으면 빈 문자열로 설정
+                // taskData의 job_cd가 JC001이면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText7.setAttribute('value', '');
+                } else {
+                    inputText7.setAttribute('value', parseFloat(taskData.prfrm_tm_ann).toFixed(1));
+                }
                 inputText7.setAttribute('readonly', true);
+                inputText7.style.backgroundColor = '#f0f0f0';
 
                 const inputTex15 = document.createElement('input'); // 가중치 적용시간 입력 필드 생성
                 inputTex15.setAttribute('type', 'text');
                 inputTex15.setAttribute('name', 'prfrm_tm_ann_cal');
                 inputTex15.setAttribute('class', 'input_text_num2');
-                inputTex15.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal).toFixed(1));
+                // inputTex15.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal).toFixed(1));
+                // inputTex15.setAttribute('value', taskData.prfrm_tm_ann_cal ? parseFloat(taskData.prfrm_tm_ann_cal).toFixed(1) : ''); // 가중치 적용시간 입력값이 없으면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputTex15.setAttribute('value', '');
+                } else {
+                    inputTex15.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal).toFixed(1));
+                }
                 inputTex15.setAttribute('readonly', true);
+                inputTex15.style.backgroundColor = '#f0f0f0';
 
                 const inputText8 = document.createElement('input'); // 중요도 조정 입력 필드 생성
                 inputText8.setAttribute('type', 'text');
                 inputText8.setAttribute('name', 'work_lv_imprt_adj');
-                inputText8.setAttribute('value', taskData.work_lv_imprt_adj);
+                // inputText8.setAttribute('value', taskData.work_lv_imprt_adj );
+                // inputText8.setAttribute('value', taskData.work_lv_imprt_adj ? taskData.work_lv_imprt_adj.toString() : ''); // 중요도 조정 입력값이 없으면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText8.setAttribute('value', '');
+                } else {
+                    inputText8.setAttribute('value', taskData.work_lv_imprt_adj);
+                }
                 inputText8.setAttribute('class', 'input_text_num');
-                // job_cd가 JC001이면 readonly
+                // margin-left
+                inputText8.style.marginLeft = '30px';
+                
 
                 const inputText9 = document.createElement('input'); // 난이도 조정 입력 필드 생성
                 inputText9.setAttribute('type', 'text');
                 inputText9.setAttribute('name', 'work_lv_dfclt_adj');
                 inputText9.setAttribute('class', 'input_text_num');
-                inputText9.setAttribute('value', taskData.work_lv_dfclt_adj);
+                // inputText9.setAttribute('value', taskData.work_lv_dfclt_adj ? taskData.work_lv_dfclt_adj.toString() : '');
+                if (selectedJob === 'JC001') {
+                    inputText9.setAttribute('value', '');
+                } else {
+                    inputText9.setAttribute('value', taskData.work_lv_dfclt_adj);
+                }
                
                 const inputText10 = document.createElement('input'); // 숙련도 조정 입력 필드 생성
                 inputText10.setAttribute('type', 'text');
                 inputText10.setAttribute('name', 'work_lv_prfcn_adj');
                 inputText10.setAttribute('class', 'input_text_num');
-                inputText10.setAttribute('value', taskData.work_lv_prfcn_adj);
+                // inputText10.setAttribute('value', taskData.work_lv_prfcn_adj ? taskData.work_lv_prfcn_adj.toString() : '');
+                if (selectedJob === 'JC001') {
+                    inputText10.setAttribute('value', '');
+                } else {
+                    inputText10.setAttribute('value', taskData.work_lv_prfcn_adj);
+                }
                 
                 const inputText11 = document.createElement('input'); // 업무수준 조정 입력 필드 생성
                 inputText11.setAttribute('type', 'text');
                 inputText11.setAttribute('name', 'work_lv_sum_adj');
                 inputText11.setAttribute('class', 'input_text_num');
-                inputText11.setAttribute('value', taskData.work_lv_sum_adj);
+                // inputText11.setAttribute('value', taskData.work_lv_sum_adj ? taskData.work_lv_sum_adj.toString() : '');
+                if (selectedJob === 'JC001') {
+                    inputText11.setAttribute('value', '');
+                } else {
+                    inputText11.setAttribute('value', taskData.work_lv_sum_adj);
+                }
                 inputText11.setAttribute('readonly', true);
+                // backgroundcolor yellow
+                inputText11.style.backgroundColor = '#ffff00';
 
                 const inputText12 = document.createElement('input'); // 업무등급 조정 입력 필드 생성
                 inputText12.setAttribute('type', 'text');
                 inputText12.setAttribute('name', 'work_grade_adj');
                 inputText12.setAttribute('class', 'input_text_num');
-                inputText12.setAttribute('value', taskData.work_grade_adj);
+                // inputText12.setAttribute('value', taskData.work_grade_adj ? taskData.work_grade_adj.toString() : '');
+                if (selectedJob === 'JC001') {
+                    inputText12.setAttribute('value', '');
+                } else {
+                    inputText12.setAttribute('value', taskData.work_grade_adj);
+                }
                 inputText12.setAttribute('readonly', true);
+                // backgroundcolor yellow
+                inputText12.style.backgroundColor = '#ffff00';
 
                 const inputText13 = document.createElement('input'); // 연간 수행시간 조정 입력 필드 생성
                 inputText13.setAttribute('type', 'text');
                 inputText13.setAttribute('name', 'prfrm_tm_ann_adj');
                 inputText13.setAttribute('class', 'input_text_num2');
-                inputText13.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_adj).toFixed(1));
+                // inputText13.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_adj).toFixed(1));
+                // inputText13.setAttribute('value', taskData.prfrm_tm_ann_adj ? parseFloat(taskData.prfrm_tm_ann_adj).toFixed(1) : ''); // 연간 수행시간 조정 입력값이 없으면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText13.setAttribute('value', '');
+                } else {
+                    inputText13.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_adj).toFixed(1));
+                }
 
                 const inputText14 = document.createElement('input'); // 가중치 적용시간 입력 필드 생성
                 inputText14.setAttribute('type', 'text');
                 inputText14.setAttribute('name', 'prfrm_tm_ann_cal_adj');
                 inputText14.setAttribute('class', 'input_text_num2');
-                inputText14.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal_adj).toFixed(1));
+                // inputText14.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal_adj).toFixed(1));
+                // inputText14.setAttribute('value', taskData.prfrm_tm_ann_cal_adj ? parseFloat(taskData.prfrm_tm_ann_cal_adj).toFixed(1) : ''); // 가중치 적용시간 조정 입력값이 없으면 빈 문자열로 설정
+                if (selectedJob === 'JC001') {
+                    inputText14.setAttribute('value', '');
+                } else {
+                    inputText14.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal_adj).toFixed(1));
+                }
                 inputText14.setAttribute('readonly', true);
+                inputText14.style.backgroundColor = '#ffff00';
 
                 // job_cd가 JC001이면 inputText8, 9, 10, 13 readonly
                 if (selectedJob === 'JC001') {
@@ -390,6 +515,12 @@
                     inputText10.setAttribute('readonly', true);
                     inputText13.setAttribute('readonly', true);
                 }
+                
+                // span 태그 생성하고 안에 text는 |
+                const span = document.createElement('span');
+                span.textContent = '|';
+                span.style.marginLeft = '5px';
+
 
                 container.appendChild(inputText);
                 container.appendChild(inputText2);
@@ -399,6 +530,7 @@
                 container.appendChild(inputText6);
                 container.appendChild(inputText7);
                 container.appendChild(inputTex15);
+                container.appendChild(span);
                 container.appendChild(inputText8);
                 container.appendChild(inputText9);
                 container.appendChild(inputText10);
@@ -581,15 +713,18 @@
             taskDiv.style.display = 'block'; // 과업 Div를 표시
             }
 
-            function calculateAndDisplayValue() { // 추가된 함수
+            // 계산 및 값을 표시하는 함수
+            function calculateAndDisplayValue() {
                 const stdWrkTm = parseFloat(document.querySelector('input[name="std_wrk_tm"]').value);
-                let totalPrfrmTmAnnCalAdj = jsonData.reduce((sum, task) => { // 연간 가중치 적용시간의 합을 구함. reduce 사용. reduce는 배열의 각 요소에 대해 주어진 함수를 실행하고 하나의 결과값을 반환
-                    let value = parseFloat(task.prfrm_tm_ann_cal_adj); // 각 과업의 연간 가중치 적용시간을 가져옴
-                    return sum + (isNaN(value) ? 0 : value); // value가 NaN이면 0을 더하고, 아니면 value를 더함
+                let totalPrfrmTmAnnCalAdj = jsonData.reduce((sum, task) => {
+                    let value = parseFloat(task.prfrm_tm_ann_cal_adj);
+                    return sum + (isNaN(value) ? 0 : value);
                 }, 0); // 초기값 0으로 설정
-                                
-                const calculatedValue = (totalPrfrmTmAnnCalAdj / stdWrkTm).toFixed(1);
-                document.getElementById('sum_prfrm_tm_ann_cal_adj').value = totalPrfrmTmAnnCalAdj.toFixed(1);
+                
+                const calculatedValue = bankersRound(totalPrfrmTmAnnCalAdj / stdWrkTm, 1).toFixed(1);
+                const totalPrfrmTmAnnCalAdjRounded = bankersRound(totalPrfrmTmAnnCalAdj, 1).toFixed(1);
+                
+                document.getElementById('sum_prfrm_tm_ann_cal_adj').value = totalPrfrmTmAnnCalAdjRounded;
                 document.getElementById('po_right_adj').value = calculatedValue;
             }
 
@@ -607,6 +742,27 @@
                 // Display differences in respective input fields
                 document.getElementById('prfrm_tm_diff').value = prfrm_tm_diff.toFixed(1);
                 document.getElementById('po_right_diff').value = po_right_diff.toFixed(1);
+            }
+
+            // Banker's rounding 함수 정의
+            function bankersRound(num, decimalPlaces) {
+                const factor = Math.pow(10, decimalPlaces);
+                const n = num * factor;
+                const f = Math.floor(n);
+                const l = n - f;
+
+                if (l > 0.5) {
+                    return (f + 1) / factor;
+                } else if (l < 0.5) {
+                    return f / factor;
+                } else {
+                    // Exactly halfway
+                    if (f % 2 === 0) {
+                        return f / factor; // Round down if the floor is even
+                    } else {
+                        return (f + 1) / factor; // Round up if the floor is odd
+                    }
+                }
             }
 
             // function updateTaskList(selectedJob, selectedDuty) { // 과업 목록을 업데이트하는 함수
@@ -879,7 +1035,41 @@
 
             //     taskDiv.style.display = 'block'; // 과업 Div를 표시
             // }
+
+            document.getElementById('dataForm').onsubmit = function() { // 폼 제출 시 실행되는 함수. 서버로 데이터 전송 전에 실행됨. 
+                // jsonData를 문자열로 변환하여 hidden input 필드에 설정
+                document.getElementById('jsonData').value = JSON.stringify(jsonData);
+                saveSelectionsToLocalStorage();
+            };
+
+            function saveSelectionsToLocalStorage() {
+                var selectedJob = document.querySelector('input[name="job"]:checked').value;
+                var selectedDuty = document.querySelector('input[name="duty"]:checked').value;
+                localStorage.setItem('selectedJob', selectedJob);
+                localStorage.setItem('selectedDuty', selectedDuty);
+            }
+
+            
+
             createJobList();
+        });
+
+        // 부서 변경 시 로컬 스토리지 삭제
+        document.querySelector('select[name="dept_cd_selected"]').addEventListener('change', function() {
+                localStorage.removeItem('selectedJob');
+                localStorage.removeItem('selectedDuty');
+            });
+
+        // 회기 변경 시 로컬 스토리지 삭제
+        document.querySelector('select[name="prd_selected"]').addEventListener('change', function() {
+            localStorage.removeItem('selectedJob');
+            localStorage.removeItem('selectedDuty');
+        });
+
+        // 로그아웃 시 로컬 스토리지 삭제
+        document.getElementById('logoutLink').addEventListener('click', function() {
+            localStorage.removeItem('selectedJob');
+            localStorage.removeItem('selectedDuty');
         });
     </script>
 </body>

@@ -27,13 +27,13 @@ from decimal import Decimal
 from django.contrib.auth.hashers import check_password
 import os #추가
 from pathlib import Path #추가
-from decimal import Decimal, ROUND_HALF_UP
+# from decimal import Decimal, ROUND_HALF_UP
 
 now = dt.datetime.now() #지금 날짜를 가져옴
 
-def round_half_up(number, decimals=1):
-    multiplier = 10 ** decimals
-    return int(number * multiplier + 0.5) / multiplier
+# def round_half_up(number, decimals=1):
+#     multiplier = 10 ** decimals
+#     return int(number * multiplier + 0.5) / multiplier
 
 # Create your views here.
 def index(request):
@@ -2543,13 +2543,16 @@ def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경�
         df_json_2 = df5.to_json(orient='records')
 
         # df3의 prfrm_tm_ann_cal 열의 합을 구한다. None일 경우 0으로 처리한다. 소숫점 1자리까지 표시한다.
-        # sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum()+1e-15, 1)
-        sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+        sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum(), 1)
+        # sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+
+        sum_prfrm_tm_ann_cal_adj = round(df3['prfrm_tm_ann_cal_adj'].sum(), 1)
 
         # round는 소숫점 1자리까지 표시한다. 반올림은 round를 사용한다. 
 
         # sum_prfrm_tm_ann_cal을 BsStdWrkTm 테이블에서 가져온 std_wrk_tm으로 나누어서, 소숫점 1자리까지 표시한다. 이 값이 적정 인원이다.
         po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)
+        po_right_adj = round(float(sum_prfrm_tm_ann_cal_adj) / float(std_wrk_tm), 1)
 
         context = {
             'prd_list' : BsPrd.objects.all(),
@@ -2564,10 +2567,12 @@ def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경�
             'std_wrk_tm': std_wrk_tm,
             'sum_prfrm_tm_ann_cal': sum_prfrm_tm_ann_cal,
             'po_right': po_right,
+            'sum_prfrm_tm_ann_cal_adj': sum_prfrm_tm_ann_cal_adj,
+            'po_right_adj': po_right_adj,
         }
     except pd.errors.MergeError as e:
 
-        messages.error(request, '해당 회기에 분석 정보 기초자료가 없습니다.')
+        messages.error(request, '해당 회기에 분석 정보 기초자료 데이터가 없습니다.')
 
         # 버튼 컨트롤 다 막아야 함
         context.update({'data' : 'null'})
@@ -2599,7 +2604,7 @@ def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경�
                           'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq } for rows in original_rows]
         df1 = pd.DataFrame(data_list)
         
-        # df1에 prfrm_tm_ann_cal 열을 추가해준다. 초기값은 null이다.
+        # df1에 prfrm_tm_ann_cal 열을 추가해준다. 환산 업무량이지. 초기값은 null이다.
         df1['prfrm_tm_ann_cal'] = None
 
         # df1에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
@@ -2644,7 +2649,7 @@ def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경�
                         'work_grade_adj': rows.work_grade_id, 'prfrm_tm_ann_adj': rows.prfrm_tm_ann} for rows in original_rows_2]
         df2 = pd.DataFrame(data_list_2)
         
-        # df2에 prfrm_tm_ann_cal_adj열을 추가해준다. 초기값은 null이다.
+        # df2에 prfrm_tm_ann_cal_adj열을 추가해준다. 환산 업무량의 adj인 것이다. 초기값은 null이다.
         df2['prfrm_tm_ann_cal_adj'] = None
 
         # df2에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal_adj)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade_adj가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
@@ -2703,11 +2708,16 @@ def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경�
             df_json_2 = df5.to_json(orient='records')
 
             # df3의 prfrm_tm_ann_cal 열의 합을 구한다. None일 경우 0으로 처리한다. 소숫점 1자리까지 반올림한다.
-            # sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum()+1e-15, 1)
-            sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+            sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum(), 1)
+
+            sum_prfrm_tm_ann_cal_adj = round(df3['prfrm_tm_ann_cal_adj'].sum(), 1)
+
+            # sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
 
             # sum_prfrm_tm_ann_cal을 BsStdWrkTm 테이블에서 가져온 std_wrk_tm으로 나누어서, 소숫점 1자리까지 표시한다. 이 값이 적정 인원이다.
             po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)
+
+            po_right_adj = round(float(sum_prfrm_tm_ann_cal_adj) / float(std_wrk_tm), 1)
 
             context = {
                 'prd_list' : BsPrd.objects.all(),
@@ -2722,10 +2732,12 @@ def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경�
                 'std_wrk_tm': std_wrk_tm,
                 'sum_prfrm_tm_ann_cal': sum_prfrm_tm_ann_cal,
                 'po_right': po_right,
+                'sum_prfrm_tm_ann_cal_adj': sum_prfrm_tm_ann_cal_adj,
+                'po_right_adj': po_right_adj,
             }
         except pd.errors.MergeError as e:
 
-            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+            messages.error(request, '해당 회기에 분석 정보 기초자료 데이터가 없습니다.')
 
             context = {
                 'prd_list' : BsPrd.objects.all(),
@@ -8265,17 +8277,18 @@ def JB200_1(request): # 업무량 분석 기초 자료 화면 - 부서 변경 �
             df_json_2 = df5.to_json(orient='records')
 
             # df3의 prfrm_tm_ann_cal 열의 합을 구한다. None일 경우 0으로 처리한다. 소숫점 1자리까지 표시한다.
-            # sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum()+1e-13, 1)
+            sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum(), 1)
             # sum_prfrm_tm_ann_cal = round(decimal.Decimal(df3['prfrm_tm_ann_cal'].sum()), 1)
-            sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+            # sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+            # print(sum_prfrm_tm_ann_cal)
 
-            # print(df3['prfrm_tm_ann_cal'].sum())
+            sum_prfrm_tm_ann_cal_adj = round(df3['prfrm_tm_ann_cal_adj'].sum(), 1)
 
+            # print(sum_prfrm_tm_ann_cal_adj)
+            
             # sum_prfrm_tm_ann_cal을 BsStdWrkTm 테이블에서 가져온 std_wrk_tm으로 나누어서, 소숫점 1자리까지 표시한다. 이 값이 적정 인원이다.
-            po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)
-
-            print(round(1.15, 1))
-            print(round(1.05, 1))
+            po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)    
+            po_right_adj = round(float(sum_prfrm_tm_ann_cal_adj) / float(std_wrk_tm), 1)                  
 
             context = {
                 'prd_list' : BsPrd.objects.all(),
@@ -8290,10 +8303,12 @@ def JB200_1(request): # 업무량 분석 기초 자료 화면 - 부서 변경 �
                 'std_wrk_tm' : std_wrk_tm,
                 'sum_prfrm_tm_ann_cal' : sum_prfrm_tm_ann_cal,
                 'po_right' : po_right,
+                'sum_prfrm_tm_ann_cal_adj' : sum_prfrm_tm_ann_cal_adj,
+                'po_right_adj' : po_right_adj,
             }
         except pd.errors.MergeError as e:
 
-            messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
+            messages.error(request, '해당 회기에 분석 정보 기초자료 데이터가 없습니다.')
 
             context = {
                 'prd_list' : BsPrd.objects.all(),
@@ -8312,7 +8327,203 @@ def JB200_1(request): # 업무량 분석 기초 자료 화면 - 부서 변경 �
 
 def JB200_2(request): # 업무량 분석 기초 자료 화면- 저장/취소 버튼 누를 시
 
-    return render(request, 'jobs/JB200.html')
+    if request.method == 'POST':
+
+        prd_selected = request.POST['prd_selected']
+        dept_selected = request.POST['dept_cd_selected']
+        dept_list = BsDept.objects.filter(prd_cd=prd_selected)
+
+        action = request.POST['action'] # 저장/취소 버튼 중 어떤 것을 눌렀는지
+
+        context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '분석 기초자료', # 제목
+                'prd_selected' : prd_selected,
+                'prd_done' : BsPrd.objects.get(prd_cd=prd_selected).prd_done_yn,
+                'dept_list' : dept_list,
+                'dept_cd_selected' : dept_selected,
+                'dept_mgr_yn': get_dept_mgr_yn(request.user.username),
+            }
+
+        if action == 'action1':
+
+            json_data = request.POST.get('jsonData')
+            data = json.loads(json_data) # JSON 문자열을 Python 객체로 변환
+            df_adj = pd.DataFrame(data) # Pandas DataFrame으로 변환. 기존 adj 테이블과 비교할 것임
+           
+            # df_adj에서 필요한 부분만 추출하여 job_task_adj와 비교할 것이다.
+            df_adj = df_adj[['prd_cd', 'dept_cd', 'job_cd', 'duty_nm', 'task_nm',
+                              'work_lv_imprt_adj', 'work_lv_dfclt_adj', 'work_lv_prfcn_adj', 'work_lv_sum_adj', 'work_grade_adj',
+                                'prfrm_tm_ann_adj', 'job_seq', 'duty_seq', 'task_seq']]
+            
+            # df_adj를 job_seq, duty_seq, task_seq 순으로 정렬
+            df_adj = df_adj.sort_values(['job_seq', 'duty_seq', 'task_seq']).reset_index(drop=True)
+
+            # DB의 job_task_adj 테이블로부터 해당 회기의 해당 부서의 정보를 가져와서 dataframe을 생성한다.
+            original_rows=JobTaskAdj.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+            data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                        'work_lv_imprt': rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                        'work_grade': rows.work_grade_id, 'prfrm_tm_ann': rows.prfrm_tm_ann, 'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq
+                          } for rows in original_rows]
+            df1 = pd.DataFrame(data_list)
+
+            # df1을 job_seq, duty_seq, task_seq 순으로 정렬
+            df1 = df1.sort_values(['job_seq', 'duty_seq', 'task_seq']).reset_index(drop=True)
+
+            # df1을 job_seq, duty_seq, task_seq 순으로 정렬
+
+            # df_adj의 컬럼 이름 변경(_adj붙은 것들)
+            df_adj.columns = ['prd_cd', 'dept_cd', 'job_cd', 'duty_nm', 'task_nm',
+                               'work_lv_imprt', 'work_lv_dfclt', 'work_lv_prfcn', 'work_lv_sum', 'work_grade', 'prfrm_tm_ann', 'job_seq', 'duty_seq', 'task_seq']
+
+            # df1과 df_adj를 비교하여 다른 행이 있으면 df_adj의 값들을 DB에 update
+            for i in range(len(df_adj)):
+
+                # 공통코드는 빼고 업데이트
+                if df_adj.loc[i, 'job_cd'] != 'JC001': # 공통코드가 아닐 경우에만 업데이트
+                    if df1.loc[i, 'work_lv_imprt'] != df_adj.loc[i, 'work_lv_imprt'] or df1.loc[i, 'work_lv_dfclt'] != df_adj.loc[i, 'work_lv_dfclt'] or df1.loc[i, 'work_lv_prfcn'] != df_adj.loc[i, 'work_lv_prfcn'] or df1.loc[i, 'prfrm_tm_ann'] != df_adj.loc[i, 'prfrm_tm_ann']:
+                        print(df1.loc[i, 'task_nm'])
+                        JobTaskAdj.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected, job_cd=df_adj.loc[i, 'job_cd'], duty_nm=df_adj.loc[i, 'duty_nm'], task_nm=df_adj.loc[i, 'task_nm']).update(
+                            work_lv_imprt=df_adj.loc[i, 'work_lv_imprt'], work_lv_dfclt=df_adj.loc[i, 'work_lv_dfclt'], work_lv_prfcn=df_adj.loc[i, 'work_lv_prfcn'],
+                            work_lv_sum=df_adj.loc[i, 'work_lv_sum'], work_grade_id=df_adj.loc[i, 'work_grade'], prfrm_tm_ann=df_adj.loc[i, 'prfrm_tm_ann'])
+
+
+        # 다시 화면을 띄워준다. 취소일 때는 여기에 해당.
+        std_wrk_tm = BsStdWrkTm.objects.get(prd_cd=prd_selected).std_wrk_tm
+
+        # job_task 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+        original_rows=JobTask.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                    'work_lv_imprt': rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
+                        'work_grade': rows.work_grade_id, 'prfrm_tm_ann': rows.prfrm_tm_ann,
+                          'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq } for rows in original_rows]
+        df1 = pd.DataFrame(data_list)
+        
+        # df1에 prfrm_tm_ann_cal 열을 추가해준다. 환산 업무량이지. 초기값은 null이다.
+        df1['prfrm_tm_ann_cal'] = None
+
+        # df1에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+        # work_grade가 null일 경우 prfrm_tm_ann_cal열도 null값으로 한다.
+        # df1의 각 행에 대하여 수행해준다. for문을 활용한다.
+        for i in range(len(df1)):
+            if df1['work_grade'][i] == 'G1':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G1').workload_wt)
+            elif df1['work_grade'][i] == 'G2':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G2').workload_wt)
+            elif df1['work_grade'][i] == 'G3':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G3').workload_wt)
+            elif df1['work_grade'][i] == 'G4':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G4').workload_wt)
+            elif df1['work_grade'][i] == 'G5':
+                if df1['prfrm_tm_ann'][i] == None:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = None
+                else:
+                    df1.loc[i, 'prfrm_tm_ann_cal'] = float(df1.loc[i, 'prfrm_tm_ann']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G5').workload_wt)
+            else:
+                df1.loc[i, 'prfrm_tm_ann_cal'] = None
+        
+        # df1['prfrm_tm_ann_cal']의 자료형을 float으로 변경
+        df1['prfrm_tm_ann_cal'] = df1['prfrm_tm_ann_cal'].astype(float)
+
+        # job_task_adj 테이블에 접근하여 dataframe을 만들고, json을 만들어서 넘겨준다.
+        original_rows_2=JobTaskAdj.objects.filter(prd_cd=prd_selected, dept_cd=dept_selected) # 나중에 prd_cd 바꿔줘야 함
+        data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm, 'task_nm': rows.task_nm,
+                        'work_lv_imprt_adj': rows.work_lv_imprt, 'work_lv_dfclt_adj': rows.work_lv_dfclt, 'work_lv_prfcn_adj': rows.work_lv_prfcn, 'work_lv_sum_adj': rows.work_lv_sum,
+                        'work_grade_adj': rows.work_grade_id, 'prfrm_tm_ann_adj': rows.prfrm_tm_ann} for rows in original_rows_2]
+        df2 = pd.DataFrame(data_list_2)
+        
+        # df2에 prfrm_tm_ann_cal_adj열을 추가해준다. 환산 업무량의 adj인 것이다. 초기값은 null이다.
+        df2['prfrm_tm_ann_cal_adj'] = None
+
+        # df2에 연간 업무량에 가중치를 곱한 값을 열(prfrm_tm_ann_cal_adj)로 추가한다. 가중치는 각 행에 따라 다르며, work_grade_adj가 G1일 경우 1.25, ㅎ2이면 1.125, G3이면 1.0, G4이면 0.875, G5면 0.75이다.
+        # work_grade_adj가 null일 경우 prfrm_tm_ann_cal_adj열도 null값으로 한다.
+        # df2의 각 행에 대하여 수행해준다. for문을 활용한다.
+        for i in range(len(df2)):
+            if df2['work_grade_adj'][i] == 'G1':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G1').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G2':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:    
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G2').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G3':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G3').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G4':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G4').workload_wt)
+            elif df2['work_grade_adj'][i] == 'G5':
+                if df2['prfrm_tm_ann_adj'][i] == None:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+                else:
+                    df2.loc[i, 'prfrm_tm_ann_cal_adj'] = float(df2.loc[i, 'prfrm_tm_ann_adj']) * float(BsWorkGrade.objects.get(prd_cd_id=prd_selected, work_grade='G5').workload_wt)
+            else:
+                df2.loc[i, 'prfrm_tm_ann_cal_adj'] = None
+        
+
+        # df2['prfrm_tm_ann_cal_adj']의 자료형을 float으로 변경
+        df2['prfrm_tm_ann_cal_adj'] = df2['prfrm_tm_ann_cal_adj'].astype(float)
+
+        df3 = pd.merge(df1, df2).sort_values(['job_seq', 'duty_seq', 'task_seq']) # job_task와 job_activity merge, 순서는 job_seq, duty_seq, task_seq, act_seq 순
+
+        # job_nm 찾기
+        original_rows_3 = BsJob.objects.filter(prd_cd=prd_selected)
+        data_list_3 = [{'prd_cd' : rows.prd_cd_id, 'job_cd': rows.job_cd, 'job_nm': rows.job_nm} for rows in original_rows_3]
+        df4 = pd.DataFrame(data_list_3)
+
+        df3 = pd.merge(df3, df4) # job_nm 추가. job_cd로 merge, 없는 부분은 뺀다. job_nm을 job_cd 뒤로 보낸다.
+
+        # df3.to_excel('df3.xlsx')
+        df_json = df3.to_json(orient='records')
+
+        # BsWorkGrade에서 데이터를 가져와서, json으로 만들어서 넘겨준다.
+        original_rows_4 = BsWorkGrade.objects.filter(prd_cd=prd_selected)
+        data_list_4 = [{'work_grade': rows.work_grade, 'work_lv_min': rows.work_lv_min, 'work_lv_max': rows.work_lv_max, 'workload_wt': rows.workload_wt} for rows in original_rows_4]
+        df5 = pd.DataFrame(data_list_4)
+        df_json_2 = df5.to_json(orient='records')
+
+        # df3의 prfrm_tm_ann_cal 열의 합을 구한다. None일 경우 0으로 처리한다. 소숫점 1자리까지 반올림한다.
+        sum_prfrm_tm_ann_cal = round(df3['prfrm_tm_ann_cal'].sum(), 1)
+
+        sum_prfrm_tm_ann_cal_adj = round(df3['prfrm_tm_ann_cal_adj'].sum(), 1)
+
+        # sum_prfrm_tm_ann_cal = round_half_up(df3['prfrm_tm_ann_cal'].sum(), 1)
+
+        # sum_prfrm_tm_ann_cal을 BsStdWrkTm 테이블에서 가져온 std_wrk_tm으로 나누어서, 소숫점 1자리까지 표시한다. 이 값이 적정 인원이다.
+        po_right = round(float(sum_prfrm_tm_ann_cal) / float(std_wrk_tm), 1)
+
+        po_right_adj = round(float(sum_prfrm_tm_ann_cal_adj) / float(std_wrk_tm), 1)
+
+        context.update({
+                'data' : df_json,
+                'standard': df_json_2,
+                'std_wrk_tm': std_wrk_tm,
+                'sum_prfrm_tm_ann_cal': sum_prfrm_tm_ann_cal,
+                'po_right': po_right,
+                'sum_prfrm_tm_ann_cal_adj': sum_prfrm_tm_ann_cal_adj,
+                'po_right_adj': po_right_adj,
+            })
+
+    return render(request, 'jobs/JB200.html', context)
 
 
 def main(request):
