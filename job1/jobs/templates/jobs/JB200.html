@@ -339,7 +339,6 @@
                 inputText3.setAttribute('type', 'text');
                 inputText3.setAttribute('name', 'work_lv_dfclt');
                 inputText3.setAttribute('class', 'input_text_num');
-                // inputText3.setAttribute('value', taskData.work_lv_dfclt ? taskData.work_lv_dfclt.toString() : ''); // 난이도 입력값이 없으면 빈 문자열로 설정
                 // taskData의 jobCd가 JC001이면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText3.setAttribute('value', '');
@@ -353,7 +352,6 @@
                 inputText4.setAttribute('type', 'text');
                 inputText4.setAttribute('name', 'work_lv_prfcn');
                 inputText4.setAttribute('class', 'input_text_num');
-                // inputText4.setAttribute('value', taskData.work_lv_prfcn ? taskData.work_lv_prfcn.toString() : ''); // 숙련도 입력값이 없으면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText4.setAttribute('value', '');
                 } else {
@@ -366,7 +364,6 @@
                 inputText5.setAttribute('type', 'text');
                 inputText5.setAttribute('name', 'work_lv_sum');
                 inputText5.setAttribute('class', 'input_text_num');
-                // inputText5.setAttribute('value', taskData.work_lv_sum ? taskData.work_lv_sum.toString() : ''); // 업무수준 입력값이 없으면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText5.setAttribute('value', '');
                 } else {
@@ -379,7 +376,6 @@
                 inputText6.setAttribute('type', 'text');
                 inputText6.setAttribute('name', 'work_grade');
                 inputText6.setAttribute('class', 'input_text_num');
-                // inputText6.setAttribute('value', taskData.work_grade ? taskData.work_grade.toString() : ''); // 업무등급 입력값이 없으면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText6.setAttribute('value', '');
                 } else {
@@ -392,9 +388,6 @@
                 inputText7.setAttribute('type', 'text');
                 inputText7.setAttribute('name', 'prfrm_tm_ann');
                 inputText7.setAttribute('class', 'input_text_num2');
-                // inputText7.setAttribute('value', parseFloat(taskData.prfrm_tm_ann).toFixed(1) || ''); // 연간 수행시간 입력값이 없으면 빈 문자열로 설정
-                // inputText7.setAttribute('value', taskData.prfrm_tm_ann ? parseFloat(taskData.prfrm_tm_ann).toFixed(1) : ''); // 연간 수행시간 입력값이 없으면 빈 문자열로 설정
-                // taskData의 job_cd가 JC001이면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText7.setAttribute('value', '');
                 } else {
@@ -407,8 +400,6 @@
                 inputTex15.setAttribute('type', 'text');
                 inputTex15.setAttribute('name', 'prfrm_tm_ann_cal');
                 inputTex15.setAttribute('class', 'input_text_num2');
-                // inputTex15.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal).toFixed(1));
-                // inputTex15.setAttribute('value', taskData.prfrm_tm_ann_cal ? parseFloat(taskData.prfrm_tm_ann_cal).toFixed(1) : ''); // 가중치 적용시간 입력값이 없으면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputTex15.setAttribute('value', '');
                 } else {
@@ -417,26 +408,35 @@
                 inputTex15.setAttribute('readonly', true);
                 inputTex15.style.backgroundColor = '#f0f0f0';
 
+                const inputText16 = document.createElement('input'); // 조정 여부 입력 필드 생성
+                inputText16.setAttribute('type', 'text');
+                inputText16.setAttribute('name', 'adj_yn');
+                inputText16.setAttribute('class', 'input_text_num');
+                // taskData의 adj_yn 값이 1이면 *로 표시하고, 0이면 빈 문자열로 설정
+                if (taskData.adj_yn === 1) {
+                    inputText16.setAttribute('value', '*');
+                } else {
+                    inputText16.setAttribute('value', '');
+                }
+                inputText16.setAttribute('readonly', true);
+                inputText16.style.backgroundColor = '#f0f0f0';
+                inputText16.style.width = '20px';
+
                 const inputText8 = document.createElement('input'); // 중요도 조정 입력 필드 생성
                 inputText8.setAttribute('type', 'text');
                 inputText8.setAttribute('name', 'work_lv_imprt_adj');
-                // inputText8.setAttribute('value', taskData.work_lv_imprt_adj );
-                // inputText8.setAttribute('value', taskData.work_lv_imprt_adj ? taskData.work_lv_imprt_adj.toString() : ''); // 중요도 조정 입력값이 없으면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText8.setAttribute('value', '');
                 } else {
                     inputText8.setAttribute('value', taskData.work_lv_imprt_adj);
                 }
                 inputText8.setAttribute('class', 'input_text_num');
-                // margin-left
-                inputText8.style.marginLeft = '30px';
+                // inputText8.style.marginLeft = '30px';
                 
-
                 const inputText9 = document.createElement('input'); // 난이도 조정 입력 필드 생성
                 inputText9.setAttribute('type', 'text');
                 inputText9.setAttribute('name', 'work_lv_dfclt_adj');
                 inputText9.setAttribute('class', 'input_text_num');
-                // inputText9.setAttribute('value', taskData.work_lv_dfclt_adj ? taskData.work_lv_dfclt_adj.toString() : '');
                 if (selectedJob === 'JC001') {
                     inputText9.setAttribute('value', '');
                 } else {
@@ -447,7 +447,6 @@
                 inputText10.setAttribute('type', 'text');
                 inputText10.setAttribute('name', 'work_lv_prfcn_adj');
                 inputText10.setAttribute('class', 'input_text_num');
-                // inputText10.setAttribute('value', taskData.work_lv_prfcn_adj ? taskData.work_lv_prfcn_adj.toString() : '');
                 if (selectedJob === 'JC001') {
                     inputText10.setAttribute('value', '');
                 } else {
@@ -458,7 +457,6 @@
                 inputText11.setAttribute('type', 'text');
                 inputText11.setAttribute('name', 'work_lv_sum_adj');
                 inputText11.setAttribute('class', 'input_text_num');
-                // inputText11.setAttribute('value', taskData.work_lv_sum_adj ? taskData.work_lv_sum_adj.toString() : '');
                 if (selectedJob === 'JC001') {
                     inputText11.setAttribute('value', '');
                 } else {
@@ -466,13 +464,12 @@
                 }
                 inputText11.setAttribute('readonly', true);
                 // backgroundcolor yellow
-                inputText11.style.backgroundColor = '#ffff00';
+                inputText11.style.backgroundColor = '#f0f0f0';
 
                 const inputText12 = document.createElement('input'); // 업무등급 조정 입력 필드 생성
                 inputText12.setAttribute('type', 'text');
                 inputText12.setAttribute('name', 'work_grade_adj');
                 inputText12.setAttribute('class', 'input_text_num');
-                // inputText12.setAttribute('value', taskData.work_grade_adj ? taskData.work_grade_adj.toString() : '');
                 if (selectedJob === 'JC001') {
                     inputText12.setAttribute('value', '');
                 } else {
@@ -480,14 +477,12 @@
                 }
                 inputText12.setAttribute('readonly', true);
                 // backgroundcolor yellow
-                inputText12.style.backgroundColor = '#ffff00';
+                inputText12.style.backgroundColor = '#f0f0f0';
 
                 const inputText13 = document.createElement('input'); // 연간 수행시간 조정 입력 필드 생성
                 inputText13.setAttribute('type', 'text');
                 inputText13.setAttribute('name', 'prfrm_tm_ann_adj');
                 inputText13.setAttribute('class', 'input_text_num2');
-                // inputText13.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_adj).toFixed(1));
-                // inputText13.setAttribute('value', taskData.prfrm_tm_ann_adj ? parseFloat(taskData.prfrm_tm_ann_adj).toFixed(1) : ''); // 연간 수행시간 조정 입력값이 없으면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText13.setAttribute('value', '');
                 } else {
@@ -498,15 +493,13 @@
                 inputText14.setAttribute('type', 'text');
                 inputText14.setAttribute('name', 'prfrm_tm_ann_cal_adj');
                 inputText14.setAttribute('class', 'input_text_num2');
-                // inputText14.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal_adj).toFixed(1));
-                // inputText14.setAttribute('value', taskData.prfrm_tm_ann_cal_adj ? parseFloat(taskData.prfrm_tm_ann_cal_adj).toFixed(1) : ''); // 가중치 적용시간 조정 입력값이 없으면 빈 문자열로 설정
                 if (selectedJob === 'JC001') {
                     inputText14.setAttribute('value', '');
                 } else {
                     inputText14.setAttribute('value', parseFloat(taskData.prfrm_tm_ann_cal_adj).toFixed(1));
                 }
                 inputText14.setAttribute('readonly', true);
-                inputText14.style.backgroundColor = '#ffff00';
+                inputText14.style.backgroundColor = '#f0f0f0';
 
                 // job_cd가 JC001이면 inputText8, 9, 10, 13 readonly
                 if (selectedJob === 'JC001') {
@@ -521,7 +514,6 @@
                 span.textContent = '|';
                 span.style.marginLeft = '5px';
 
-
                 container.appendChild(inputText);
                 container.appendChild(inputText2);
                 container.appendChild(inputText3);
@@ -531,6 +523,7 @@
                 container.appendChild(inputText7);
                 container.appendChild(inputTex15);
                 container.appendChild(span);
+                container.appendChild(inputText16);
                 container.appendChild(inputText8);
                 container.appendChild(inputText9);
                 container.appendChild(inputText10);
@@ -540,52 +533,170 @@
                 container.appendChild(inputText14);
 
                 // 각 input 필드에 대해 이벤트 리스너 추가
-
                 inputText8.addEventListener('change', function() {
-                    updateWorkLvImprtAdj(container, this.value);
-                    updateWorkLvSumAndGradeAdj(container);
-                    updatePrfrmTmAnnCalAdj(container, inputText13.value); // 추가된 부분
-                    calculateAndDisplayValue();
-                    calculateDifferences();
+                    updateWorkLvImprtAdj(container, this.value); // 중요도 조정 값 업데이트
+                    updateWorkLvSumAndGradeAdj(container); // 업무수준과 업무등급 업데이트
+                    updatePrfrmTmAnnCalAdj(container, inputText13.value); // 연간 업무량과 환산 업무량 조정 값 업데이트
+                    calculateAndDisplayValue(); // 전체 업무량과 적정 인원 업데이트
+                    calculateDifferences(); // 업무량과 적정인원 차이 계산
                 });
 
                 inputText9.addEventListener('change', function() {
-                    updateWorkLvDfcltAdj(container, this.value);
-                    updateWorkLvSumAndGradeAdj(container);
-                    updatePrfrmTmAnnCalAdj(container, inputText13.value); // 추가된 부분
-                    calculateAndDisplayValue();
-                    calculateDifferences();
+                    updateWorkLvDfcltAdj(container, this.value); // 난이도 조정 값 업데이트
+                    updateWorkLvSumAndGradeAdj(container); // 업무수준과 업무등급 업데이트
+                    updatePrfrmTmAnnCalAdj(container, inputText13.value); // 연간 업무량과 환산 업무량 조정 값 업데이트
+                    calculateAndDisplayValue(); // 전체 업무량과 적정 인원 업데이트
+                    calculateDifferences(); // 업무량과 적정인원 차이 계산
                 });
 
                 inputText10.addEventListener('change', function() {
-                    updateWorkLvPrfcnAdj(container, this.value);
-                    updateWorkLvSumAndGradeAdj(container);
-                    updatePrfrmTmAnnCalAdj(container, inputText13.value); // 추가된 부분
-                    calculateAndDisplayValue();
-                    calculateDifferences();
+                    updateWorkLvPrfcnAdj(container, this.value); // 숙련도 조정 값 업데이트
+                    updateWorkLvSumAndGradeAdj(container); // 업무수준과 업무등급 업데이트
+                    updatePrfrmTmAnnCalAdj(container, inputText13.value); // 연간 업무량과 환산 업무량 조정 값 업데이트
+                    calculateAndDisplayValue(); // 전체 업무량과 적정 인원 업데이트
+                    calculateDifferences(); // 업무량과 적정인원 차이 계산
                 });
 
                 inputText13.addEventListener('change', function() {
-                    updatePrfrmTmAnnCalAdj(container, this.value); //this.value는 변경된 값
-                    calculateAndDisplayValue();
-                    calculateDifferences();
+                    updatePrfrmTmAnnCalAdj(container, this.value); // 연간 업무량과 환산 업무량 조정 값 업데이트
+                    calculateAndDisplayValue(); // 전체 업무량과 적정 인원 업데이트
+                    calculateDifferences(); // 업무량과 적정인원 차이 계산
                 });
 
                 taskDiv.appendChild(container); // 과업 Div에 추가
                 
                 });
                 // 함수 정의
-                function updateWorkLvImprtAdj(container, value) {
-                if (validateInput(value)) {
-                    const taskName = container.querySelector('input[name="task_nm"]').value;
-                    const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty);
+                // function updateWorkLvImprtAdj(container, value) {
+                // if (validateInput(value)) { // 입력값이 유효한지 확인
+                //     const taskName = container.querySelector('input[name="task_nm"]').value;
+                //     const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty);
                     
-                    if (taskIndex !== -1) {
-                        jsonData[taskIndex]['work_lv_imprt_adj'] = value;
+                //     if (taskIndex !== -1) {
+                //         jsonData[taskIndex]['work_lv_imprt_adj'] = value;
+                //     }
+
+                //     // 디버깅: 각 값들을 콘솔에 출력
+                //     console.log('work_lv_imprt_adj:', jsonData[taskIndex]['work_lv_imprt_adj']);
+                //     console.log('work_lv_imprt:', jsonData[taskIndex]['work_lv_imprt']);
+                //     console.log('work_lv_dfclt_adj:', jsonData[taskIndex]['work_lv_dfclt_adj']);
+                //     console.log('work_lv_dfclt:', jsonData[taskIndex]['work_lv_dfclt']);
+                //     console.log('work_lv_prfcn_adj:', jsonData[taskIndex]['work_lv_prfcn_adj']);
+                //     console.log('work_lv_prfcn:', jsonData[taskIndex]['work_lv_prfcn']);
+                //     console.log('prfrm_tm_ann_adj:', jsonData[taskIndex]['prfrm_tm_ann_adj']);
+                //     console.log('prfrm_tm_ann:', jsonData[taskIndex]['prfrm_tm_ann']);
+
+                //     // 그 index의 조정 중요도, 조정 난이도, 조정 숙련도, 조정 연간 업무량, 조정 환산 업무량이 각각 중요도, 난이도, 숙련도, 연간 업무량, 환산 업무량과 다른 경우
+                //     // adj_yn을 *로 업데이트
+                //     if (jsonData[taskIndex]['work_lv_imprt_adj'] !== jsonData[taskIndex]['work_lv_imprt'] 
+                //     // || 
+                //     //     jsonData[taskIndex]['work_lv_dfclt_adj'] !== jsonData[taskIndex]['work_lv_dfclt'] ||
+                //     //     jsonData[taskIndex]['work_lv_prfcn_adj'] !== jsonData[taskIndex]['work_lv_prfcn'] 
+                        
+                //         // jsonData[taskIndex]['prfrm_tm_ann_adj'] !== jsonData[taskIndex]['prfrm_tm_ann']
+                //         // prfrm_tm_ann_adj와 prfrm_tm_ann의 자료형을 float으로 바꾸어 비교. 무조건 소숫점 첫째자리까지 표현
+                //         // parseFloat(jsonData[taskIndex]['prfrm_tm_ann_adj']).toFixed(1) !== parseFloat(jsonData[taskIndex]['prfrm_tm_ann']).toFixed(1)
+                        
+                //         ) {
+                //         console.log('연간 업무량:', parseFloat(jsonData[taskIndex]['prfrm_tm_ann']).toFixed(1));
+                //         jsonData[taskIndex]['adj_yn'] = 1;
+                //         console.log('다른 경우');
+                //         // input에 표시
+                //         container.querySelector('input[name="adj_yn"]').value = '*';
+                //     } else { // 같은 경우
+                //         console.log('같은 경우');
+                //         jsonData[taskIndex]['adj_yn'] = 0;
+                //         container.querySelector('input[name="adj_yn"]').value = '4';
+                //     }
+
+                    
+                // } else { // 입력값이 유효하지 않으면
+                //     revertInput(container, 'work_lv_imprt_adj'); // 입력값을 되돌림
+                // }
+                // }
+
+                // function updateWorkLvImprtAdj(container, value) {
+                //     if (validateInput(value)) { // 입력값이 유효한지 확인
+                //         const taskName = container.querySelector('input[name="task_nm"]').value;
+                //         const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty);
+                        
+                //         if (taskIndex !== -1) {
+                //             jsonData[taskIndex]['work_lv_imprt_adj'] = value;
+                //         }
+
+                //         // 디버깅: 각 값들을 콘솔에 출력
+                //         console.log('work_lv_imprt_adj:', jsonData[taskIndex]['work_lv_imprt_adj']);
+                //         console.log('work_lv_imprt:', jsonData[taskIndex]['work_lv_imprt']);
+                //         console.log('work_lv_dfclt_adj:', jsonData[taskIndex]['work_lv_dfclt_adj']);
+                //         console.log('work_lv_dfclt:', jsonData[taskIndex]['work_lv_dfclt']);
+                //         console.log('work_lv_prfcn_adj:', jsonData[taskIndex]['work_lv_prfcn_adj']);
+                //         console.log('work_lv_prfcn:', jsonData[taskIndex]['work_lv_prfcn']);
+                //         console.log('prfrm_tm_ann_adj:', jsonData[taskIndex]['prfrm_tm_ann_adj']);
+                //         console.log('prfrm_tm_ann:', jsonData[taskIndex]['prfrm_tm_ann']);
+
+                //         // 각 값을 숫자로 변환
+                //         const imprtAdj = parseFloat(jsonData[taskIndex]['work_lv_imprt_adj']);
+                //         const imprt = parseFloat(jsonData[taskIndex]['work_lv_imprt']);
+                //         const dfcltAdj = parseFloat(jsonData[taskIndex]['work_lv_dfclt_adj']);
+                //         const dfclt = parseFloat(jsonData[taskIndex]['work_lv_dfclt']);
+                //         const prfcnAdj = parseFloat(jsonData[taskIndex]['work_lv_prfcn_adj']);
+                //         const prfcn = parseFloat(jsonData[taskIndex]['work_lv_prfcn']);
+                //         const prfrmAnnAdj = parseFloat(jsonData[taskIndex]['prfrm_tm_ann_adj']).toFixed(1);
+                //         const prfrmAnn = parseFloat(jsonData[taskIndex]['prfrm_tm_ann']).toFixed(1);
+
+                //         // 각 조건이 어떻게 비교되는지 로그 출력
+                //         console.log('imprtAdj !== imprt:', imprtAdj !== imprt);
+                //         console.log('dfcltAdj !== dfclt:', dfcltAdj !== dfclt);
+                //         console.log('prfcnAdj !== prfcn:', prfcnAdj !== prfcn);
+                //         console.log('prfrmAnnAdj !== prfrmAnn:', prfrmAnnAdj !== prfrmAnn);
+
+                //         // 각 값들을 비교하여 adj_yn 설정
+                //         if (imprtAdj !== imprt || dfcltAdj !== dfclt || prfcnAdj !== prfcn || prfrmAnnAdj !== prfrmAnn) {
+                //             jsonData[taskIndex]['adj_yn'] = 1;
+                //             console.log('다른 경우');
+                //             // input에 표시
+                //             container.querySelector('input[name="adj_yn"]').value = '*';
+                //         } else { // 같은 경우
+                //             console.log('같은 경우');
+                //             jsonData[taskIndex]['adj_yn'] = 0;
+                //             container.querySelector('input[name="adj_yn"]').value = '4';
+                //         }
+                //     } else { // 입력값이 유효하지 않으면
+                //         revertInput(container, 'work_lv_imprt_adj'); // 입력값을 되돌림
+                //     }
+                // }
+
+                function updateWorkLvImprtAdj(container, value) {
+                    if (validateInput(value)) { // 입력값이 유효한지 확인
+                        const taskName = container.querySelector('input[name="task_nm"]').value;
+                        const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty);
+                        
+                        if (taskIndex !== -1) {
+                            jsonData[taskIndex]['work_lv_imprt_adj'] = value;
+                        }
+
+                        // 각 값을 숫자로 변환
+                        const imprtAdj = parseFloat(jsonData[taskIndex]['work_lv_imprt_adj']);
+                        const imprt = parseFloat(jsonData[taskIndex]['work_lv_imprt']);
+                        const dfcltAdj = parseFloat(jsonData[taskIndex]['work_lv_dfclt_adj']);
+                        const dfclt = parseFloat(jsonData[taskIndex]['work_lv_dfclt']);
+                        const prfcnAdj = parseFloat(jsonData[taskIndex]['work_lv_prfcn_adj']);
+                        const prfcn = parseFloat(jsonData[taskIndex]['work_lv_prfcn']);
+                        const prfrmAnnAdj = parseFloat(jsonData[taskIndex]['prfrm_tm_ann_adj']).toFixed(1);
+                        const prfrmAnn = parseFloat(jsonData[taskIndex]['prfrm_tm_ann']).toFixed(1);
+
+                        // 각 값들을 비교하여 adj_yn 설정
+                        if (imprtAdj !== imprt || dfcltAdj !== dfclt || prfcnAdj !== prfcn || prfrmAnnAdj !== prfrmAnn) {
+                            jsonData[taskIndex]['adj_yn'] = 1;
+                            // input에 표시
+                            container.querySelector('input[name="adj_yn"]').value = '*';
+                        } else { // 같은 경우
+                            jsonData[taskIndex]['adj_yn'] = 0;
+                            container.querySelector('input[name="adj_yn"]').value = '';
+                        }
+                    } else { // 입력값이 유효하지 않으면
+                        revertInput(container, 'work_lv_imprt_adj'); // 입력값을 되돌림
                     }
-                } else {
-                    revertInput(container, 'work_lv_imprt_adj');
-                }
                 }
 
                 function updateWorkLvDfcltAdj(container, value) {
@@ -596,10 +707,31 @@
                     if (taskIndex !== -1) {
                         jsonData[taskIndex]['work_lv_dfclt_adj'] = value;
                     }
+
+                    // 각 값을 숫자로 변환
+                    const imprtAdj = parseFloat(jsonData[taskIndex]['work_lv_imprt_adj']);
+                    const imprt = parseFloat(jsonData[taskIndex]['work_lv_imprt']);
+                    const dfcltAdj = parseFloat(jsonData[taskIndex]['work_lv_dfclt_adj']);
+                    const dfclt = parseFloat(jsonData[taskIndex]['work_lv_dfclt']);
+                    const prfcnAdj = parseFloat(jsonData[taskIndex]['work_lv_prfcn_adj']);
+                    const prfcn = parseFloat(jsonData[taskIndex]['work_lv_prfcn']);
+                    const prfrmAnnAdj = parseFloat(jsonData[taskIndex]['prfrm_tm_ann_adj']).toFixed(1);
+                    const prfrmAnn = parseFloat(jsonData[taskIndex]['prfrm_tm_ann']).toFixed(1);
+
+                    // 각 값들을 비교하여 adj_yn 설정
+                    if (imprtAdj !== imprt || dfcltAdj !== dfclt || prfcnAdj !== prfcn || prfrmAnnAdj !== prfrmAnn) {
+                        jsonData[taskIndex]['adj_yn'] = 1;
+                        // input에 표시
+                        container.querySelector('input[name="adj_yn"]').value = '*';
+                    } else { // 같은 경우
+                        jsonData[taskIndex]['adj_yn'] = 0;
+                        container.querySelector('input[name="adj_yn"]').value = '';
+                    }
+
                 } else {
                     revertInput(container, 'work_lv_dfclt_adj');
                 }
-                }
+                } 
 
                 function updateWorkLvPrfcnAdj(container, value) {
                 if (validateInput(value)) {
@@ -609,35 +741,55 @@
                     if (taskIndex !== -1) {
                         jsonData[taskIndex]['work_lv_prfcn_adj'] = value;
                     }
+
+                    // 각 값을 숫자로 변환
+                    const imprtAdj = parseFloat(jsonData[taskIndex]['work_lv_imprt_adj']);
+                    const imprt = parseFloat(jsonData[taskIndex]['work_lv_imprt']);
+                    const dfcltAdj = parseFloat(jsonData[taskIndex]['work_lv_dfclt_adj']);
+                    const dfclt = parseFloat(jsonData[taskIndex]['work_lv_dfclt']);
+                    const prfcnAdj = parseFloat(jsonData[taskIndex]['work_lv_prfcn_adj']);
+                    const prfcn = parseFloat(jsonData[taskIndex]['work_lv_prfcn']);
+                    const prfrmAnnAdj = parseFloat(jsonData[taskIndex]['prfrm_tm_ann_adj']).toFixed(1);
+                    const prfrmAnn = parseFloat(jsonData[taskIndex]['prfrm_tm_ann']).toFixed(1);
+
+                    // 각 값들을 비교하여 adj_yn 설정
+                    if (imprtAdj !== imprt || dfcltAdj !== dfclt || prfcnAdj !== prfcn || prfrmAnnAdj !== prfrmAnn) {
+                        jsonData[taskIndex]['adj_yn'] = 1;
+                        // input에 표시
+                        container.querySelector('input[name="adj_yn"]').value = '*';
+                    } else { // 같은 경우
+                        jsonData[taskIndex]['adj_yn'] = 0;
+                        container.querySelector('input[name="adj_yn"]').value = '';
+                    }
+
                 } else {
                     revertInput(container, 'work_lv_prfcn_adj');
                 }
                 }
 
-                function updateWorkLvSumAndGradeAdj(container) {
-                const imprt = parseInt(container.querySelector('input[name="work_lv_imprt_adj"]').value, 10) || 0; // 중요도. 뒤의 10은 10진수를 의미
-                const dfclt = parseInt(container.querySelector('input[name="work_lv_dfclt_adj"]').value, 10) || 0; // 난이도
-                const prfcn = parseInt(container.querySelector('input[name="work_lv_prfcn_adj"]').value, 10) || 0; // 숙련도
-                const sum = imprt + dfclt + prfcn;
+                function updateWorkLvSumAndGradeAdj(container) { // 업무수준과 업무등급을 업데이트하는 함수
+                    const imprt = parseInt(container.querySelector('input[name="work_lv_imprt_adj"]').value, 10) || 0; // 중요도. 뒤의 10은 10진수를 의미
+                    const dfclt = parseInt(container.querySelector('input[name="work_lv_dfclt_adj"]').value, 10) || 0; // 난이도
+                    const prfcn = parseInt(container.querySelector('input[name="work_lv_prfcn_adj"]').value, 10) || 0; // 숙련도
+                    const sum = imprt + dfclt + prfcn;
 
-                container.querySelector('input[name="work_lv_sum_adj"]').value = sum; // 업무수준 업데이트. json이 아니라 화면에만 업데이트
+                    container.querySelector('input[name="work_lv_sum_adj"]').value = sum; // 업무수준 업데이트. json이 아니라 화면에만 업데이트
 
-                const taskName = container.querySelector('input[name="task_nm"]').value; // 과업명을 받아옴
-                // 그 직무의 그 책무의 그 과업의 인덱스를 찾음
-                const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty); 
-                if (taskIndex !== -1) { // 인덱스가 존재하면
-                    jsonData[taskIndex]['work_lv_sum_adj'] = sum; // 업무수준 업데이트. json에 업데이트
-                }
+                    const taskName = container.querySelector('input[name="task_nm"]').value; // 과업명을 받아옴
+                    // 그 직무의 그 책무의 그 과업의 인덱스를 찾음
+                    const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty); 
+                    if (taskIndex !== -1) { // 인덱스가 존재하면
+                        jsonData[taskIndex]['work_lv_sum_adj'] = sum; // 업무수준 업데이트. json에 업데이트
+                    }
 
-                // work_grade_adj 업데이트
-                const grade = getWorkGrade(sum); // 업무수준에 따른 업무등급을 가져옴
-                container.querySelector('input[name="work_grade_adj"]').value = grade;  // 업무등급 업데이트. 화면에만 업데이트
-                if (taskIndex !== -1) { // 인덱스가 존재하면
-                    jsonData[taskIndex]['work_grade_adj'] = grade; // 업무등급 업데이트. json에 업데이트
-                }
-
-                // 업무등급에 따른 prfrm_tm_ann_cal_adj 업데이트
-                updatePrfrmTmAnnCalAdj(container, container.querySelector('input[name="prfrm_tm_ann_adj"]').value);
+                    // work_grade_adj 업데이트
+                    const grade = getWorkGrade(sum); // 업무수준에 따른 업무등급을 가져옴
+                    container.querySelector('input[name="work_grade_adj"]').value = grade;  // 업무등급 업데이트. 화면에만 업데이트
+                    if (taskIndex !== -1) { // 인덱스가 존재하면
+                        jsonData[taskIndex]['work_grade_adj'] = grade; // 업무등급 업데이트. json에 업데이트
+                    }
+                    // 업무등급에 따른 prfrm_tm_ann_cal_adj 업데이트
+                    updatePrfrmTmAnnCalAdj(container, container.querySelector('input[name="prfrm_tm_ann_adj"]').value);
                 }
 
                 function getWorkGrade(sum) { // 업무수준에 따른 업무등급을 반환하는 함수
@@ -679,6 +831,26 @@
                                 jsonData[taskIndex]['prfrm_tm_ann_cal_adj'] = "NaN";
                             }
                         }
+                    }
+
+                    // 각 값을 숫자로 변환
+                    const imprtAdj = parseFloat(jsonData[taskIndex]['work_lv_imprt_adj']);
+                    const imprt = parseFloat(jsonData[taskIndex]['work_lv_imprt']);
+                    const dfcltAdj = parseFloat(jsonData[taskIndex]['work_lv_dfclt_adj']);
+                    const dfclt = parseFloat(jsonData[taskIndex]['work_lv_dfclt']);
+                    const prfcnAdj = parseFloat(jsonData[taskIndex]['work_lv_prfcn_adj']);
+                    const prfcn = parseFloat(jsonData[taskIndex]['work_lv_prfcn']);
+                    const prfrmAnnAdj = parseFloat(jsonData[taskIndex]['prfrm_tm_ann_adj']).toFixed(1);
+                    const prfrmAnn = parseFloat(jsonData[taskIndex]['prfrm_tm_ann']).toFixed(1);
+
+                    // 각 값들을 비교하여 adj_yn 설정
+                    if (imprtAdj !== imprt || dfcltAdj !== dfclt || prfcnAdj !== prfcn || prfrmAnnAdj !== prfrmAnn) {
+                        jsonData[taskIndex]['adj_yn'] = 1;
+                        // input에 표시
+                        container.querySelector('input[name="adj_yn"]').value = '*';
+                    } else { // 같은 경우
+                        jsonData[taskIndex]['adj_yn'] = 0;
+                        container.querySelector('input[name="adj_yn"]').value = '';
                     }
                 } else {
                     revertInput(container, 'prfrm_tm_ann_adj');
@@ -736,8 +908,8 @@
                 var po_right_adj = parseFloat(document.getElementById('po_right_adj').value);
 
                 // Calculate differences
-                var prfrm_tm_diff = sum_prfrm_tm_ann_cal - sum_prfrm_tm_ann_cal_adj;
-                var po_right_diff = po_right - po_right_adj;
+                var prfrm_tm_diff = sum_prfrm_tm_ann_cal_adj - sum_prfrm_tm_ann_cal;
+                var po_right_diff = po_right_adj - po_right;
 
                 // Display differences in respective input fields
                 document.getElementById('prfrm_tm_diff').value = prfrm_tm_diff.toFixed(1);

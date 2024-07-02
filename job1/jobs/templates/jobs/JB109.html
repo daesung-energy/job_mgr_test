@@ -39,14 +39,20 @@
                 <span style="padding-right: 40px"></span>
                 <span name="span3" onclick="submitForm('span3')" {% if tab == "tab3" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">적정인력 산정</span>
                 <span style="padding-right: 40px"></span>
+                <span name="span1_1" onclick="submitForm('span1_1')" {% if tab == "tab1_1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">
+                    조정 업무량 분석</span>
+                <span style="padding-right: 40px"></span>
+                <span name="span2_1" onclick="submitForm('span2_1')" {% if tab == "tab2_1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">
+                    조정 업무량 구성비</span>
+                <span style="padding-right: 40px"></span>
                 <span name="span4" onclick="submitForm('span4')" {% if tab == "tab4" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">인력산정 결과</span>
                 <span style="padding-right: 40px"></span>
                 <span name="span5" {% if tab == "span5" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">연간 비교</span>
             </div>
         </form>
 
-        <!-- 탭이 tab1 혹은 tab2일 때 부서 선택을 할 수 있도록 한다-->
-        {% if tab == 'tab1' or tab == 'tab2' %}
+        <!-- 탭이 tab1 혹은 tab2 혹은 tab1_1 혹은 tab2_1 일 때 부서 선택을 할 수 있도록 한다-->
+        {% if tab == 'tab1' or tab == 'tab2' or tab == 'tab1_1' or tab == 'tab2_1' %}
         <!-- 부서 선택 div -->
         <div style="padding-top:20px;">
             
@@ -54,38 +60,43 @@
             <p> 
                 <!-- 부서 선택 form -->
                 <form method="POST" id="JB109_3" action="{% url 'JB109_3' %}">
-                {% csrf_token %}
-                <!-- 회기, 탭 선택값 -->
-                <input type="hidden" name="prd_cd_selected" value="{{ prd_cd_selected }}">
-                <input type="hidden" name="tab" value="{{ tab }}">
-                <span class="label-text2">부서</span>
-                <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
-                <select name="dept_selected" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
-                    {% if dept_selected_key == "former" %}
-                    <option>부서선택</option>
+                    {% csrf_token %}
+
+                    <!-- 회기, 탭 선택값 -->
+                    <input type="hidden" name="prd_cd_selected" value="{{ prd_cd_selected }}">
+                    <input type="hidden" name="tab" value="{{ tab }}">
+                    <span class="label-text2">부서</span>
+                    
+                    <!-- 선택/초기 회기에 대한 BsDept에 있는 목록을 가져옴, 선택한 값을 유지시켜 줌 if문 활용 -->
+                    <select name="dept_selected" class="select-combox" style="margin-left: 62px;" onchange="this.form.submit()">
+                        {% if dept_selected_key == "former" %}
+                        <option>부서선택</option>
+                        {% endif %}
+                        {% for item in dept_list %}
+                        <option value="{{ item.dept_cd }}" {%if dept_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
+                        {% endfor %}
+                    </select>
+
+                    <!-- 인쇄 다운로드 버튼 컨트롤 -->
+                    {% if dept_selected_key == "latter" %}
+                    <span style="margin-left: 795px;">
+                        {% if tab == "tab1" or tab == "tab1_1" %}
+                        <button class="save" onclick="printTableContent('job_analysis', '{{ prd_cd_selected }}', '{{ dept_selected_nm }}')">인쇄</button>
+                        <button class="save" onclick="exportToExcel('job_analysis')">다운로드</button>
+                        {% endif %}
+                        {% if tab == "tab2" or tab == "tab2_1" %}
+                        <button class="save" onclick="printTableContent('analysis_by_duty', '{{ prd_cd_selected }}', '{{ dept_selected_nm }}')">인쇄</button>
+                        <button class="save" onclick="exportToExcel('analysis_by_duty')">다운로드</button>
+                        {% endif %} 
+                    </span>
+                    {% else %}
+                    <span style="margin-left: 795px;">
+                        <button class="del_disabled" disabled>인쇄</button>
+                        <button class="del_disabled" disabled>다운로드</button> 
+                    </span>
                     {% endif %}
-                    {% for item in dept_list %}
-                    <option value="{{ item.dept_cd }}" {%if dept_selected == item.dept_cd %} selected {% endif %} > {{ item.dept_nm }} </option>
-                    {% endfor %}
-                </select>
-                {% if dept_selected_key == "latter" %}
-                <span style="margin-left: 795px;">
-                    {% if tab == "tab1" %}
-                    <button class="save" onclick="printTableContent('job_analysis', '{{ prd_cd_selected }}', '{{ dept_selected_nm }}')">인쇄</button>
-                    <button class="save" onclick="exportToExcel('job_analysis')">다운로드</button>
-                    {% endif %}
-                    {% if tab == "tab2" %}
-                    <button class="save" onclick="printTableContent('analysis_by_duty', '{{ prd_cd_selected }}', '{{ dept_selected_nm }}')">인쇄</button>
-                    <button class="save" onclick="exportToExcel('analysis_by_duty')">다운로드</button>
-                    {% endif %} 
-                </span>
-                {% else %}
-                <span style="margin-left: 795px;">
-                    <button class="del_disabled" disabled>인쇄</button>
-                    <button class="del_disabled" disabled>다운로드</button> 
-                </span>
-                {% endif %}
-            </form>
+
+                </form>
             </p>
         </div>
         {% endif %}
@@ -132,11 +143,11 @@
         {% endif %}
 
         <!-- 탭 선택에 따라 다르게 보여줌 -->
-        <!-- 1. 업무량 분석 탭 -->
-        {% if tab == 'tab1' %}
+        <!-- 1. 업무량 분석 탭 or 조정 업무량 분석 탭 -->
+        {% if tab == 'tab1' or tab == 'tab1_1' %}
             {% if dept_selected_key == "latter" %}
             <div style="margin-top:20px; margin-bottom:20px; margin-left:1035px; background-color: yellow;">
-                
+
             </div>
             <!-- 업무량 분석 div -->
             <div id="JB109_3" style="width:1300px;">
@@ -189,6 +200,7 @@
                     <td style="text-align: center;"><p> </p></td>
                     <td style="text-align: center;"><p> {{ sum_5 }}</p></td>
                     <td class="number-format" style="text-align: center;"><p> {{ sum_6 }}</p></td>
+                    <!-- <td style="text-align: center;"><p> {{ sum_6 }}</p></td> -->
                     <td style="text-align: center;"><p> {{ sum_7 }}</p></td>
                     <td style="text-align: center;"><p> {{ sum_8 }}</p></td>
                     </tr>
@@ -201,7 +213,7 @@
 
         <!-- 2. 업무량 구성비 탭 -->
 
-        {% if tab == 'tab2' %}
+        {% if tab == 'tab2' or tab == 'tab2_1' %}
             {% if dept_selected_key == "latter" %}
 
             <div style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1320px;">        
@@ -298,8 +310,8 @@
         <!-- 4. 인력산정 결과 탭 -->
         {% if tab == 'tab3' %}
             {% if domain_selected_key == "latter" %}
-            
-            
+
+
 
             {% endif %}
         {% endif %}
@@ -307,9 +319,27 @@
         <input type="hidden" id="tab-value" value="{{ tab }}">
 
     </div>
+    
+    <!-- 메시지 표시 -->
+    {% if messages %}
+    <div id="messages" style="display: none;">
+        {% for message in messages %}
+        <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     </wrap>
     
     <script>
+
+        var messagesContainer = document.getElementById('messages');
+                if (messagesContainer) {
+                    var messages = messagesContainer.getElementsByTagName('span');
+                    for (var i = 0; i < messages.length; i++) {
+                    alert(messages[i].textContent);
+                    }
+                } 
 
         //프린트
         function printTableContent(tableId, prdCdSelected, deptSelectedNm) {
@@ -417,7 +447,8 @@
 
             // console.log(table.rows); 
 
-            if (tabValue === 'tab1') { // 업무량 분석 탭
+            // if (tabValue === 'tab1') { // 업무량 분석 탭
+            if (tabValue === 'tab1' || tabValue === 'tab1_1') { // 업무량 분석 탭
 
                 // 콘솔에 프린트
                 // console.log(table.rows);
@@ -453,7 +484,7 @@
                 });
             }
 
-            if (tabValue === 'tab2') { // 업무량 구성비 탭
+            if (tabValue === 'tab2' || tabValue === 'tab2_1') { // 업무량 구성비 탭
                 let currentExcelRow = 3;
                 Array.from(table.rows).forEach((htmlRow) => {
                     const excelRow = worksheet.getRow(currentExcelRow);
@@ -690,7 +721,7 @@
 
             // const tabValue = document.getElementById('tab-value').value;
 
-            if (tabValue === 'tab2') {
+            if (tabValue === 'tab2' || tabValue === 'tab2_1') {
                 mergeCellsByColumn('analysis_by_duty', 0); // 직무명 컬럼 인덱스 0
             }
 

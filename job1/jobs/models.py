@@ -560,6 +560,7 @@ class JobTaskAdj(models.Model):
     job_seq = models.IntegerField()
     duty_seq = models.IntegerField()
     task_seq = models.IntegerField()
+    adj_yn = models.IntegerField()
 
     class Meta:
         managed = False
