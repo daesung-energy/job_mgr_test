@@ -45,6 +45,9 @@
                 <span name="span2_1" onclick="submitForm('span2_1')" {% if tab == "tab2_1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">
                     조정 업무량 구성비</span>
                 <span style="padding-right: 40px"></span>
+                <span name="span3_1" onclick="submitForm('span3_1')" {% if tab == "tab3_1" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">
+                    조정 적정인력 산정</span>
+                <span style="padding-right: 40px"></span>
                 <span name="span4" onclick="submitForm('span4')" {% if tab == "tab4" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">인력산정 결과</span>
                 <span style="padding-right: 40px"></span>
                 <span name="span5" {% if tab == "span5" %} class="Choice" {% endif %} style="cursor: pointer; font-family: Seed-Medium;">연간 비교</span>
@@ -102,7 +105,7 @@
         {% endif %}
 
         <!-- 탭이 tab3, tab4일 경우 조직 그룹을 선택할 수 있도록 한다. -->
-        {% if tab == 'tab3' or tab == 'tab4' %}
+        {% if tab == 'tab3' or tab == 'tab3_1' or tab == 'tab4' %}
         <!-- 조직 그룹 선택 div -->
         <div style="padding-top:20px;">
             
@@ -125,7 +128,7 @@
                     {% endfor %}
                 </select>
                 {% if domain_selected_key == "latter" %}
-                    {% if tab == 'tab3' %}
+                    {% if tab == 'tab3' or tab == 'tab3_1' %}
                         <span style="margin-left: 795px;">
                             <button class="save" onclick="printTableContent('man_analysis', '{{ prd_cd_selected }}', '{{ domain_selected }}')">인쇄</button>
                             <button class="save" onclick="exportToExcel('man_analysis')">다운로드</button>
@@ -262,7 +265,7 @@
         {% endif %}
 
         <!-- 3. 적정인력 산정 탭 -->
-        {% if tab == 'tab3' %}
+        {% if tab == 'tab3' or tab == 'tab3_1' %}
             {% if domain_selected_key == "latter" %}
             <div style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1320px;">
             <div id="analysis" class="list-box" style="padding-top:20px; width:1300px;">
@@ -308,7 +311,7 @@
         {% endif %}
 
         <!-- 4. 인력산정 결과 탭 -->
-        {% if tab == 'tab3' %}
+        {% if tab == 'tab4' %}
             {% if domain_selected_key == "latter" %}
 
 
@@ -426,7 +429,7 @@
             // const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
 
             let selectedInfo;
-            if (tabValue === 'tab3') {
+            if (tabValue === 'tab3' || tabValue === 'tab3_1') {
                 selectedInfo = document.querySelector("select[name='domain_selected']").selectedOptions[0].text; // 도메인명을 직접 가져오기
             } else {
                 selectedInfo = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
@@ -438,7 +441,8 @@
             const headerRow = worksheet.getRow(1); // 첫 번째 행에 헤더 추가
             headerRow.getCell(1).value = "회기: " + prd_cd_selected; // 회기 정보 추가
             // headerRow.getCell(2).value = "부서: " + dept_selected; // 부서 정보 추가
-            headerRow.getCell(2).value = tabValue === 'tab3' ? "도메인: " + selectedInfo : "부서: " + selectedInfo; // 도메인 또는 부서 정보 추가
+            // headerRow.getCell(2).value = tabValue === 'tab3' ? "도메인: " + selectedInfo : "부서: " + selectedInfo; // 도메인 또는 부서 정보 추가
+            headerRow.getCell(2).value = tabValue === 'tab3' || tabValue === 'tab3_1' ? "도메인: " + selectedInfo : "부서: " + selectedInfo; // 도메인 또는 부서 정보 추가
 
             headerRow.commit(); // 행에 대한 변경 사항을 저장
 
@@ -509,7 +513,7 @@
                 });
             }
 
-            if (tabValue === 'tab3') {
+            if (tabValue === 'tab3' || tabValue === 'tab3_1') {
                 let currentExcelRow = 3;
                 Array.from(table.rows).forEach((htmlRow) => {
                     const excelRow = worksheet.getRow(currentExcelRow);
@@ -725,7 +729,7 @@
                 mergeCellsByColumn('analysis_by_duty', 0); // 직무명 컬럼 인덱스 0
             }
 
-            if (tabValue === 'tab3') {
+            if (tabValue === 'tab3' || tabValue === 'tab3_1') {
                 mergeCellsByColumn('man_analysis', 0); // 그룹명 컬럼 인덱스 0
             }
         });

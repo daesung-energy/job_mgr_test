@@ -801,25 +801,26 @@
                 return ''; // 기준에 맞는 등급이 없을 경우 빈 문자열 반환
                 }
 
-                function updatePrfrmTmAnnCalAdj(container, value) {
-                if (validateInput2(value)) {
-                    const taskName = container.querySelector('input[name="task_nm"]').value;
-                    const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty);
+                function updatePrfrmTmAnnCalAdj(container, value) { // 연간 업무량과 환산 업무량을 업데이트하는 함수
+                if (validateInput2(value)) { // 입력값이 유효한지 확인
+                    const taskName = container.querySelector('input[name="task_nm"]').value; // 과업명을 받아옴
 
-                    if (taskIndex !== -1) {
-                        jsonData[taskIndex]['prfrm_tm_ann_adj'] = value;
+                    // 그 직무의 그 책무의 그 과업의 인덱스를 찾음
+                    const taskIndex = jsonData.findIndex(task => task.task_nm === taskName && task.job_cd === selectedJob && task.duty_nm === selectedDuty);
+                    if (taskIndex !== -1) { // 인덱스가 존재하면
+                        jsonData[taskIndex]['prfrm_tm_ann_adj'] = value; // 연간 업무량 업데이트. json에 업데이트
                     }
 
-                    const workGradeAdj = container.querySelector('input[name="work_grade_adj"]').value;
-                    const gradeData = jsonData2.find(data => data.work_grade === workGradeAdj);
+                    const workGradeAdj = container.querySelector('input[name="work_grade_adj"]').value; // 업무등급을 받아옴
+                    const gradeData = jsonData2.find(data => data.work_grade === workGradeAdj); // 업무등급에 해당하는 데이터를 찾음
 
-                    if (gradeData) {
-                        const prfrmTmAnnAdjValue = parseFloat(value);
-                        const workloadWt = parseFloat(gradeData.workload_wt);
+                    if (gradeData) { // 데이터가 존재하면
+                        const prfrmTmAnnAdjValue = parseFloat(value); // 입력값을 숫자로 변환
+                        const workloadWt = parseFloat(gradeData.workload_wt); // 가중치를 숫자로 변환
 
-                        if (!isNaN(prfrmTmAnnAdjValue) && !isNaN(workloadWt)) {
-                            const prfrmTmAnnCalAdj = prfrmTmAnnAdjValue * workloadWt;
-                            container.querySelector('input[name="prfrm_tm_ann_cal_adj"]').value = prfrmTmAnnCalAdj.toFixed(1);
+                        if (!isNaN(prfrmTmAnnAdjValue) && !isNaN(workloadWt)) { // 둘 다 숫자일 경우, 즉 NaN이 아닐 경우
+                            const prfrmTmAnnCalAdj = prfrmTmAnnAdjValue * workloadWt; // 환산 업무량 계산
+                            container.querySelector('input[name="prfrm_tm_ann_cal_adj"]').value = prfrmTmAnnCalAdj.toFixed(1); // 환산 업무량을 input에 표시
 
                             if (taskIndex !== -1) {
                                 jsonData[taskIndex]['prfrm_tm_ann_cal_adj'] = prfrmTmAnnCalAdj.toFixed(1);
@@ -880,24 +881,62 @@
                 container.querySelector(`input[name="${inputName}"]`).value = previousValue;
                 }
 
-                
-
             taskDiv.style.display = 'block'; // 과업 Div를 표시
             }
 
+            // // 계산 및 값을 표시하는 함수
+            // function calculateAndDisplayValue() {
+            //     const stdWrkTm = parseFloat(document.querySelector('input[name="std_wrk_tm"]').value);
+            //     let totalPrfrmTmAnnCalAdj = jsonData.reduce((sum, task) => {
+            //         let value = parseFloat(task.prfrm_tm_ann_cal_adj);
+            //         return sum + (isNaN(value) ? 0 : value);
+            //     }, 0); // 초기값 0으로 설정
+                
+            //     const calculatedValue = bankersRound(totalPrfrmTmAnnCalAdj / stdWrkTm, 1).toFixed(1);
+            //     const totalPrfrmTmAnnCalAdjRounded = bankersRound(totalPrfrmTmAnnCalAdj, 1).toFixed(1);
+                
+            //     document.getElementById('sum_prfrm_tm_ann_cal_adj').value = totalPrfrmTmAnnCalAdjRounded;
+            //     document.getElementById('po_right_adj').value = calculatedValue;
+            // }
             // 계산 및 값을 표시하는 함수
             function calculateAndDisplayValue() {
                 const stdWrkTm = parseFloat(document.querySelector('input[name="std_wrk_tm"]').value);
-                let totalPrfrmTmAnnCalAdj = jsonData.reduce((sum, task) => {
-                    let value = parseFloat(task.prfrm_tm_ann_cal_adj);
-                    return sum + (isNaN(value) ? 0 : value);
-                }, 0); // 초기값 0으로 설정
                 
-                const calculatedValue = bankersRound(totalPrfrmTmAnnCalAdj / stdWrkTm, 1).toFixed(1);
-                const totalPrfrmTmAnnCalAdjRounded = bankersRound(totalPrfrmTmAnnCalAdj, 1).toFixed(1);
+                // 업무 등급별로 값을 계산
+                const grades = ['G1', 'G2', 'G3', 'G4', 'G5'];
+                let totalPrfrmTmAnnCalAdjSum = grades.reduce((sum, grade) => {
+                    let gradeSum = jsonData.reduce((gradeSum, task) => {
+                        if (task.work_grade_adj === grade) {
+                            let value = parseFloat(task.prfrm_tm_ann_cal_adj);
+                            return gradeSum + (isNaN(value) ? 0 : value);
+                        }
+                        return gradeSum;
+                    }, 0);
+                    return sum + gradeSum;
+                }, 0); // 초기값 0으로 설정
+
+                // const calculatedValue = bankersRound(totalPrfrmTmAnnCalAdjSum / stdWrkTm, 1).toFixed(1);
+                const totalPrfrmTmAnnCalAdjRounded = bankersRound(totalPrfrmTmAnnCalAdjSum, 1).toFixed(1);
+
+                // 적정 인원 계산
+                let totalCalculatedValue = grades.reduce((sum, grade) => {
+                    let gradeSum = jsonData.reduce((gradeSum, task) => {
+                        if (task.work_grade_adj === grade) {
+                            let value = parseFloat(task.prfrm_tm_ann_cal_adj);
+                            return gradeSum + (isNaN(value) ? 0 : value);
+                        }
+                        return gradeSum;
+                    }, 0);
+                    let calculatedValue = bankersRound(gradeSum / stdWrkTm, 1);
+                    return sum + calculatedValue;
+                }, 0);
+
+                const finalCalculatedValue = bankersRound(totalCalculatedValue, 1).toFixed(1);
+
                 
                 document.getElementById('sum_prfrm_tm_ann_cal_adj').value = totalPrfrmTmAnnCalAdjRounded;
-                document.getElementById('po_right_adj').value = calculatedValue;
+                // document.getElementById('po_right_adj').value = calculatedValue;
+                document.getElementById('po_right_adj').value = finalCalculatedValue;
             }
 
             function calculateDifferences() {
