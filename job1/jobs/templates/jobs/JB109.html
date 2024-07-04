@@ -98,7 +98,6 @@
                         <button class="del_disabled" disabled>다운로드</button> 
                     </span>
                     {% endif %}
-
                 </form>
             </p>
         </div>
@@ -128,7 +127,7 @@
                     {% endfor %}
                 </select>
                 {% if domain_selected_key == "latter" %}
-                    {% if tab == 'tab3' or tab == 'tab3_1' %}
+                    {% if tab == 'tab3' or tab == 'tab3_1' or tab == 'tab4' %}
                         <span style="margin-left: 795px;">
                             <button class="save" onclick="printTableContent('man_analysis', '{{ prd_cd_selected }}', '{{ domain_selected }}')">인쇄</button>
                             <button class="save" onclick="exportToExcel('man_analysis')">다운로드</button>
@@ -313,9 +312,24 @@
         <!-- 4. 인력산정 결과 탭 -->
         {% if tab == 'tab4' %}
             {% if domain_selected_key == "latter" %}
-
-
-
+            <!-- analysis 를 이용해 테이블 만든다. -->
+            <div style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1320px;">
+            <div id="analysis" class="list-box" style="padding-top:20px; width:1300px;">
+                <table id="man_analysis">
+                    <thead>
+                        <tr id="tableHeader">
+                            <!-- 헤더는 JavaScript에서 동적으로 생성 -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- 바디는 JavaScript에서 동적으로 생성 -->
+                    </tbody>
+                    <tfoot id="tableFooter">
+                        <!-- 합계 행을 추가할 곳 -->
+                    </tfoot>
+                </table>
+            </div>
+            </div>
             {% endif %}
         {% endif %}
 
@@ -335,6 +349,125 @@
     </wrap>
     
     <script>
+
+        document.addEventListener("DOMContentLoaded", function() {
+            var manResult = JSON.parse('{{ man_result|escapejs }}'); // JSON 데이터 파싱
+
+            function createTableFromJSON(data) {
+                var tableHeader = document.getElementById('tableHeader');
+                var tableBody = document.getElementById('tableBody');
+                var tableFooter = document.getElementById('tableFooter');
+
+                // 테이블 헤더 생성
+                var headers = Object.keys(data[0]);
+                headers.forEach(function(header) {
+                    var th = document.createElement('th');
+                    th.innerHTML = header;
+                    tableHeader.appendChild(th);
+                });
+
+                // 테이블 바디 생성
+                var previousGroupName = "";
+                var rowSpanCount = 0;
+                var groupSums = {};
+                var totalSums = {};
+
+                headers.forEach(function(header) {
+                    totalSums[header] = 0;
+                });
+
+                data.forEach(function(row, index) {
+                    var tr = document.createElement('tr');
+
+                    // tr 높이 설정
+                    tr.style.height = "40px";
+                    // tr 가운데정렬
+                    tr.style.textAlign = "center";
+
+                    headers.forEach(function(header) {
+                        var td = document.createElement('td');
+                        if (header === "그룹명") {
+                            if (row[header] !== previousGroupName) {
+                                if (rowSpanCount > 0) {
+                                    tableBody.rows[tableBody.rows.length - rowSpanCount].cells[0].rowSpan = rowSpanCount;
+                                    addSubtotalRow(groupSums, headers, tableBody);
+                                }
+                                previousGroupName = row[header];
+                                rowSpanCount = 1;
+                                td.innerHTML = row[header];
+                                tr.appendChild(td);
+                                groupSums = {};
+                                headers.forEach(function(header) {
+                                    groupSums[header] = 0;
+                                });
+                            } else {
+                                rowSpanCount++;
+                            }
+                        } else {
+                            td.innerHTML = row[header];
+                            tr.appendChild(td);
+                            if (!groupSums[header]) groupSums[header] = 0;
+                            groupSums[header] += parseInt(row[header]) || 0;
+                            totalSums[header] += parseInt(row[header]) || 0;
+                        }
+                    });
+                    tableBody.appendChild(tr);
+                });
+                if (rowSpanCount > 0) {
+                    tableBody.rows[tableBody.rows.length - rowSpanCount].cells[0].rowSpan = rowSpanCount;
+                    addSubtotalRow(groupSums, headers, tableBody);
+                }
+                addTotalRow(totalSums, headers, tableFooter);
+            }
+
+            function addSubtotalRow(groupSums, headers, tableBody) {
+                var subtotalRow = document.createElement('tr');
+
+                // tr 높이 설정
+                subtotalRow.style.height = "40px";
+                // tr 가운데정렬
+                subtotalRow.style.textAlign = "center";
+
+                headers.forEach(function(header, index) {
+                    var td = document.createElement('td');
+                    if (index === 0) {
+                        td.setAttribute('colspan', 2);
+                        td.innerHTML = '소계';
+                    } else if (index === 1) {
+                        return;
+                    } else {
+                        td.innerHTML = groupSums[header];
+                    }
+                    subtotalRow.appendChild(td);
+                });
+                tableBody.appendChild(subtotalRow);
+            }
+
+            function addTotalRow(totalSums, headers, tableFooter) {
+                var totalRow = document.createElement('tr');
+
+                // tr 높이 설정
+                totalRow.style.height = "40px";
+                // tr 가운데정렬
+                totalRow.style.textAlign = "center";
+
+                headers.forEach(function(header, index) {
+                    var td = document.createElement('td');
+                    if (index === 0) {
+                        td.setAttribute('colspan', 2);
+                        td.innerHTML = '합계';
+                    } else if (index === 1) {
+                        return;
+                    } else {
+                        td.innerHTML = totalSums[header];
+                    }
+                    totalRow.appendChild(td);
+                });
+                tableFooter.appendChild(totalRow);
+            }
+
+            createTableFromJSON(manResult);
+        });
 
         var messagesContainer = document.getElementById('messages');
                 if (messagesContainer) {
@@ -429,7 +562,7 @@
             // const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
 
             let selectedInfo;
-            if (tabValue === 'tab3' || tabValue === 'tab3_1') {
+            if (tabValue === 'tab3' || tabValue === 'tab3_1' || tabValue === 'tab4') {
                 selectedInfo = document.querySelector("select[name='domain_selected']").selectedOptions[0].text; // 도메인명을 직접 가져오기
             } else {
                 selectedInfo = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
@@ -442,7 +575,7 @@
             headerRow.getCell(1).value = "회기: " + prd_cd_selected; // 회기 정보 추가
             // headerRow.getCell(2).value = "부서: " + dept_selected; // 부서 정보 추가
             // headerRow.getCell(2).value = tabValue === 'tab3' ? "도메인: " + selectedInfo : "부서: " + selectedInfo; // 도메인 또는 부서 정보 추가
-            headerRow.getCell(2).value = tabValue === 'tab3' || tabValue === 'tab3_1' ? "도메인: " + selectedInfo : "부서: " + selectedInfo; // 도메인 또는 부서 정보 추가
+            headerRow.getCell(2).value = tabValue === 'tab3' || tabValue === 'tab3_1' || tabValue === 'tab4' ? "도메인: " + selectedInfo : "부서: " + selectedInfo; // 도메인 또는 부서 정보 추가
 
             headerRow.commit(); // 행에 대한 변경 사항을 저장
 
@@ -513,7 +646,7 @@
                 });
             }
 
-            if (tabValue === 'tab3' || tabValue === 'tab3_1') {
+            if (tabValue === 'tab3' || tabValue === 'tab3_1') { 
                 let currentExcelRow = 3;
                 Array.from(table.rows).forEach((htmlRow) => {
                     const excelRow = worksheet.getRow(currentExcelRow);
@@ -537,6 +670,230 @@
                     currentExcelRow++;
                 });
             }
+
+            // if (tabValue === 'tab4') { // 셀 병합 빼고 성공
+            //     const manResult = JSON.parse('{{ man_result|escapejs }}'); // JSON 데이터 파싱
+
+            //     // 테이블 헤더 생성
+            //     const headers = Object.keys(manResult[0]); // 첫 번째 데이터의 키를 가져와 헤더로 사용
+            //     const headerRow = worksheet.addRow(headers); // 헤더 행 추가
+
+            //     let previousGroupName = ''; // 이전 그룹명을 저장할 변수
+            //     let groupStartRow = currentExcelRow; // 그룹 시작 행을 저장할 변수
+            //     let groupSums = {}; // 그룹별 합계를 저장할 객체
+            //     let totalSums = {}; // 전체 합계를 저장할 객체
+
+            //     headers.forEach(header => { // 헤더에 대해 반복. 헤더는 엑셀의 각 열을 의미
+            //         groupSums[header] = 0; // 그룹별 합계 객체에 각 헤더를 키로 추가
+            //         totalSums[header] = 0; // 전체 합계 객체에 각 헤더를 키로 추가
+            //     });
+
+            //     manResult.forEach((row, index) => { // 데이터에 대해 반복
+            //         if (previousGroupName !== row['그룹명'] && previousGroupName !== '') { // 이전 그룹명과 현재 그룹명이 다르고 이전 그룹명이 비어있지 않다면
+            //             // 소계 행 추가
+            //             const subtotalData = headers.map(header => (header === '부서명' ? '' : groupSums[header])); // 소계 행 데이터 생성
+            //             subtotalData[0] = '소계'; // 첫 번째 열에 '소계' 추가
+            //             const subtotalRow = worksheet.addRow(subtotalData); // 소계 행 추가
+            //             subtotalRow.getCell(1).value = '소계'; // 첫 번째 셀에 '소계' 추가
+
+            //             groupSums = {}; // 그룹별 합계 객체 초기화
+            //             headers.forEach(header => { // 헤더에 대해 반복
+            //                 groupSums[header] = 0; // 그룹별 합계 객체에 각 헤더를 키로 추가
+            //             });
+
+            //             currentExcelRow++; // 엑셀 행 인덱스 증가
+            //         }
+
+            //         const dataRow = worksheet.addRow(Object.values(row)); // 데이터 행 추가
+
+            //         headers.forEach((header, colIndex) => { // 헤더에 대해 반복
+            //             if (!isNaN(parseFloat(row[header])) && header !== '그룹명' && header !== '부서명') { // 숫자인 경우
+            //                 groupSums[header] += parseFloat(row[header]); // 그룹별 합계에 더하기
+            //                 totalSums[header] += parseFloat(row[header]); // 전체 합계에 더하기
+            //             }
+            //         });
+
+            //         previousGroupName = row['그룹명']; // 이전 그룹명을 현재 그룹명으로 변경
+            //         currentExcelRow++; // 엑셀 행 인덱스 증가
+            //     });
+
+            //     // 마지막 소계 행 추가
+            //     if (Object.keys(groupSums).length > 0) {
+            //         const subtotalData = headers.map(header => (header === '부서명' ? '' : groupSums[header]));
+            //         subtotalData[0] = '소계';
+            //         const subtotalRow = worksheet.addRow(subtotalData);
+            //         subtotalRow.getCell(1).value = '소계';
+            //     }
+
+            //     // 합계 행 추가
+            //     const totalData = headers.map(header => (header === '부서명' ? '' : totalSums[header]));
+            //     totalData[0] = '합계';
+            //     const totalRow = worksheet.addRow(totalData);
+            //     totalRow.getCell(1).value = '합계';
+
+            //     // 그룹명 셀 병합 처리
+            //     let mergeStartRow = 3; // 데이터 시작 행 번호
+            //     let mergeGroupName = '';
+
+            //     // for (let i = 3; i <= worksheet.rowCount; i++) { // 데이터 행에 대해 반복. 시작은 3부터 시작, 끝은 데이터 행의 개수까지
+            //     //     let cell = worksheet.getRow(i).getCell(1); // 현재 행의 첫 번째 셀 가져오기. 첫번째 셀은 그룹명
+            //     //     console.log('정상', i, cell.value); // 디버깅 로그 추가
+            //     //     if (cell.value === mergeGroupName) {  // 현재 그룹명이 이전 그룹명과 같다면
+            //     //         // 그룹명 셀을 이전 행의 그룹명 셀과 병합
+            //     //         worksheet.mergeCells(mergeStartRow, 1, i, 1); // 이전 그룹명부터 현재 행까지 병합. mergeCells함수를 사용하여 병합. 인자는 시작 행, 시작 열, 끝 행, 끝 열
+            //     //         console.log('그룹명 병합:', mergeGroupName, mergeStartRow, '부터', i, '까지'); // 디버깅 로그 추가
+            //     //     } else { // 현재 그룹명이 이전 그룹명과 다르다면
+            //     //         mergeGroupName = cell.value; // 현재 그룹명을 이전 그룹명으로 변경
+            //     //         mergeStartRow = i; // 병합 시작 행을 현재 행으로 변경
+            //     //         console.log('새 그룹명:', cell.value, '에서 병합 시작:', mergeStartRow); // 디버깅 로그 추가
+            //     //     }
+            //     // }
+                                
+            //     console.log('정상')
+            // }
+
+            if (tabValue === 'tab4') { // 테두리 빼고 성공
+                const manResult = JSON.parse('{{ man_result|escapejs }}'); // JSON 데이터 파싱
+
+                // 테이블 헤더 생성
+                const headers = Object.keys(manResult[0]); // 첫 번째 데이터의 키를 가져와 헤더로 사용
+                const headerRow = worksheet.addRow(headers); // 헤더 행 추가
+
+                let previousGroupName = ''; // 이전 그룹명을 저장할 변수
+                let groupStartRow = currentExcelRow; // 그룹 시작 행을 저장할 변수
+                let groupSums = {}; // 그룹별 합계를 저장할 객체
+                let totalSums = {}; // 전체 합계를 저장할 객체
+
+                headers.forEach(header => { // 헤더에 대해 반복. 헤더는 엑셀의 각 열을 의미
+                    groupSums[header] = 0; // 그룹별 합계 객체에 각 헤더를 키로 추가
+                    totalSums[header] = 0; // 전체 합계 객체에 각 헤더를 키로 추가
+                });
+
+                const mergeRanges = []; // 병합 범위를 저장할 배열
+
+                manResult.forEach((row, index) => { // 데이터에 대해 반복
+                    if (previousGroupName !== row['그룹명'] && previousGroupName !== '') { // 이전 그룹명과 현재 그룹명이 다르고 이전 그룹명이 비어있지 않다면
+                        // 병합 범위 기록
+                        mergeRanges.push({ startRow: groupStartRow, endRow: currentExcelRow - 1 });
+                        
+                        // 소계 행 추가
+                        const subtotalData = headers.map(header => (header === '부서명' ? '' : groupSums[header])); // 소계 행 데이터 생성
+                        subtotalData[0] = '소계'; // 첫 번째 열에 '소계' 추가
+                        const subtotalRow = worksheet.addRow(subtotalData); // 소계 행 추가
+                        subtotalRow.getCell(1).value = '소계'; // 첫 번째 셀에 '소계' 추가
+
+                        worksheet.mergeCells(currentExcelRow, 1, currentExcelRow, 2); // 두 번째 열까지 병합
+
+                        groupSums = {}; // 그룹별 합계 객체 초기화
+                        headers.forEach(header => { // 헤더에 대해 반복
+                            groupSums[header] = 0; // 그룹별 합계 객체에 각 헤더를 키로 추가
+                        });
+
+                        currentExcelRow++; // 엑셀 행 인덱스 증가
+                        groupStartRow = currentExcelRow; // 병합 시작 행을 소계 행 이후로 설정
+                    }
+
+                    const dataRow = worksheet.addRow(Object.values(row)); // 데이터 행 추가
+
+                    headers.forEach((header, colIndex) => { // 헤더에 대해 반복
+                        if (!isNaN(parseFloat(row[header])) && header !== '그룹명' && header !== '부서명') { // 숫자인 경우
+                            groupSums[header] += parseFloat(row[header]); // 그룹별 합계에 더하기
+                            totalSums[header] += parseFloat(row[header]); // 전체 합계에 더하기
+                        }
+                    });
+
+                    previousGroupName = row['그룹명']; // 이전 그룹명을 현재 그룹명으로 변경
+                    currentExcelRow++; // 엑셀 행 인덱스 증가
+                });
+
+                // 마지막 병합 범위 기록
+                mergeRanges.push({ startRow: groupStartRow, endRow: currentExcelRow - 1 });
+
+                // 마지막 소계 행 추가
+                if (Object.keys(groupSums).length > 0) {
+                    const subtotalData = headers.map(header => (header === '부서명' ? '' : groupSums[header]));
+                    subtotalData[0] = '소계';
+                    const subtotalRow = worksheet.addRow(subtotalData);
+                    subtotalRow.getCell(1).value = '소계';
+                    worksheet.mergeCells(currentExcelRow, 1, currentExcelRow, 2); // 두 번째 열까지 병합
+                    const cell = worksheet.getCell(`A${currentExcelRow}`); // 병합된 셀 가져오기
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' }; // 가운데 정렬
+                    currentExcelRow++; // 엑셀 행 인덱스 증가
+                }
+
+                // 합계 행 추가
+                const totalData = headers.map(header => (header === '부서명' ? '' : totalSums[header]));
+                totalData[0] = '합계';
+                const totalRow = worksheet.addRow(totalData);
+                totalRow.getCell(1).value = '합계';
+                worksheet.mergeCells(currentExcelRow, 1, currentExcelRow, 2); // 두 번째 열까지 병합
+                const cell = worksheet.getCell(`A${currentExcelRow}`); // 병합된 셀 가져오기
+                cell.alignment = { vertical: 'middle', horizontal: 'center' }; // 가운데 정렬
+
+                // 병합 범위에 따라 병합 수행
+                mergeRanges.forEach(range => {
+                    if (range.startRow !== range.endRow) {
+                        worksheet.mergeCells(range.startRow, 1, range.endRow, 1);
+                        const cell = worksheet.getCell(`A${range.startRow}`); // 병합된 셀 가져오기
+                        cell.alignment = { vertical: 'middle', horizontal: 'center' }; // 가운데 정렬
+                    }
+                });
+            }
+
+            // 포기한 것
+            // if (tabValue === 'tab4') {
+            //     const table = document.getElementById('man_analysis');
+            //     if (!table) {
+            //         alert("Table not found!");
+            //         return;
+            //     }
+
+            //     let mergeMap = [];
+            //     let previousGroupName = '';
+            //     let groupStartRow = currentExcelRow;
+
+            //     Array.from(table.rows).forEach((htmlRow, rowIndex) => {
+            //         const excelRow = worksheet.getRow(currentExcelRow);
+            //         let currentExcelColumn = 1;
+
+            //         Array.from(htmlRow.cells).forEach((htmlCell, cellIndex) => {
+            //             while (mergeMap[currentExcelColumn] > currentExcelRow) {
+            //                 currentExcelColumn++;
+            //             }
+
+            //             const excelCell = excelRow.getCell(currentExcelColumn);
+            //             excelCell.value = htmlCell.innerText;
+            //             applyStylesToCell(excelCell, htmlCell);
+
+            //             const colSpan = htmlCell.colSpan || 1;
+            //             const rowSpan = htmlCell.rowSpan || 1;
+
+            //             if (colSpan > 1 || rowSpan > 1) {
+            //                 let mergeEndColumn = currentExcelColumn + colSpan - 1;
+            //                 let mergeEndRow = currentExcelRow + rowSpan - 1;
+            //                 worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn);
+            //                 for (let col = currentExcelColumn; col <= mergeEndColumn; col++) {
+            //                     mergeMap[col] = mergeEndRow;
+            //                 }
+            //             }
+
+            //             if (cellIndex === 0 && htmlCell.innerText.trim() !== '') { // 그룹명 셀 병합 처리
+            //                 if (htmlCell.innerText !== previousGroupName) {
+            //                     previousGroupName = htmlCell.innerText;
+            //                     groupStartRow = currentExcelRow;
+            //                 }
+            //             }
+
+            //             currentExcelColumn += colSpan;
+            //         });
+
+            //         if (rowIndex > 0 && table.rows[rowIndex - 1].cells[0].innerText.trim() !== '' && htmlRow.cells[0].innerText.trim() === '') {
+            //             worksheet.mergeCells(groupStartRow, 1, currentExcelRow - 1, 1);
+            //         }
+
+            //         currentExcelRow++;
+            //     });
+            // }
 
             worksheet.columns.forEach(column => { // 각 열에 대해 반복
                 column.width = 20; // 각 열의 너비를 20으로 설정
@@ -648,54 +1005,6 @@
                     }
                 }
             });
-
-            // // // 직무명이 같은 경우 셀 병합
-            // if (tabValue === 'tab2') {
-
-            //     const table = document.getElementById('analysis_by_duty');
-
-            //     let previousJobName = "";
-            //     let rowspanCount = 1;
-            //     let firstCell;
-
-            //     // if (tabValue === 'tab2') {
-            //     for (let row of table.rows) {
-            //         let currentCell = row.cells[0];
-
-            //         if (currentCell.innerText === previousJobName) {
-            //             rowspanCount++;
-            //             firstCell.rowSpan = rowspanCount;
-            //             currentCell.style.display = 'none';
-            //         } else {
-            //             previousJobName = currentCell.innerText;
-            //             firstCell = currentCell;
-            //             rowspanCount = 1;
-            //         }
-            //     }
-            // }
-
-            // // tab3의 man_analysis 테이블을 위한 rowspan 처리
-            // if (tabValue === 'tab3') {
-            //     const table = document.getElementById('man_analysis');
-
-            //     let previousDeptGrpName = "";
-            //     let rowspanCount = 1;
-            //     let firstCell;
-
-            //     for (let row of table.rows) {
-            //         let currentCell = row.cells[0];
-
-            //         if (currentCell.innerText === previousDeptGrpName) {
-            //             rowspanCount++;
-            //             firstCell.rowSpan = rowspanCount;
-            //             currentCell.style.display = 'none';
-            //         } else {
-            //             previousDeptGrpName = currentCell.innerText;
-            //             firstCell = currentCell;
-            //             rowspanCount = 1;
-            //         }
-            //     }
-            // }
             
             function mergeCellsByColumn(tableId, columnIndex) {
                 const table = document.getElementById(tableId);

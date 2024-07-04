@@ -8127,51 +8127,7 @@ def JB109_4(request): # 업무량 분석 - 조직그룹 선택한 후 - 적정�
             # df3를 domain_seq, grq_seq, dept_seq 순으로 정렬한다.
             df3 = df3.sort_values(['domain_seq', 'grp_seq', 'dept_seq']).reset_index(drop=True)
 
-        if tab == 'tab4': # 인력 산정 결과 탭일 때
-
-            # BsTtlList 테이블로부터 해당 회기의 직책 리스트를 가져오고 그 가져온 리스트 수 만큼 df3의 열을 만들어준다.
-            ttl_list = BsTtlList.objects.filter(prd_cd=prd_cd_selected).order_by('ttl_ordr')
-            
-            for rows in ttl_list:
-                df3[rows.ttl_nm] = 0
-            
-            # df3의 각 행(부서)에 대하여, BsTtlCnt 테이블로부터 해당 부서의 직책별 인원수를 가져온다.
-            # 이 때, 가져온 인원수를 df3의 해당 직책 열에 넣어준다.
-            for i in range(len(df3)): # 각 부서에 대하여
-                for rows in ttl_list:
-                    df3.loc[i, rows.ttl_nm] = BsTtlCnt.objects.get(prd_cd=prd_cd_selected, dept_cd=df3.iloc[i]['dept_cd'], ttl_nm=rows.ttl_nm).ttl_cnt
-
-            # 합계 열 추가
-
-
-            for rows in ttl_list:
-                df3[rows.ttl_nm+'_now'] = 0
-
-            # df3의 각 행(부서)에 대하여, BsMbr 테이블을 이용해 각 직책별 현재 인원수를 가져온다.
-            # 이 때, 가져온 인원수를 df3의 해당 직책 열에 넣어준다.
-            for i in range(len(df3)): # 각 부서에 대하여
-                for rows in ttl_list:
-                    df3.loc[i, rows.ttl_nm+'_now'] = BsMbr.objects.filter(prd_cd=prd_cd_selected, dept_cd=df3.iloc[i]['dept_cd'], ttl_nm=rows.ttl_nm).count()
-
-            # 부서명 열 추가
-            df3['dept_nm'] = df3['dept_cd'].apply(lambda x: BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=x).dept_nm)
-            
-            # # 부서명 열을 dept_grp_nm 뒤로 이동
-            # cols = df3.columns.tolist()
-            # cols = cols[:2] + cols[-1:] + cols[2:-1]
-            # df3 = df3[cols]
-
-            # # df3를 domain_seq, grq_seq, dept_seq 순으로 정렬한다.
-            # df3 = df3.sort_values(['domain_seq', 'grp_seq', 'dept_seq']).reset_index(drop=True)
-
-            # # df3에서 dept_domain, domain_seq, grp_seq, dept_cd, dept_seq 열 없앤다.
-            # df3 = df3.drop(['dept_domain', 'domain_seq', 'grp_seq', 'dept_cd', 'dept_seq'], axis=1)
-
-            # df3에 TO대비 열 추가해준다. TO대비 = 
-
-            # print(df3)            
-
-        context = {
+            context = {
             'prd_list' : BsPrd.objects.all(),
             'title' : '업무량 분석', # 제목
             'prd_cd_selected' : prd_cd_selected,
@@ -8181,7 +8137,83 @@ def JB109_4(request): # 업무량 분석 - 조직그룹 선택한 후 - 적정�
             'domain_list' : domain_list,
             'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
             'analysis' : df3,
-        }
+            }
+
+        if tab == 'tab4': # 인력 산정 결과 탭일 때
+
+            # BsTtlList 테이블로부터 해당 회기의 직책 리스트를 가져오고 그 가져온 리스트 수 만큼 df3의 열을 만들어준다.
+            ttl_list = BsTtlList.objects.filter(prd_cd=prd_cd_selected).order_by('ttl_ordr')
+            
+            for rows in ttl_list:
+                df3[rows.ttl_nm] = 0
+            
+            df3['TO합계'] = 0
+
+            # df3의 각 행(부서)에 대하여, BsTtlCnt 테이블로부터 해당 부서의 직책별 인원수를 가져온다.
+            # 이 때, 가져온 인원수를 df3의 해당 직책 열에 넣어준다.
+            for i in range(len(df3)): # 각 부서에 대하여
+
+                to_sum = 0
+
+                for rows in ttl_list:
+                    df3.loc[i, rows.ttl_nm] = BsTtlCnt.objects.get(prd_cd=prd_cd_selected, dept_cd=df3.iloc[i]['dept_cd'], ttl_nm=rows.ttl_nm).ttl_cnt
+                    to_sum = to_sum + df3.loc[i, rows.ttl_nm]
+
+                # TO합계 열 업데이트
+                df3.loc[i, 'TO합계'] = to_sum
+
+            for rows in ttl_list:
+                df3[rows.ttl_nm+' PO'] = 0
+
+            df3['PO합계'] = 0
+
+            # df3의 각 행(부서)에 대하여, BsMbr 테이블을 이용해 각 직책별 현재 인원수를 가져온다.
+            # 이 때, 가져온 인원수를 df3의 해당 직책 열에 넣어준다.
+            for i in range(len(df3)): # 각 부서에 대하여
+
+                po_sum = 0
+                
+                for rows in ttl_list:
+                    df3.loc[i, rows.ttl_nm+' PO'] = BsMbr.objects.filter(prd_cd=prd_cd_selected, dept_cd=df3.iloc[i]['dept_cd'], ttl_nm=rows.ttl_nm).count()
+                    po_sum = po_sum + df3.loc[i, rows.ttl_nm+' PO']
+
+                # PO합계 열 업데이트
+                df3.loc[i, 'PO합계'] = po_sum
+
+            # 부서명 열 추가
+            df3['부서명'] = df3['dept_cd'].apply(lambda x: BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=x).dept_nm)
+            
+            # 부서명 열을 dept_grp_nm 뒤로 이동
+            cols = df3.columns.tolist()
+            cols = cols[:2] + cols[-1:] + cols[2:-1]
+            df3 = df3[cols]
+
+            # df3를 domain_seq, grq_seq, dept_seq 순으로 정렬한다.
+            df3 = df3.sort_values(['domain_seq', 'grp_seq', 'dept_seq']).reset_index(drop=True)
+
+            # df3에서 dept_domain, domain_seq, grp_seq, dept_cd, dept_seq 열 없앤다.
+            df3 = df3.drop(['dept_domain', 'domain_seq', 'grp_seq', 'dept_cd', 'dept_seq'], axis=1)
+
+            # df3에 TO대비 열 추가해준다. TO대비 = TO합계 - PO합계
+            df3['TO 대비'] = df3['TO합계'] - df3['PO합계']
+
+            # df3의 dept_grp_nm 열 이름을 그룹명으로 변경
+            df3 = df3.rename(columns={'dept_grp_nm':'그룹명'})
+
+            # df3를 json으로 변환하여 man_result라는 데이터로 저장
+            man_result = df3.to_json(orient='records')
+
+            context = {
+                'prd_list' : BsPrd.objects.all(),
+                'title' : '업무량 분석', # 제목
+                'prd_cd_selected' : prd_cd_selected,
+                'tab' : tab,
+                'domain_selected' : domain_selected,
+                'domain_selected_key' : 'latter',
+                'domain_list' : domain_list,
+                'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+                'man_result' : man_result,
+            }
 
     return render(request, 'jobs/JB109.html', context)
 
