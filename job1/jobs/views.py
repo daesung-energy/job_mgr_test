@@ -8169,7 +8169,7 @@ def JB109_4(request): # 업무량 분석 - 조직그룹 선택한 후 - 적정�
 
             # df3에 TO대비 열 추가해준다. TO대비 = 
 
-            print(df3)            
+            # print(df3)            
 
         context = {
             'prd_list' : BsPrd.objects.all(),
