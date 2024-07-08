@@ -585,3 +585,18 @@ class VJb110F(models.Model):
     class Meta:
         managed = False
         db_table = 'v_jb110_f'
+
+
+class VJb111(models.Model):
+    prd_cd = models.CharField(max_length=5, primary_key=True)
+    dept_cd = models.CharField(max_length=4, blank=True, null=True)
+    task_prsn_chrg = models.CharField(max_length=500, blank=True, null=True)
+    job_nm = models.CharField(max_length=50, blank=True, null=True)
+    wrk_tm_std = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True)
+    total_prfrm_tm_ann = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True)
+    wrk_tm_std2 = models.DecimalField(max_digits=4, decimal_places=1, blank=True, null=True)
+    work_ratio = models.DecimalField(max_digits=4, decimal_places=1, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'v_jb111'

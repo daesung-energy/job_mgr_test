@@ -290,7 +290,7 @@
                     </thead>
                     <tbody>
                         {% for index, row in analysis.iterrows %}
-                            <tr style="height: 40px; text-align: center;">
+                            <tr style="height: 50px; text-align: center;">
                                 <td class="dept-grp-cell-class"><p>{{ row.dept_grp_nm }}</p></td>
                                 <td><p>{{ row.dept_nm }}</p></td>
                                 <td><p>{{ row.dept_po }}</p></td>
@@ -492,11 +492,31 @@
             var content = table.outerHTML; // 테이블 요소의 HTML 내용을 가져와 content에 저장
             var originalDocument = document.body.innerHTML; // 원래 문서 내용을 originalDocument에 저장
 
+            // tab-value에 따라 추가할 텍스트 설정
+            var tabValue = document.getElementById('tab-value').value;
+            var additionalText = "";
+            if (tabValue === "tab1") {
+                additionalText = "업무량 분석";
+            } else if (tabValue === "tab2") {
+                additionalText = "업무량 구성비";
+            } else if (tabValue === "tab3") {
+                additionalText = "적정 인력 산정";
+            } else if (tabValue === "tab4") {
+                additionalText = "인력산정 결과";
+            } else if (tabValue === "tab1_1") {
+                additionalText = "조정 업무량 분석";
+            } else if (tabValue === "tab2_1") {
+                additionalText = "조정 업무량 구성비";
+            } else if (tabValue === "tab3_1") {
+                additionalText = "조정 적정 인력 산정";
+            }            
+
             // 프린트 내용에 추가할 내용
             var printContent = `
                 <div>
                     <p>회기: ${prdCdSelected}</p>
                     <p>부서: ${deptSelectedNm}</p>
+                    <p>${additionalText}</p>
                 </div>
                 ${content}
             `;

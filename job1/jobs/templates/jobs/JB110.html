@@ -46,18 +46,19 @@
                     {% if tab_activate == 'no' %}
                         <span name="span1" style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
                         <span style="padding-right: 40px"></span>
-                        <span name="span2" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
+                        <span name="span3" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
                     {% else %}
                         <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %}
                         style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
                         <span style="padding-right: 40px"></span>
-                        <span name="span2" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
+                        <span name="span3" onclick="submitForm('span3')" {% if tab == "tab3" %} class="Choice" {% endif %}
+                        style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
                     {% endif %}
                 </div>
             </form>
             </div>
 
-            <!-- 부서 선택 div -->
+            <!-- 부서 선택 div - 경영기획팀만 해당 -->
             <div style="padding-top: 20px; display:flex;">
                 <!-- 부서 선택 form -->
                 <form id="JB110_2" action="{% url 'JB110_2' %}" method="POST">
@@ -85,8 +86,15 @@
                     <button class="save" onclick="exportToExcel('analysis_by_jobs')">다운로드</button> 
                 </span>
                 {% endif %}
+                {% if tab == "tab3" %}
+                <span style="margin-left: 795px;">
+                    <button class="save" onclick="printTableContent('analysis_by_man', '{{prd_cd_selected}}', '{{dept_selected_nm}}')">인쇄</button>
+                    <button class="save" onclick="exportToExcel('analysis_by_man')">다운로드</button> 
+                </span>
+                {% endif %}
             </div>
 
+            <!-- 테이블 영역 -->
             {% if tab == "tab1" %}
             <!-- 직무별 업무량 분석 테이블 div - 탭이 직무별 업무량 분석일 때만 떠야 함 -->            
             <div id="analysis" class="list-box" style="padding-top:20px; width:1300px;" >
@@ -139,7 +147,53 @@
             </div>
             {% endif %}
 
-
+            {% if tab == "tab3" %}
+            <!-- 직무별 업무량 분석 테이블 div - 탭이 직무별 업무량 분석일 때만 떠야 함 -->            
+            <div id="analysis" class="list-box" style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1300px;" >
+                <table id="analysis_by_man">
+                <thead>
+                    <tr>
+                        <th><p>성명</p></th>
+                        <th><p>직무명</p></th>
+                        <th><p>표준근무시간</p></th>
+                        <th><p>업무량</p></th>
+                        <th><p>표준근무시간 대비</p></th>
+                        <th><p>업무량 구성비</p></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <!-- 일반 행 - for문으로 생성, analysis라는 dataframe을 참조 -->
+                {% for index, row in analysis.iterrows %}
+                <tr style="height: 50px; text-align: center;">
+                    <td style="line-height: 1; height: 50px;"><p>{% if row.task_prsn_chrg %} {{ row.task_prsn_chrg }} {% else %} {% endif %} </p></td>
+                    <td style="line-height: 1;"><p>{{ row.job_nm }}</p></td>
+                    <td class="number-format"><p>{% if row.wrk_tm_std %} {{ row.wrk_tm_std }} {% else %} {% endif %} </p></td>
+                    <td class="number-format"><p>{% if row.total_prfrm_tm_ann %} {{ row.total_prfrm_tm_ann }} {% else %} {% endif %}</p></td>
+                    <td><p>{% if row.wrk_tm_std2 %} {{ row.wrk_tm_std2 }}% {% else %} {% endif %}</p></td>
+                    <td><p>{% if row.work_ratio %} {{ row.work_ratio }}% {% else %} {% endif %}</p></td>
+                </tr>
+                {% endfor %}
+                <!-- 합계 행 -->
+                <tr style="height: 50px;">
+                    <td style="text-align: center;"><p>합계</p></td>
+                    <td></td>
+                    <td class="number-format" style="text-align: center;"><p>{{ sum_1 }}</p></td>
+                    <td class="number-format" style="text-align: center;"><p>{{ sum_2 }}</p></td>
+                    <td style="text-align: center;"><p>{{ sum_3 }}%</p></td>
+                    <td style="text-align: center;">
+                    <p>
+                    {% if 99.9 <= sum_4 <= 100.1 %}
+                        100.0%
+                    {% else %}
+                        {{ sum_4 }}%
+                    {% endif %}
+                    </p>
+                    </td>
+                </tr>
+                </tbody>
+                </table>
+            </div>
+            {% endif %}
         </div>
 
         <!-- 에러 메시지 -->

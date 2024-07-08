@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import HttpResponse
 #BsPrd 메시지 끌고옴
-from .models import BsPrd, CcCdDetail, CcCdHeader, BsJob, BsDept, BsJobDept, BsMbr, BsWorkGrade, MbrJobGrp, MbrJobGrpDetail, JobTask, JobTaskAdj, JobActivity, BsPrd, BsAcnt, BsJobResp, JobSpcfc, BsStdWrkTm, BsWlOvSht, BsPosGrade, BsPosList, BsDeptGrp, BsDeptResp, BsDeptGrpDomain, BsTtlList, BsTtlCnt, BsMbrGrp, BsMbrGrpNm, VJb110F
+from .models import BsPrd, CcCdDetail, CcCdHeader, BsJob, BsDept, BsJobDept, BsMbr, BsWorkGrade, MbrJobGrp, MbrJobGrpDetail, JobTask, JobTaskAdj, JobActivity, BsPrd, BsAcnt, BsJobResp, JobSpcfc, BsStdWrkTm, BsWlOvSht, BsPosGrade, BsPosList, BsDeptGrp, BsDeptResp, BsDeptGrpDomain, BsTtlList, BsTtlCnt, BsMbrGrp, BsMbrGrpNm, VJb110F, VJb111 
 #확인하는 메시지 끌고옴
 #from .models import TextConfirm
 from datetime import datetime
@@ -8236,7 +8236,6 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
             'title': '부서 업무량 분석',  # 제목
             'prd_list': BsPrd.objects.all(),
             'prd_cd_selected': prd_cd_selected,
-            # 'activate': 'no',  # 버튼 컨트롤 off
             'status': 'tab_after',
             'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
             'dept_login_nm' : dept_login_nm,
@@ -8283,15 +8282,10 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                 ratio_list = [(x/sum_2)*100 if x != '' else 0 for x in df1['wrk_tm']]
                 # 이 리스트의 합을 구한다.
                 sum_3 = round(sum(ratio_list), 1)
-                
-                # sum_2 = df1['wrk_tm'].sum() # 업무량 합계
-                # sum_3 = df1['imprt'].sum() # 중요도 합계
 
                 context.update({
                     'dept_selected': dept_login,
                     'dept_selected_nm' : dept_login_nm,
-                    # 'activate': 'yes', # 버튼 컨트롤 on
-                    'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                     'analysis' : df1,
                     'sum_1' : sum_1,
                     'sum_2' : sum_2,
@@ -8305,16 +8299,39 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                 context.update({
                     'dept_selected': dept_login,
                     'dept_selected_nm' : dept_login_nm,
-                    # 'activate': 'yes', # 버튼 컨트롤 on
-                    'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 })
 
 
-        elif span_name == 'span2': # 담당자별 업무량 분석 탭일 경우
-            context['tab'] = "tab2"
+        elif span_name == 'span3': # 담당자별 업무량 분석 탭일 경우
+            context['tab'] = "tab3"
+
+            try:
+                # v_jb111 뷰에서 해당 부서의 담당자별 업무량 분석 정보를 가져와서 데이터프레임 생성
+                analysis_target = VJb111.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+                data_list = [{'task_prsn_chrg' : rows.task_prsn_chrg, 'job_nm' : rows.job_nm, 'wrk_tm_std' : rows.wrk_tm_std, 'total_prfrm_tm_ann' : rows.total_prfrm_tm_ann,
+                            'wrk_tm_std2' : rows.wrk_tm_std2, 'work_ratio' : rows.work_ratio  } for rows in analysis_target]
+                
+                df1 = pd.DataFrame(data_list)
+                sum_1 = df1['wrk_tm_std'].sum() # 표준 업무량 합계
+                sum_2 = df1['total_prfrm_tm_ann'].sum() # 연간 수행시간 합계
+                sum_3 = df1['wrk_tm_std2'].sum() # 표준 업무량 합계2
+                sum_4 = df1['work_ratio'].sum() # 업무량 비율 합계
+
+                context.update({
+                    'dept_selected': dept_login,
+                    'dept_selected_nm' : dept_login_nm,
+                    'analysis' : df1,
+                    'sum_1' : sum_1,
+                    'sum_2' : sum_2,
+                    'sum_3' : sum_3,
+                    'sum_4' : sum_4,
+                })
+
+            except KeyError as e:
+
+                messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
 
             context.update({
-                # 'activate': 'yes', # 버튼 컨트롤 on
                 'prd_done' : BsPrd.objects.get(prd_cd=prd_cd_selected).prd_done_yn,
                 'dept_selected' : dept_login
             })
@@ -8345,7 +8362,7 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
             'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
         }
 
-        if tab == "tab1": # 부서 정보 탭 선택한 상태일 시 - 부서 성과책임 표시
+        if tab == "tab1": # 직무별 업무량 분석 탭일 경우
 
             try:
 
@@ -8385,12 +8402,33 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
 
                 messages.error(request, '해당 회기에 선택한 부서의 정보가 없습니다.')
 
-        elif tab == "tab2": # 부서원 탭 선택한 상태일 시 - 부서원 목록 표시
-            
+        elif tab == "tab3": # 담당자별 업무량 분석 탭일 경우
 
-            context.update({
-            
-            })
+            try:
+
+                # v_jb111 뷰에서 해당 부서의 담당자별 업무량 분석 정보를 가져와서 데이터프레임 생성
+                analysis_target = VJb111.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
+                data_list = [{'task_prsn_chrg' : rows.task_prsn_chrg, 'job_nm' : rows.job_nm, 'wrk_tm_std' : rows.wrk_tm_std, 'total_prfrm_tm_ann' : rows.total_prfrm_tm_ann,
+                            'wrk_tm_std2' : rows.wrk_tm_std2, 'work_ratio' : rows.work_ratio  } for rows in analysis_target]
+                
+                df1 = pd.DataFrame(data_list)
+
+                sum_1 = df1['wrk_tm_std'].sum() # 표준 업무량 합계
+                sum_2 = df1['total_prfrm_tm_ann'].sum() # 연간 수행시간 합계
+                sum_3 = df1['wrk_tm_std2'].sum() # 표준 업무량 합계2
+                sum_4 = df1['work_ratio'].sum() # 업무량 비율 합계
+
+                context.update({
+                    'analysis' : df1,
+                    'sum_1' : sum_1,
+                    'sum_2' : sum_2,
+                    'sum_3' : sum_3,
+                    'sum_4' : sum_4,
+                })
+
+            except KeyError as e:
+
+                messages.error(request, '해당 회기에 로그인한 부서의 정보가 없습니다.')
 
     return render(request, 'jobs/JB110.html', context)
 

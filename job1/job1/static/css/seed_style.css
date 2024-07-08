@@ -541,6 +541,7 @@ header {
 .list-box td {
   border: 1px solid black;
   border-collapse: collapse;
+  height: 50px;
 }
 
 .list-box th {
