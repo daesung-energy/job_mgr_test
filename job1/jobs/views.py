@@ -7942,8 +7942,10 @@ def JB109_4(request): # 업무량 분석 - 조직그룹 선택한 후 - 적정�
         
         if tab == 'tab3' or tab == 'tab3_1' : # 적정 인력 산정 탭 선택했을 때
 
-            # df3에 dept_po 열을 추가한다. dept_po 데이터는 BsDept 테이블에서 해당 부서코드의 dept_po 값을 가져온다.
-            df3['dept_po'] = df3['dept_cd'].apply(lambda x: BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=x).dept_po)
+            # # df3에 dept_po 열을 추가한다. dept_po 데이터는 BsDept 테이블에서 해당 부서코드의 dept_po 값을 가져온다.
+            # df3['dept_po'] = df3['dept_cd'].apply(lambda x: BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=x).dept_po)
+            # df3에 dept_po열을 추가한다. dept_po 데이터는 BsMbr에서 그 부서에 해당하는 object 중 ttl_nm이 '팀장'인 것을 제외한 object의 수를 가져온다.
+            df3['dept_po'] = df3['dept_cd'].apply(lambda x: len(BsMbr.objects.filter(prd_cd=prd_cd_selected, dept_cd=x).exclude(ttl_nm='팀장')))
 
             work_grade_list = ['G1', 'G2', 'G3', 'G4', 'G5'] # 업무등급 리스트
 
@@ -8028,10 +8030,6 @@ def JB109_4(request): # 업무량 분석 - 조직그룹 선택한 후 - 적정�
 
                     # 적정인력 산정 열 추가. 적정 인력 산정은 각 grade에 대해서 환산 업무량을 표준 근무시간으로 나눈 값이다. 반올림해준다.
                     df4.loc[df4['work_grade'] == grade, 'po_appr'] = round(df4.loc[df4['work_grade'] == grade, 'prfrm_tm_ann_cal']/std_wrk_tm, 1)
-
-                    # print(df4)
-
-
 
                 # sum_tm_cal = round(sum_tm_cal, 1) # 환산 업무량 열 추가
 
