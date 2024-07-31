@@ -240,9 +240,8 @@
             <div class="fakeimg" style="height: 200px">
               <p>직무 분석</p>
               <a href="{% url 'JB200' %}">분석 기초자료</a>
-              <a href="#">직무 분류 체계</a>
-              <a href="#">업무 분장표</a>
-              <!-- <a href="{% url 'JB109' %}" {% if title == "업무량 분석" %} class = "selected_menu" {% endif %}>업무량 분석</a> -->
+              <a href="{% url 'JB300' %}">직무 분류 체계</a>
+              <a href="{% url 'JB301' %}">업무 분장표</a>
               <a href="{% url 'JB109' %}">업무량 분석</a>
 
             </div>
@@ -250,11 +249,6 @@
           <div class="management">
             <div class="fakeimg" style="height: 240px">
               <p>기준 정보</p>
-              <!-- <a href="{% url 'BS101' %}" {% if title == "회기 관리" %} class = "selected_menu" {% endif %}>회기 관리</a>
-              <a href="{% url 'BS105' %}" {% if title == "표준 정보" %} class = "selected_menu" {% endif %}>표준 정보</a>
-              <a href="{% url 'BS300' %}" {% if title == "조직 정보" %} class = "selected_menu" {% endif %}>조직 정보</a>
-              <a href="{% url 'BS106' %}" {% if title == "직무 관리" %} class = "selected_menu" {% endif %}>직무 관리</a>
-              <a href="{% url 'BS200' %}" {% if title == "직무 조사" %} class = "selected_menu" {% endif %}>직무 조사</a> -->
               <a href="{% url 'BS101' %}">회기 관리</a>
               <a href="{% url 'BS105' %}">표준 정보</a>
               <a href="{% url 'BS300' %}">조직 정보</a>

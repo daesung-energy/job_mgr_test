@@ -1,0 +1,54 @@
+{% extends 'jobs/base.html' %}
+{% load static %}
+{% block content %}
+
+<body>
+
+    <wrap>
+
+    <div id="information" style="margin-left: 50px; margin-top:50px;">
+        <!-- 회기 선택하도록 하는 폼 -->
+        <form action = "{% url 'JB301' %}" method="POST" id="JB301">
+        {% csrf_token %}
+            <div class="list-box-prd">
+
+                <table>
+                <thead>
+                    <tr>
+                    <th style="width: 100px;">
+                        <p>회 기</p>
+                    </th>
+                    <th>
+                        <select name="prd_cd_selected" class="select-combox3" id="selectOptions">
+                        {% for item in prd %}
+                        <option value="{{ item.prd_cd }}" {%if prd_cd_selected == item.prd_cd %} selected {% endif %}> {{ item.prd_cd }} ({{ item.year }}년 {{ item.turn }}차수) - 확정여부 : {{ item.prd_done_yn }} </option>
+                        {% endfor %}
+                        </select>
+                    </th>
+                    </tr>
+                </thead>
+                </table>
+            </div>
+            <button type="submit" class="save">다운로드</button>
+
+        </form>
+
+    </div>
+
+    {% if messages %}
+        <div id="messages" style="display: none;">
+            {% for message in messages %}
+            <span class="{{ message.tags }}">{{ message|escapejs }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    </wrap>
+
+    <script>
+
+
+    </script>
+
+</body>
+{% endblock %}
