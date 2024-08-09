@@ -48,7 +48,6 @@ urlpatterns = [
     path('JB110/', views.JB110, name='JB110'),
     path('JB200/', views.JB200, name='JB200'),
     path('JB300/', views.JB300, name='JB300'),
-    path('JB301/', views.JB301, name='JB301'),
     path('create_bs_prd/', views.create_bs_prd, name='create_bs_prd'),
     path('BS200_2', views.BS200_2, name='BS200_2'),
     path('BS103_1/', views.BS103_1, name='BS103_1'),

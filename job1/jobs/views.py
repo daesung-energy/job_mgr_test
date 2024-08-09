@@ -247,16 +247,16 @@ def my_view(request):
     return render(request, 'jobs/AGgrid.html', context)
 
 
-def BS101(request): #BS101사이트의 view파일
+def BS101(request): # 회기 관리(회기 등록) 초기화면
 
     context1 = { #context를 넘겨줌. context는 어떤 type도 가능(?)
         'today_date1' : str(dt.datetime.today()).split()[0],
         'title' : '회기 관리',
-        'tab' : 'tab1',
-        'prd' : BsPrd.objects.all(),
-        'prd_cd_selected' : BsPrd.objects.last().prd_cd,
+        'tab' : 'tab1', # 회기 등록을 선택했다는 키값
+        'prd' : BsPrd.objects.all(), # 모든 회기 목록
+        'prd_cd_selected' : BsPrd.objects.last().prd_cd, # 회기 선택값
         'modified' : 'n', # 회기 복사나 삭제 작업을 하지 않았다는 키값(메시지용),
-        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
+        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username), # 로그인한 부서가 관리 부서인지 여부. y이면 관리 부서이고, 모든 메뉴를 다 사용할 수 있다. n이면 직무관리/비번변경만 가능
     }
 
     return render(request, 'jobs/BS101.html', context1) #장고가 context를 meshup해서 html template으로 보내줌
@@ -1236,10 +1236,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.200.200', # 데이터베이스 주소
+            host='130.1.112.100', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='1234', # 데이터베이스 비밀번호
-            db='jobdb',
+            password='cdh0706**', # 데이터베이스 비밀번호
+            db='betadb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -2812,7 +2812,7 @@ def JB200(request): # 업무량 분석 기초 자료 화면. 이 화면은 경�
     return render(request, 'jobs/JB200.html', context)
 
 
-def JB300(request):
+def JB300(request): # 직무 분류 체계 초기화면
 
     prd_cd_selected = BsPrd.objects.all().last().prd_cd
 
@@ -3108,483 +3108,6 @@ def JB300(request):
         # return response # 엑셀 파일 다운로드
 
     return render(request, 'jobs/JB300.html', context)
-
-
-def JB301(request): # 회기에 따른 도메인 선택
-
-    prd_cd_selected = BsPrd.objects.all().last().prd_cd
-
-    context = {
-        'title' : '업무 분장표', # 제목
-        'prd' : BsPrd.objects.all(),
-        'prd_cd_selected' : prd_cd_selected,
-        'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
-    }
-
-    if request.method == 'POST': # 회기 변경 시
-
-        context = {
-            'title' : '업무 분장표', # 제목
-            'prd' : BsPrd.objects.all(),
-            'prd_cd_selected' : prd_cd_selected,
-            'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
-        }
-
-        # SQLAlchemy 엔진을 사용하여 데이터베이스에 연결
-        engine = create_engine('mysql+pymysql://cdh:1234@130.1.200.200/jobdb')
-        db_name = 'jobdb'
-
-        # prd_cd = '2022A'
-        prd_cd = request.POST['prd_cd_selected']
-        dept_domain = '본부별'
-
-        def get_data_from_db(engine, db_name, table_name, where_clause):
-            query = f"SELECT * FROM {db_name}.{table_name} WHERE {where_clause}"
-            df = pd.read_sql(query, engine)
-            return df
-
-        """ 직무정보 """
-        # 직무코드 데이터
-        where_clause = f"prd_cd = '{prd_cd_selected}'"
-        df_job_code = get_data_from_db(engine, db_name, "bs_job", where_clause)
-
-        # 직무-책무-과업-활동 데이터
-        df1 = get_data_from_db(engine, db_name, "job_task", where_clause)
-        df2 = get_data_from_db(engine, db_name, "job_activity", where_clause)
-
-        """ 부서 및 조직 그룹 정보 """
-        # 부서 데이터
-        df_dept = get_data_from_db(engine, db_name, "bs_dept", where_clause)
-
-        # 조직 그룹 도메인
-        where_clause = f"prd_cd = '{prd_cd_selected}' and dept_domain = '{dept_domain}'"
-        df_dept_grp_domain = get_data_from_db(engine, db_name, "bs_dept_grp_domain", where_clause)
-
-        # 조직 그룹
-        df_dept_grp = get_data_from_db(engine, db_name, "bs_dept_grp", where_clause)
-
-        engine.dispose()
-
-        # 결합 Key : prd_cd, dept_cd, job_cd, duty_nm, task_nm
-        data = pd.merge(df1, df2, how='right', on=['prd_cd', 'dept_cd', 'job_cd', 'duty_nm', 'task_nm'], suffixes=('_left', '_right'))
-        # 중복 컬럼 데이터 삭제
-        data.drop(data.filter(regex='_left'), axis=1, inplace=True)
-        # 직무명 추가
-        data = pd.merge(data, df_job_code[['prd_cd', 'job_cd', 'job_nm']], how='left', on=['prd_cd', 'job_cd'])
-        # NaN을 None으로 변환
-        data = data.replace({np.nan: None})
-        # 인덱스 초기화
-        data = data.reset_index(drop=True)
-        assert df2.shape[0] == data.shape[0]    # 전체 데이터 건수가 df2 데이터 건수와 같아야 정상
-
-        # 조직 그룹 및 부서
-        dept_all = pd.merge(df_dept_grp_domain, df_dept_grp, how='left', on=['prd_cd', 'dept_domain', 'dept_grp_nm'])
-        # 부서명 추가
-        dept_all = pd.merge(dept_all, df_dept[['prd_cd', 'dept_cd', 'dept_nm', 'dept_po']], how='left', on=['prd_cd', 'dept_cd'])
-        # 부서 순서 정렬
-        dept_all = dept_all.sort_values(by=['grp_seq', 'dept_seq']).reset_index(drop=True)
-
-        wb = Workbook()
-
-        # 테두리 적용
-        BORDER_THIN_UP = Border(top=Side(style='thin'))
-        BORDER_THIN_ALL = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-
-        """
-        첫번째 Sheet : 표지
-        """
-        ws = wb.active  # 현재 활성화된 sheet 가져옴
-        ws.title = "표지"
-
-        # 제목
-        row_no = 2
-        title = ws.cell(row=row_no, column=1)
-        title.value = "팀별 업무분장표"
-        title.font = Font(color="000000", size=40, bold=True)
-        title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-        ws.merge_cells(start_row=row_no, start_column=1, end_row=row_no, end_column=7)
-        ws.row_dimensions[row_no].height = 100
-
-        # 년월
-        row_no = 17
-        ym = ws.cell(row=row_no, column=1)
-        now = dt.datetime.now()
-        ym.value = str(now.year) + "년 " + str(now.month) + "월"
-        ym.font = Font(color="000000", size=15, bold=True)
-        ym.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-        ws.merge_cells(start_row=row_no, start_column=1, end_row=row_no, end_column=7)
-        ws.row_dimensions[row_no].height = 30
-
-        # 회사
-        row_no = 33
-        company = ws.cell(row=row_no, column=1)
-        company.value = "대성에너지(주)"
-        company.font = Font(color="000000", size=25, bold=True)
-        company.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-        ws.merge_cells(start_row=row_no, start_column=1, end_row=row_no, end_column=7)
-        ws.row_dimensions[row_no].height = 50
-
-        # Page Setup
-        ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
-        ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
-        ws.page_setup.paperSize = ws.PAPERSIZE_A4
-        ws.page_setup.fitToHeight = 0
-        ws.page_setup.fitToWidth = 1
-        ws.print_options.horizontalCentered = True
-
-        """
-        두번째 Sheet : 목차
-        """
-        ws_toc = wb.create_sheet("목차", 2)        # 2번째 index에 sheet 생성
-
-        # Title
-        title = ws_toc.cell(row=1, column=1)
-        title.value = " < 업 무 분 장 표 목 차 > "
-        title.font = Font(color="000000", size=16, bold=False)
-        title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-        ws_toc.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
-        ws_toc.row_dimensions[1].height = 40
-
-        # 데이터 항목 개수
-        DATA_COLS = 5
-
-        # 컬럼 열 너비
-        ws_toc.column_dimensions["A"].width = 5
-        ws_toc.column_dimensions["B"].width = 20
-        ws_toc.column_dimensions["C"].width = 20
-        ws_toc.column_dimensions["D"].width = 20
-        ws_toc.column_dimensions["E"].width = 5
-
-        # 헤더: 항목 명칭 및 속성
-        header_cols = ["조직", "", "팀"]
-        row_no = 4
-        for i, header_name in enumerate(header_cols):
-            header = ws_toc.cell(row=row_no, column=i+2)
-            header.value = header_name
-            header.alignment = Alignment(horizontal="center", vertical="center", wrapText=False)
-            header.fill = PatternFill(fgColor="D0FA58", fill_type="solid")
-
-        ws_toc.row_dimensions[3].height = 15
-
-        """
-        조직그룹 및 부서 순서대로 표시
-        """
-
-        prev_dept_grp_nm = None
-
-        for idx, row in dept_all.iterrows():
-            dept_grp_nm = row['dept_grp_nm']
-            dept_nm = row['dept_nm']
-
-            row_no += 1
-            # 조직 그룹
-            if dept_grp_nm != prev_dept_grp_nm:
-                dept_grp = ws_toc.cell(row=row_no, column=2)
-                dept_grp.value = dept_grp_nm
-                dept_grp.alignment = Alignment(horizontal="center", vertical="center", wrapText=False)
-                prev_dept_grp_nm = dept_grp_nm
-                for c in [2, 3, 4]:
-                    dept_grp_cells = ws_toc.cell(row=row_no, column=c)
-                    dept_grp_cells.border = BORDER_THIN_UP
-
-            # 부서명 및 총 인원
-            dept = ws_toc.cell(row=row_no, column=4)
-            dept.value = dept_nm
-            dept.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-
-        row_no += 1
-        for c in [2, 3, 4]:
-            last_cell = ws_toc.cell(row=row_no, column=c)
-            last_cell.border = BORDER_THIN_UP
-
-        """
-        페이지 설정 및 인쇄 옵션
-        """
-        ws_toc.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
-        ws_toc.page_setup.orientation = ws_toc.ORIENTATION_PORTRAIT
-        ws_toc.page_setup.paperSize = ws_toc.PAPERSIZE_A4
-        ws_toc.page_setup.fitToHeight = 0
-        ws_toc.page_setup.fitToWidth = 1
-        ws_toc.print_options.horizontalCentered = True
-
-        """
-        세번째 Sheet : 업무 분장표(과업 단위)
-        """
-        ws_task = wb.create_sheet("업무분장표_과업", 3)        # 3번째 index에 sheet 생성
-
-        # TITLE_ROW = 1   # 첫번째 행 "제목"
-
-        # Title
-        title = ws_task.cell(row=1, column=1)
-        title.value = prd_cd[:4] + "년도 업무분장표"
-        title.font = Font(color="0000FF", size=25, bold=True)
-        title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-        ws_task.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
-        ws_task.row_dimensions[1].height = 75
-
-
-        # 데이터 항목 개수
-        DATA_COLS = 4
-
-        # 과업 항목 열 위치
-        TASK_START_COL = 3
-
-        # 컬럼 열 너비
-        ws_task.column_dimensions["A"].width = 15
-        ws_task.column_dimensions["B"].width = 20
-        ws_task.column_dimensions["C"].width = 30
-        ws_task.column_dimensions["D"].width = 20
-
-        """
-        조직그룹 및 부서별로 직무정보 표시
-        """
-
-        row_no = 1     # 직무정보 데이터 시작 위치: 조직그룹/부서/직무정보
-
-        prev_dept_grp_nm = None
-
-        for idx, row in dept_all.iterrows():
-            dept_grp_nm = row['dept_grp_nm']
-            dept_cd = row['dept_cd']
-            dept_nm = row['dept_nm']
-            dept_po = row['dept_po']
-
-            # 조직 그룹
-            if dept_grp_nm != prev_dept_grp_nm:
-                row_no += 3
-                dept_grp = ws_task.cell(row=row_no, column=1)
-                dept_grp.value = " [ " + dept_grp_nm + " ]"
-                dept_grp.font = Font(color="000000", size=15, bold=True)
-                dept_grp.alignment = Alignment(horizontal="left", vertical="center", wrapText=False)
-                prev_dept_grp_nm = dept_grp_nm
-                ws_task.row_dimensions[row_no].height = 25
-
-            # 부서명 및 총 인원
-            row_no += 2
-            bullet1 = ws_task.cell(row=row_no, column=1)
-            bullet1.value = "  ■ 팀명 :"
-            bullet1.font = Font(color="000000", size=13, bold=True)
-            bullet1.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
-            dept = ws_task.cell(row=row_no, column=2)
-            dept.value = dept_nm
-            dept.font = Font(color="000000", size=13, bold=True)
-            dept.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
-            bullet2 = ws_task.cell(row=row_no, column=3)
-            bullet2.value = "■ 총 인원(직책자포함) : " + str(dept_po) + "명"
-            bullet2.font = Font(color="000000", size=13, bold=True)
-            bullet2.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
-            ws_task.row_dimensions[row_no].height = 20
-
-            # 헤더: 항목 명칭 및 속성
-            header_cols = ["직무\n(Job)", "책무\n(Duty)", "과업\n(Task)", "과업 담당자"]
-            row_no += 1
-            for i, header_name in enumerate(header_cols):
-                header = ws_task.cell(row=row_no, column=i+1)
-                header.value = header_name
-                header.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-                header.fill = PatternFill(fgColor="D0FA58", fill_type="solid")
-
-            # 직무정보 : 1줄씩 데이터 추가
-            job_data = data[data['dept_cd'] == dept_cd]
-            job_data = job_data.sort_values(by=['job_seq_right', 'duty_seq_right', 'task_seq_right', 'act_seq']).reset_index(drop=True)
-            prev_job_nm = prev_duty_nm = prev_task_nm = None
-            # row_no += 1
-            for i, r in job_data.iterrows():
-                row_no += 1
-                # 직무명
-                job_nm = ws_task.cell(row=row_no, column=1)
-                if r['job_nm'] == prev_job_nm:  # 동일 데이터 반복 제거
-                    job_nm.value = ""
-                else:
-                    job_nm.value = prev_job_nm = r['job_nm']
-                    job_nm.border = BORDER_THIN_UP
-                    job_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                # 책무
-                duty_nm = ws_task.cell(row=row_no, column=2)
-                if r['duty_nm'] == prev_duty_nm:  # 동일 데이터 반복 제거
-                    duty_nm.value = ""
-                else:
-                    duty_nm.value = prev_duty_nm = r['duty_nm']
-                    duty_nm.border = BORDER_THIN_UP
-                    duty_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                """ 과업 데이터 """
-                # 과업, 과업 담당자, 과업 업무특성
-                task_nm = ws_task.cell(row=row_no, column=3)
-                if r['task_nm'] == prev_task_nm:  # 동일 데이터 반복 제거
-                    task_nm.value = ""
-                else:
-                    task_nm.value = prev_task_nm = r['task_nm']
-                    task_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                    for c in range(TASK_START_COL, DATA_COLS+1):
-                        task_related_cell = ws_task.cell(row=row_no, column=c)
-                        task_related_cell.border = BORDER_THIN_UP
-
-                """ 과업 담당자 """
-                task_prsn_chrg = ws_task.cell(row=row_no, column=4)
-                task_prsn_chrg.value = r['task_prsn_chrg']
-                task_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-
-
-        """
-        페이지 설정 및 인쇄 옵션
-        """
-        ws_task.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
-        ws_task.page_setup.orientation = ws_task.ORIENTATION_PORTRAIT
-        ws_task.page_setup.paperSize = ws_task.PAPERSIZE_A4
-        ws_task.page_setup.fitToHeight = 0
-        ws_task.page_setup.fitToWidth = 1
-        ws_task.print_options.horizontalCentered = True
-
-        """
-        네번째 Sheet : 업무 분장표(활동 단위)
-        """
-        ws_data = wb.create_sheet("업무분장표_활동", 4)        # 3번째 index에 sheet 생성
-
-        # Title
-        title = ws_data.cell(row=1, column=1)
-        title.value = prd_cd[:4] + "년도 업무분장표"
-        title.font = Font(color="0000FF", size=25, bold=True)
-        title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-        ws_data.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
-        ws_data.row_dimensions[1].height = 75
-
-
-        # 데이터 항목 개수
-        DATA_COLS = 5
-
-        # 과업 항목 열 위치
-        TASK_START_COL = 3
-
-        # 컬럼 열 너비
-        ws_data.column_dimensions["A"].width = 15
-        ws_data.column_dimensions["B"].width = 20
-        ws_data.column_dimensions["C"].width = 30
-        ws_data.column_dimensions["D"].width = 75
-        ws_data.column_dimensions["E"].width = 20
-
-        """
-        조직그룹 및 부서별로 직무정보 표시
-        """
-
-        row_no = 1     # 직무정보 데이터 시작 위치: 조직그룹/부서/직무정보
-
-        prev_dept_grp_nm = None
-
-        for idx, row in dept_all.iterrows():
-            dept_grp_nm = row['dept_grp_nm']
-            dept_cd = row['dept_cd']
-            dept_nm = row['dept_nm']
-            dept_po = row['dept_po']
-
-            # 조직 그룹
-            if dept_grp_nm != prev_dept_grp_nm:
-                row_no += 3
-                dept_grp = ws_data.cell(row=row_no, column=1)
-                dept_grp.value = " [ " + dept_grp_nm + " ]"
-                dept_grp.font = Font(color="000000", size=15, bold=True)
-                dept_grp.alignment = Alignment(horizontal="left", vertical="center", wrapText=False)
-                prev_dept_grp_nm = dept_grp_nm
-                ws_data.row_dimensions[row_no].height = 25
-
-            # 부서명 및 총 인원
-            row_no += 2
-            bullet1 = ws_data.cell(row=row_no, column=1)
-            bullet1.value = "  ■ 팀명 :"
-            bullet1.font = Font(color="000000", size=13, bold=True)
-            bullet1.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
-            dept = ws_data.cell(row=row_no, column=2)
-            dept.value = dept_nm
-            dept.font = Font(color="000000", size=13, bold=True)
-            dept.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
-            bullet2 = ws_data.cell(row=row_no, column=3)
-            bullet2.value = "■ 총 인원(직책자포함) : " + str(dept_po) + "명"
-            bullet2.font = Font(color="000000", size=13, bold=True)
-            bullet2.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
-            ws_data.row_dimensions[row_no].height = 20
-
-            # 헤더: 항목 명칭 및 속성
-            header_cols = ["직무\n(Job)", "책무\n(Duty)", "과업\n(Task)", "활동\n(Activity)", "활동 담당자"]
-            row_no += 1
-            for i, header_name in enumerate(header_cols):
-                header = ws_data.cell(row=row_no, column=i+1)
-                header.value = header_name
-                header.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
-                header.fill = PatternFill(fgColor="D0FA58", fill_type="solid")
-
-            # 직무정보 : 1줄씩 데이터 추가
-            job_data = data[data['dept_cd'] == dept_cd]
-            job_data = job_data.sort_values(by=['job_seq_right', 'duty_seq_right', 'task_seq_right', 'act_seq']).reset_index(drop=True)
-            prev_job_nm = prev_duty_nm = prev_task_nm = None
-            # row_no += 1
-            for i, r in job_data.iterrows():
-                row_no += 1
-                # 직무명
-                job_nm = ws_data.cell(row=row_no, column=1)
-                if r['job_nm'] == prev_job_nm:  # 동일 데이터 반복 제거
-                    job_nm.value = ""
-                else:
-                    job_nm.value = prev_job_nm = r['job_nm']
-                    job_nm.border = BORDER_THIN_UP
-                    job_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                # 책무
-                duty_nm = ws_data.cell(row=row_no, column=2)
-                if r['duty_nm'] == prev_duty_nm:  # 동일 데이터 반복 제거
-                    duty_nm.value = ""
-                else:
-                    duty_nm.value = prev_duty_nm = r['duty_nm']
-                    duty_nm.border = BORDER_THIN_UP
-                    duty_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                """ 과업 데이터 """
-                # 과업, 과업 담당자, 과업 업무특성
-                task_nm = ws_data.cell(row=row_no, column=3)
-                if r['task_nm'] == prev_task_nm:  # 동일 데이터 반복 제거
-                    task_nm.value = ""
-                else:
-                    task_nm.value = prev_task_nm = r['task_nm']
-                    task_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-                    for c in range(TASK_START_COL, DATA_COLS+1):
-                        task_related_cell = ws_data.cell(row=row_no, column=c)
-                        task_related_cell.border = BORDER_THIN_UP
-
-                """ 활동 데이터 """
-                act_nm = ws_data.cell(row=row_no, column=4)
-                act_nm.value = r['act_nm']
-                act_nm.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-
-                """ 활동 담당자 """
-                act_prsn_chrg = ws_data.cell(row=row_no, column=5)
-                act_prsn_chrg.value = r['act_prsn_chrg']
-                act_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
-
-        """
-        페이지 설정 및 인쇄 옵션
-        """
-        ws_data.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=True)
-        ws_data.page_setup.orientation = ws_data.ORIENTATION_LANDSCAPE
-        ws_data.page_setup.paperSize = ws_data.PAPERSIZE_A4
-        ws_data.page_setup.fitToHeight = 0
-        ws_data.page_setup.fitToWidth = 1
-        ws_data.print_options.horizontalCentered = True
-
-        """
-        엑셀 파일 저장
-        """
-        # 엑셀 파일을 BytesIO 객체에 저장
-        excel_buffer = BytesIO()
-        excel_file = "org_job_" + str(now) + ".xlsx"
-        wb.save(excel_buffer)
-        wb.close()
-        excel_buffer.seek(0)
-
-        encoded_filename = urllib.parse.quote(excel_file)
-
-        # HttpResponse로 파일 전송
-        response = HttpResponse(excel_buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-
-        return response # 엑셀 파일 다운로드
-
-    return render(request, 'jobs/JB301.html', context)
 
 
 def BS200_1(request): #BS200에서 탭 선택 후 display
@@ -8764,6 +8287,42 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후 - 업무�
                 # work_lv_mean열 추가. duty_imprt, duty_dfclt, duty_prfcn의 평균을 구해서 추가한다.
                 df2['work_lv_mean'] = round((df2['duty_imprt'] + df2['duty_dfclt'] + df2['duty_prfcn']), 1)
 
+                # # 바꿔야 되는 부분
+                g1_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G1').work_lv_min
+                g1_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G1').work_lv_max
+                g2_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G2').work_lv_min
+                g2_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G2').work_lv_max
+                g3_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G3').work_lv_min
+                g3_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G3').work_lv_max
+                g4_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G4').work_lv_min
+                g4_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G4').work_lv_max
+                g5_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G5').work_lv_min
+                g5_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G5').work_lv_max
+
+                # df2에서 각 행에 대해 work_lv_mean열에 대해 조건문을 적용하여 G1, G2, G3, G4, G5를 부여한다.
+                # for문을 이용해 각 row에 접근해서 바꿔준다.
+                for i in range(len(df2)):
+
+                    # 그 행의 job_cd가 JC001이면 work_lv_mean열에 빈칸을 부여한다.
+                    if df2.loc[i, 'job_cd'] == 'JC001':
+                        df2.loc[i, 'work_lv_mean'] = ''
+                    
+                    # 그 행의 job_cd가 JC001이 아니면
+                    else:
+
+                        if round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) > g1_max:
+                            df2.loc[i, 'work_lv_mean'] = 'G1'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g1_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g1_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G1'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g2_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g2_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G2'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g3_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g3_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G3'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g4_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g4_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G4'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g5_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g5_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G5'
+                
                 # BsJob 테이블을 이용해 해당 job_cd의 job_nm 열을 추가할 것이다.
                 job_nm_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm for x in df2['job_cd']]
                 df2['job_nm'] = job_nm_list
@@ -9168,6 +8727,226 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                     'dept_selected_nm' : dept_login_nm,
                 })
 
+        elif span_name == 'span2': # 책무별 업무량 분석 탭일 경우
+            context['tab'] = "tab2"
+
+            job_task = JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_login)
+
+            data_list = [{'job_cd' : rows.job_cd_id, 'duty_nm' : rows.duty_nm, 'task_nm' : rows.task_nm,
+                'work_lv_imprt' : rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn,
+                'work_lv_sum' : rows.work_lv_sum, 'work_grade' : rows.work_grade_id, 'prfrm_tm_ann':rows.prfrm_tm_ann,
+                    'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq } for rows in job_task]
+
+            df1 = pd.DataFrame(data_list) # JobTask 테이블에서 필요한 rough data를 가져왔다.
+
+            try:
+                # job_cd, duty_nm, job_seq, duty_seq열을 가져와서 중복을 제거한 후, job_seq, duty_seq 순으로 정렬한다. 이후 인덱스 리셋한다.
+                df2 = df1[['job_cd', 'duty_nm', 'job_seq', 'duty_seq']].drop_duplicates().sort_values(['job_seq', 'duty_seq']).reset_index(drop=True)
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행 수를 센다. 그러면 task의 개수이다. 이를 task_cnt 열로 추가한다.
+                # df2에 대해서 for문을 활용하여 task_cnt열 데이터를 추가해준다. 먼저 task_cnt열부터 만들어놓고 시작해야 한다.
+                df2['task_cnt'] = 0
+                for i in range(len(df2)):
+                    df2.loc[i, 'task_cnt'] = len(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])])
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구해서 그 값을 job_prfrm_tm_ann 열로 추가한다.
+                # 우선 df1의 prfrm_tm_ann열 중에서 Null값을 0으로 치환한다.
+                df1['prfrm_tm_ann'] = df1['prfrm_tm_ann'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_tm_ann열 데이터를 추가해준다. 먼저 duty_tm_ann열 만들어놓고 시작해야 한다.
+                df2['duty_tm_ann'] = 0
+                for i in range(len(df2)):
+                    df2.loc[i, 'duty_tm_ann'] = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum()
+
+                # df2의 duty_tm_ann열의 합을 구한 후, 그 값을 sum_duty_tm_ann이라는 변수에 저장한다.
+                sum_duty_tm_ann = df2['duty_tm_ann'].sum()
+
+                # df2에 각 duty의 ratio열인 duty_ratio을 추가한다. for문을 활용한다.
+                df2['duty_ratio'] = 0
+                for i in range(len(df2)):
+                    df2.loc[i, 'duty_ratio'] = round((df2.loc[i, 'duty_tm_ann']/sum_duty_tm_ann)*100, 1)
+
+                # 리스트를 만드는데, 앞에서는 duty_ratio를 반올림해서 만들었다. 이번에는 반올림하지 않고 만든다.
+                duty_ratio_list = [(x/sum_duty_tm_ann)*100 for x in df2['duty_tm_ann']]
+
+                # 이 리스트의 합을 구한다. 나중에 sum값으로 사용할 값이다.
+                sum_duty_ratio = round(sum(duty_ratio_list), 1)
+
+                ### 바꿔야 하는 부분 ###
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_imprt를 해당 duty의 해당 duty_nm의 전체 prfrm_tm_ann 합에서 그 행의 비율을 곱한 값의 합을 구해서 duty_imprt열로 추가한다.
+                # 우선 df1의 work_lv_imprt열 중에서 Null값을 0으로 치환한다.
+                df1['work_lv_imprt'] = df1['work_lv_imprt'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_imprt열 데이터를 추가해준다. 먼저 duty_imprt열 만들어놓고 시작해야 한다.
+                df2['duty_imprt'] = 0
+                # for i in range(len(df2)):
+                #     df2.loc[i, 'duty_imprt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].mean(), 1)
+
+                
+                for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
+
+                    # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_imprt를 곱한 값을 구하여 duty_imprt열에 추가한다.
+                    # 이를 위해서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구한다.
+                    sum_prfrm_tm_ann = float(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum())
+
+                    # sum_prfrm_tm_ann이 0인 경우는 duty_imprt열을 0으로 처리한다.
+                    if sum_prfrm_tm_ann == 0:
+                        df2.loc[i, 'duty_imprt'] = 0
+                    else:
+                        # sum_prfrm_tm_ann이 0이 아닌 경우는 duty_imprt열을 구한다.
+                        # df2.loc[i, 'duty_imprt'] = round(float((df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].sum())/sum_prfrm_tm_ann)*100, 1)
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_imprt 리스트 생성
+                        work_lv_imprt_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].tolist()
+                        # work_lv_imprt_list의 자료형을 float으로 변경
+                        work_lv_imprt_list = [float(x) for x in work_lv_imprt_list]
+                        
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
+                        prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        # prfrm_tm_ann_ratio_list의 모든 값을 sum_prfrm_tm_ann으로 나눈 값으로 변경
+                        prfrm_tm_ann_ratio_list = [x/sum_prfrm_tm_ann for x in prfrm_tm_ann_ratio_list]
+
+                        # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
+                        df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)]), 1)
+                        
+                        
+                        # prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']/sum_prfrm_tm_ann
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        # prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        
+                        # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
+                        # df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)])*100, 1)
+
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_dfclt 평균의 소수 첫째자리까지 반올림을 구해서 duty_dfclt열로 추가한다.
+                # 우선 df1의 work_lv_dfclt열 중에서 Null값을 0으로 치환한다.
+                df1['work_lv_dfclt'] = df1['work_lv_dfclt'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_dfclt열 데이터를 추가해준다. 먼저 duty_dfclt열 만들어놓고 시작해야 한다.
+                df2['duty_dfclt'] = 0
+                # for i in range(len(df2)):
+                #     df2.loc[i, 'duty_dfclt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_dfclt'].mean(), 1)
+
+                for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
+
+                    # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_dfclt를 곱한 값을 구하여 duty_dfclt열에 추가한다.
+                    # 이를 위해서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구한다.
+                    sum_prfrm_tm_ann = float(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum())
+
+                    # sum_prfrm_tm_ann이 0인 경우는 duty_dfclt열을 0으로 처리한다.
+                    if sum_prfrm_tm_ann == 0:
+                        df2.loc[i, 'duty_dfclt'] = 0
+                    else:
+                        # sum_prfrm_tm_ann이 0이 아닌 경우는 duty_dfclt열을 구한다.
+                        # df2.loc[i, 'duty_dfclt'] = round(float((df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_dfclt'].sum())/sum_prfrm_tm_ann)*100, 1)
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_dfclt 리스트 생성
+                        work_lv_dfclt_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_dfclt'].tolist()
+                        # work_lv_dfclt_list의 자료형을 float으로 변경
+                        work_lv_dfclt_list = [float(x) for x in work_lv_dfclt_list]
+
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
+                        prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        # prfrm_tm_ann_ratio_list의 모든 값을 sum_prfrm_tm_ann으로 나
+                        prfrm_tm_ann_ratio_list = [x/sum_prfrm_tm_ann for x in prfrm_tm_ann_ratio_list]
+
+                        # 두 리스트를 곱한 값을 구하여 duty_dfclt열에 추가한다.
+                        df2.loc[i, 'duty_dfclt'] = round(sum([a*b for a, b in zip(work_lv_dfclt_list, prfrm_tm_ann_ratio_list)]), 1)
+
+
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_prfcn 평균의 소수 첫째자리까지 반올림을 구해서 duty_prfcn열로 추가한다.
+                # 우선 df1의 work_lv_prfcn열 중에서 Null값을 0으로 치환한다.
+                df1['work_lv_prfcn'] = df1['work_lv_prfcn'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_prfcn열 데이터를 추가해준다. 먼저 duty_prfcn열 만들어놓고 시작해야 한다.
+                df2['duty_prfcn'] = 0
+                # for i in range(len(df2)):
+                #     df2.loc[i, 'duty_prfcn'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_prfcn'].mean(), 1)
+
+                for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
+
+                    # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_prfcn을 곱한 값을 구하여 duty_prfcn열에 추가한다.
+                    # 이를 위해서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구한다.
+                    sum_prfrm_tm_ann = float(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum())
+
+                    # sum_prfrm_tm_ann이 0인 경우는 duty_prfcn열을 0으로 처리한다.
+                    if sum_prfrm_tm_ann == 0:
+                        df2.loc[i, 'duty_prfcn'] = 0
+                    else:
+                        # sum_prfrm_tm_ann이 0이 아닌 경우는 duty_prfcn열을 구한다.
+                        # df2.loc[i, 'duty_prfcn'] = round(float((df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_prfcn'].sum())/sum_prfrm_tm_ann)*100, 1)
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_prfcn 리스트 생성
+                        work_lv_prfcn_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_prfcn'].tolist()
+                        # work_lv_prfcn_list의 자료형을 float으로 변경
+                        work_lv_prfcn_list = [float(x) for x in work_lv_prfcn_list]
+
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
+                        prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        # prfrm_tm_ann_ratio_list의 모든 값을 sum_prfrm_tm_ann으로 나눈 값으로 변경
+                        prfrm_tm_ann_ratio_list = [x/sum_prfrm_tm_ann for x in prfrm_tm_ann_ratio_list]
+
+                        # 두 리스트를 곱한 값을 구하여 duty_prfcn열에 추가한다.
+                        df2.loc[i, 'duty_prfcn'] = round(sum([a*b for a, b in zip(work_lv_prfcn_list, prfrm_tm_ann_ratio_list)]), 1)
+
+                # work_lv_mean열 추가. duty_imprt, duty_dfclt, duty_prfcn의 평균을 구해서 추가한다.
+                df2['work_lv_mean'] = round((df2['duty_imprt'] + df2['duty_dfclt'] + df2['duty_prfcn']), 1)
+
+                # # 바꿔야 되는 부분
+                g1_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G1').work_lv_min
+                g1_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G1').work_lv_max
+                g2_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G2').work_lv_min
+                g2_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G2').work_lv_max
+                g3_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G3').work_lv_min
+                g3_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G3').work_lv_max
+                g4_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G4').work_lv_min
+                g4_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G4').work_lv_max
+                g5_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G5').work_lv_min
+                g5_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G5').work_lv_max
+
+                # df2에서 각 행에 대해 work_lv_mean열에 대해 조건문을 적용하여 G1, G2, G3, G4, G5를 부여한다.
+                # for문을 이용해 각 row에 접근해서 바꿔준다.
+                for i in range(len(df2)):
+
+                    # 그 행의 job_cd가 JC001이면 work_lv_mean열에 빈칸을 부여한다.
+                    if df2.loc[i, 'job_cd'] == 'JC001':
+                        df2.loc[i, 'work_lv_mean'] = ''
+                    
+                    # 그 행의 job_cd가 JC001이 아니면
+                    else:
+
+                        if round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) > g1_max:
+                            df2.loc[i, 'work_lv_mean'] = 'G1'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g1_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g1_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G1'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g2_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g2_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G2'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g3_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g3_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G3'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g4_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g4_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G4'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g5_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g5_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G5'
+                
+                # BsJob 테이블을 이용해 해당 job_cd의 job_nm 열을 추가할 것이다.
+                job_nm_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm for x in df2['job_cd']]
+                df2['job_nm'] = job_nm_list
+
+                # job_nm열을 job_cd열 뒤로 이동
+                cols = df2.columns.tolist()
+                cols = cols[:1] + cols[-1:] + cols[1:-1]
+                df2 = df2[cols]
+
+                context.update({
+                    'dept_selected': dept_login,
+                    'dept_selected_nm' : dept_login_nm,
+                    'analysis' : df2,
+                    'sum_duty_tm_ann' : sum_duty_tm_ann,
+                    'sum_duty_ratio' : sum_duty_ratio,
+                })
+
+            except KeyError as e:
+                messages.error(request, '해당 회기에 선택한 부서의 조정 업무량 구성비 정보가 없습니다.')
 
         elif span_name == 'span3': # 담당자별 업무량 분석 탭일 경우
             context['tab'] = "tab3"
@@ -9268,6 +9047,229 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
             except KeyError as e:
 
                 messages.error(request, '해당 회기에 선택한 부서의 정보가 없습니다.')
+
+
+        elif tab == "tab2": # 책무별 업무량 분석 탭일 경우
+        
+            context['tab'] = "tab2"
+
+            job_task = JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
+
+            data_list = [{'job_cd' : rows.job_cd_id, 'duty_nm' : rows.duty_nm, 'task_nm' : rows.task_nm,
+                'work_lv_imprt' : rows.work_lv_imprt, 'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn,
+                'work_lv_sum' : rows.work_lv_sum, 'work_grade' : rows.work_grade_id, 'prfrm_tm_ann':rows.prfrm_tm_ann,
+                    'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq } for rows in job_task]
+
+            df1 = pd.DataFrame(data_list) # JobTask 테이블에서 필요한 rough data를 가져왔다.
+
+            try:
+                # job_cd, duty_nm, job_seq, duty_seq열을 가져와서 중복을 제거한 후, job_seq, duty_seq 순으로 정렬한다. 이후 인덱스 리셋한다.
+                df2 = df1[['job_cd', 'duty_nm', 'job_seq', 'duty_seq']].drop_duplicates().sort_values(['job_seq', 'duty_seq']).reset_index(drop=True)
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행 수를 센다. 그러면 task의 개수이다. 이를 task_cnt 열로 추가한다.
+                # df2에 대해서 for문을 활용하여 task_cnt열 데이터를 추가해준다. 먼저 task_cnt열부터 만들어놓고 시작해야 한다.
+                df2['task_cnt'] = 0
+                for i in range(len(df2)):
+                    df2.loc[i, 'task_cnt'] = len(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])])
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구해서 그 값을 job_prfrm_tm_ann 열로 추가한다.
+                # 우선 df1의 prfrm_tm_ann열 중에서 Null값을 0으로 치환한다.
+                df1['prfrm_tm_ann'] = df1['prfrm_tm_ann'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_tm_ann열 데이터를 추가해준다. 먼저 duty_tm_ann열 만들어놓고 시작해야 한다.
+                df2['duty_tm_ann'] = 0
+                for i in range(len(df2)):
+                    df2.loc[i, 'duty_tm_ann'] = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum()
+
+                # df2의 duty_tm_ann열의 합을 구한 후, 그 값을 sum_duty_tm_ann이라는 변수에 저장한다.
+                sum_duty_tm_ann = df2['duty_tm_ann'].sum()
+
+                # df2에 각 duty의 ratio열인 duty_ratio을 추가한다. for문을 활용한다.
+                df2['duty_ratio'] = 0
+                for i in range(len(df2)):
+                    df2.loc[i, 'duty_ratio'] = round((df2.loc[i, 'duty_tm_ann']/sum_duty_tm_ann)*100, 1)
+
+                # 리스트를 만드는데, 앞에서는 duty_ratio를 반올림해서 만들었다. 이번에는 반올림하지 않고 만든다.
+                duty_ratio_list = [(x/sum_duty_tm_ann)*100 for x in df2['duty_tm_ann']]
+
+                # 이 리스트의 합을 구한다. 나중에 sum값으로 사용할 값이다.
+                sum_duty_ratio = round(sum(duty_ratio_list), 1)
+
+                ### 바꿔야 하는 부분 ###
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_imprt를 해당 duty의 해당 duty_nm의 전체 prfrm_tm_ann 합에서 그 행의 비율을 곱한 값의 합을 구해서 duty_imprt열로 추가한다.
+                # 우선 df1의 work_lv_imprt열 중에서 Null값을 0으로 치환한다.
+                df1['work_lv_imprt'] = df1['work_lv_imprt'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_imprt열 데이터를 추가해준다. 먼저 duty_imprt열 만들어놓고 시작해야 한다.
+                df2['duty_imprt'] = 0
+                # for i in range(len(df2)):
+                #     df2.loc[i, 'duty_imprt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].mean(), 1)
+
+                
+                for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
+
+                    # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_imprt를 곱한 값을 구하여 duty_imprt열에 추가한다.
+                    # 이를 위해서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구한다.
+                    sum_prfrm_tm_ann = float(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum())
+
+                    # sum_prfrm_tm_ann이 0인 경우는 duty_imprt열을 0으로 처리한다.
+                    if sum_prfrm_tm_ann == 0:
+                        df2.loc[i, 'duty_imprt'] = 0
+                    else:
+                        # sum_prfrm_tm_ann이 0이 아닌 경우는 duty_imprt열을 구한다.
+                        # df2.loc[i, 'duty_imprt'] = round(float((df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].sum())/sum_prfrm_tm_ann)*100, 1)
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_imprt 리스트 생성
+                        work_lv_imprt_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].tolist()
+                        # work_lv_imprt_list의 자료형을 float으로 변경
+                        work_lv_imprt_list = [float(x) for x in work_lv_imprt_list]
+                        
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
+                        prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        # prfrm_tm_ann_ratio_list의 모든 값을 sum_prfrm_tm_ann으로 나눈 값으로 변경
+                        prfrm_tm_ann_ratio_list = [x/sum_prfrm_tm_ann for x in prfrm_tm_ann_ratio_list]
+
+                        # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
+                        df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)]), 1)
+                        
+                        
+                        # prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']/sum_prfrm_tm_ann
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        # prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        
+                        # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
+                        # df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)])*100, 1)
+
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_dfclt 평균의 소수 첫째자리까지 반올림을 구해서 duty_dfclt열로 추가한다.
+                # 우선 df1의 work_lv_dfclt열 중에서 Null값을 0으로 치환한다.
+                df1['work_lv_dfclt'] = df1['work_lv_dfclt'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_dfclt열 데이터를 추가해준다. 먼저 duty_dfclt열 만들어놓고 시작해야 한다.
+                df2['duty_dfclt'] = 0
+                # for i in range(len(df2)):
+                #     df2.loc[i, 'duty_dfclt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_dfclt'].mean(), 1)
+
+                for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
+
+                    # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_dfclt를 곱한 값을 구하여 duty_dfclt열에 추가한다.
+                    # 이를 위해서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구한다.
+                    sum_prfrm_tm_ann = float(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum())
+
+                    # sum_prfrm_tm_ann이 0인 경우는 duty_dfclt열을 0으로 처리한다.
+                    if sum_prfrm_tm_ann == 0:
+                        df2.loc[i, 'duty_dfclt'] = 0
+                    else:
+                        # sum_prfrm_tm_ann이 0이 아닌 경우는 duty_dfclt열을 구한다.
+                        # df2.loc[i, 'duty_dfclt'] = round(float((df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_dfclt'].sum())/sum_prfrm_tm_ann)*100, 1)
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_dfclt 리스트 생성
+                        work_lv_dfclt_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_dfclt'].tolist()
+                        # work_lv_dfclt_list의 자료형을 float으로 변경
+                        work_lv_dfclt_list = [float(x) for x in work_lv_dfclt_list]
+
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
+                        prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        # prfrm_tm_ann_ratio_list의 모든 값을 sum_prfrm_tm_ann으로 나
+                        prfrm_tm_ann_ratio_list = [x/sum_prfrm_tm_ann for x in prfrm_tm_ann_ratio_list]
+
+                        # 두 리스트를 곱한 값을 구하여 duty_dfclt열에 추가한다.
+                        df2.loc[i, 'duty_dfclt'] = round(sum([a*b for a, b in zip(work_lv_dfclt_list, prfrm_tm_ann_ratio_list)]), 1)
+
+
+
+                # df1을 참고하여, 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_prfcn 평균의 소수 첫째자리까지 반올림을 구해서 duty_prfcn열로 추가한다.
+                # 우선 df1의 work_lv_prfcn열 중에서 Null값을 0으로 치환한다.
+                df1['work_lv_prfcn'] = df1['work_lv_prfcn'].fillna(0)
+                # 그 후 df2에 대해서 for문을 활용하여 duty_prfcn열 데이터를 추가해준다. 먼저 duty_prfcn열 만들어놓고 시작해야 한다.
+                df2['duty_prfcn'] = 0
+                # for i in range(len(df2)):
+                #     df2.loc[i, 'duty_prfcn'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_prfcn'].mean(), 1)
+
+                for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
+
+                    # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_prfcn을 곱한 값을 구하여 duty_prfcn열에 추가한다.
+                    # 이를 위해서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann의 합을 구한다.
+                    sum_prfrm_tm_ann = float(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann'].sum())
+
+                    # sum_prfrm_tm_ann이 0인 경우는 duty_prfcn열을 0으로 처리한다.
+                    if sum_prfrm_tm_ann == 0:
+                        df2.loc[i, 'duty_prfcn'] = 0
+                    else:
+                        # sum_prfrm_tm_ann이 0이 아닌 경우는 duty_prfcn열을 구한다.
+                        # df2.loc[i, 'duty_prfcn'] = round(float((df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_prfcn'].sum())/sum_prfrm_tm_ann)*100, 1)
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 work_lv_prfcn 리스트 생성
+                        work_lv_prfcn_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_prfcn'].tolist()
+                        # work_lv_prfcn_list의 자료형을 float으로 변경
+                        work_lv_prfcn_list = [float(x) for x in work_lv_prfcn_list]
+
+                        # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
+                        prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
+                        # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
+                        prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
+                        # prfrm_tm_ann_ratio_list의 모든 값을 sum_prfrm_tm_ann으로 나눈 값으로 변경
+                        prfrm_tm_ann_ratio_list = [x/sum_prfrm_tm_ann for x in prfrm_tm_ann_ratio_list]
+
+                        # 두 리스트를 곱한 값을 구하여 duty_prfcn열에 추가한다.
+                        df2.loc[i, 'duty_prfcn'] = round(sum([a*b for a, b in zip(work_lv_prfcn_list, prfrm_tm_ann_ratio_list)]), 1)
+
+                # work_lv_mean열 추가. duty_imprt, duty_dfclt, duty_prfcn의 평균을 구해서 추가한다.
+                df2['work_lv_mean'] = round((df2['duty_imprt'] + df2['duty_dfclt'] + df2['duty_prfcn']), 1)
+
+                # # 바꿔야 되는 부분
+                g1_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G1').work_lv_min
+                g1_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G1').work_lv_max
+                g2_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G2').work_lv_min
+                g2_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G2').work_lv_max
+                g3_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G3').work_lv_min
+                g3_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G3').work_lv_max
+                g4_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G4').work_lv_min
+                g4_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G4').work_lv_max
+                g5_min = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G5').work_lv_min
+                g5_max = BsWorkGrade.objects.get(prd_cd_id = prd_cd_selected, work_grade='G5').work_lv_max
+
+                # df2에서 각 행에 대해 work_lv_mean열에 대해 조건문을 적용하여 G1, G2, G3, G4, G5를 부여한다.
+                # for문을 이용해 각 row에 접근해서 바꿔준다.
+                for i in range(len(df2)):
+
+                    # 그 행의 job_cd가 JC001이면 work_lv_mean열에 빈칸을 부여한다.
+                    if df2.loc[i, 'job_cd'] == 'JC001':
+                        df2.loc[i, 'work_lv_mean'] = ''
+                    
+                    # 그 행의 job_cd가 JC001이 아니면
+                    else:
+
+                        if round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) > g1_max:
+                            df2.loc[i, 'work_lv_mean'] = 'G1'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g1_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g1_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G1'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g2_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g2_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G2'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g3_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g3_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G3'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g4_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g4_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G4'
+                        elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g5_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g5_min:
+                            df2.loc[i, 'work_lv_mean'] = 'G5'
+                
+                # BsJob 테이블을 이용해 해당 job_cd의 job_nm 열을 추가할 것이다.
+                job_nm_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm for x in df2['job_cd']]
+                df2['job_nm'] = job_nm_list
+
+                # job_nm열을 job_cd열 뒤로 이동
+                cols = df2.columns.tolist()
+                cols = cols[:1] + cols[-1:] + cols[1:-1]
+                df2 = df2[cols]
+
+                context.update({
+                    'dept_selected': dept_selected,
+                    'dept_selected_nm' : BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept_selected).dept_nm,
+                    'analysis' : df2,
+                    'sum_duty_tm_ann' : sum_duty_tm_ann,
+                    'sum_duty_ratio' : sum_duty_ratio,
+                })
+
+            except KeyError as e:
+                messages.error(request, '해당 회기에 선택한 부서의 조정 업무량 구성비 정보가 없습니다.')
 
         elif tab == "tab3": # 담당자별 업무량 분석 탭일 경우
 
@@ -9718,7 +9720,7 @@ def JB200_2(request): # 업무량 분석 기초 자료 화면- 저장/취소 버
     return render(request, 'jobs/JB200.html', context)
 
 
-def JB300_1(request):
+def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
 
     if request.method == 'POST':
 
@@ -10018,8 +10020,8 @@ def JB300_1(request):
         elif action == 'action2': # 업무 분장표 눌렀을 때
 
             # SQLAlchemy 엔진을 사용하여 데이터베이스에 연결
-            engine = create_engine('mysql+pymysql://cdh:1234@130.1.200.200/jobdb')
-            db_name = 'jobdb'
+            engine = create_engine('mysql+pymysql://cdh:cdh0706**@130.1.112.100/betadb')
+            db_name = 'betadb'
 
             # prd_cd = '2022A'
             prd_cd = prd_cd_selected
@@ -10562,10 +10564,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -10637,10 +10639,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',

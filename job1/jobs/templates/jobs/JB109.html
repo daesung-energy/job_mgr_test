@@ -350,7 +350,7 @@
     
     <script>
 
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function() { // 인력산정 결과 탭은 json으로 생성한다.
             var manResult = JSON.parse('{{ man_result|escapejs }}'); // JSON 데이터 파싱
 
             function createTableFromJSON(data) {
@@ -768,7 +768,7 @@
             //     //         console.log('새 그룹명:', cell.value, '에서 병합 시작:', mergeStartRow); // 디버깅 로그 추가
             //     //     }
             //     // }
-                                
+
             //     console.log('정상')
             // }
 

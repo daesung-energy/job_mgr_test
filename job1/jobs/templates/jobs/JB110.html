@@ -46,10 +46,15 @@
                     {% if tab_activate == 'no' %}
                         <span name="span1" style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
                         <span style="padding-right: 40px"></span>
+                        <span name="span2" style="cursor: pointer; font-family: Seed-Medium;">책무별 업무량 분석</span>
+                        <span style="padding-right: 40px"></span>
                         <span name="span3" style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
                     {% else %}
                         <span name="span1" onclick="submitForm('span1')" {% if tab == "tab1" %} class="Choice" {% endif %}
                         style="cursor: pointer; font-family: Seed-Medium;">직무별 업무량 분석</span>
+                        <span style="padding-right: 40px"></span>
+                        <span name="span1" onclick="submitForm('span2')" {% if tab == "tab2" %} class="Choice" {% endif %}
+                        style="cursor: pointer; font-family: Seed-Medium;">책무별 업무량 분석</span>
                         <span style="padding-right: 40px"></span>
                         <span name="span3" onclick="submitForm('span3')" {% if tab == "tab3" %} class="Choice" {% endif %}
                         style="cursor: pointer; font-family: Seed-Medium;">담당자별 업무량 분석</span>
@@ -84,6 +89,12 @@
                 <span style="margin-left: 795px;">
                     <button class="save" onclick="printTableContent('analysis_by_jobs', '{{prd_cd_selected}}', '{{dept_selected_nm}}')">인쇄</button>
                     <button class="save" onclick="exportToExcel('analysis_by_jobs')">다운로드</button> 
+                </span>
+                {% endif %}
+                {% if tab == "tab2" %}
+                <span style="margin-left: 795px;">
+                    <button class="save" onclick="printTableContent('analysis_by_duty', '{{prd_cd_selected}}', '{{dept_selected_nm}}')">인쇄</button>
+                    <button class="save" onclick="exportToExcel('analysis_by_duty')">다운로드</button> 
                 </span>
                 {% endif %}
                 {% if tab == "tab3" %}
@@ -147,6 +158,52 @@
             </div>
             {% endif %}
 
+            {% if tab == "tab2" %}
+            <!-- 책무별 업무량 분석 테이블 div - 탭이 책무별 업무량 분석일 때만 떠야 함 -->
+            <div id="analysis" class="list-box" style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1300px;" >
+                <table id="analysis_by_duty">
+                    <thead>                
+                        <tr>
+                            <th style="height: 40px;"><p>직무명</p></th>
+                            <th style="height: 40px;"><p>책무명</p></th>
+                            <th style="height: 40px;"><p>과업수</p></th>
+                            <th style="height: 40px;"><p>연간 수행시간</p></th>
+                            <th style="height: 40px;"><p>업무량 구성비(%)</p></th>
+                            <th style="height: 40px;"><p>중요도</p></th>
+                            <th style="height: 40px;"><p>난이도</p></th>                           
+                            <th style="height: 40px;"><p>숙련도</p></th>
+                            <th style="height: 40px;"><p>업무 등급</p></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for index, row in analysis.iterrows %}
+                            <tr style="height: 40px; text-align: center;">
+                                <td class="job-cell-class"><p>{{ row.job_nm }}</p></td>
+                                <td><p>{{ row.duty_nm }}</p></td>
+                                <td><p>{{ row.task_cnt }}</p></td>
+                                <td><p>{{ row.duty_tm_ann }}</p></td>
+                                <td><p>{{ row.duty_ratio }}</p></td>
+                                <td><p>{{ row.duty_imprt }}</p></td>
+                                <td><p>{{ row.duty_dfclt }}</p></td>
+                                <td><p>{{ row.duty_prfcn }}</p></td>
+                                <td><p>{{ row.work_lv_mean }}</p></td>
+                            </tr>
+                        {% endfor %}
+                        <tr style="height: 40px; text-align: center;">
+                            <td colspan="3"><p>합계</p></td>
+                            <td><p>{{ sum_duty_tm_ann }}</p></td>
+                            <td><p>{{ sum_duty_ratio }}</p></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>                            
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+
             {% if tab == "tab3" %}
             <!-- 직무별 업무량 분석 테이블 div - 탭이 직무별 업무량 분석일 때만 떠야 함 -->            
             <div id="analysis" class="list-box" style="margin-top:20px; margin-left:20px; border: 1px solid #ccc; overflow-y: scroll; height: 600px; width:1300px;" >
@@ -204,6 +261,8 @@
             {% endfor %}
         </div>
         {% endif %}
+
+        <input type="hidden" id="tab-value" value="{{ tab }}">
 
     </wrap>
     
@@ -280,6 +339,8 @@
             const prd_cd_selected = document.querySelector("input[name='prd_cd_selected']").value;
             const dept_selected = document.querySelector("select[name='dept_selected']").selectedOptions[0].text;  // 부서명을 직접 가져오기
 
+            const tabValue = document.getElementById('tab-value').value;
+
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Sheet 1');
 
@@ -291,39 +352,99 @@
             let currentExcelRow = 3;
             let mergeMap = [];
 
-            Array.from(table.rows).forEach((htmlRow, rowIndex) => {
-                const excelRow = worksheet.getRow(currentExcelRow);
-                let currentExcelColumn = 1;
+            // Array.from(table.rows).forEach((htmlRow, rowIndex) => { // 테이블의 각 행에 대해 반복
+            //     const excelRow = worksheet.getRow(currentExcelRow); // 현재 엑셀 행 가져오기
+            //     let currentExcelColumn = 1; // 엑셀 열 인덱스 초기화
 
-                Array.from(htmlRow.cells).forEach(htmlCell => {
-                    while (mergeMap[currentExcelColumn] >= currentExcelRow) {
-                        currentExcelColumn++;
+            //     Array.from(htmlRow.cells).forEach(htmlCell => { // 행의 각 셀에 대해 반복
+            //         while (mergeMap[currentExcelColumn] >= currentExcelRow) { // 병합된 셀이면 다음 셀로 이동
+            //             currentExcelColumn++; // 다음 셀로 이동
+            //         }
+
+            //         const excelCell = excelRow.getCell(currentExcelColumn); // 현재 엑셀 셀 가져오기
+            //         excelCell.value = htmlCell.innerText.trim(); // 셀 값 설정
+            //         applyStylesToCell(excelCell, htmlCell); // 셀 스타일 적용
+
+            //         const colSpan = htmlCell.colSpan || 1; // 셀의 colSpan 속성 가져오기
+            //         const rowSpan = htmlCell.rowSpan || 1; // 셀의 rowSpan 속성 가져오기
+
+            //         if (colSpan > 1 || rowSpan > 1) { // 병합할 셀이면
+            //             let mergeEndColumn = currentExcelColumn + colSpan - 1; // 병합할 마지막 열 인덱스 계산
+            //             let mergeEndRow = currentExcelRow + rowSpan - 1; // 병합할 마지막 행 인덱스 계산
+            //             worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn); // 셀 병합
+
+            //             for (let col = currentExcelColumn; col <= mergeEndColumn; col++) { // 병합된 셀에 대해 병합 정보 저장
+            //                 mergeMap[col] = mergeEndRow; // 병합된 셀의 마지막 행 인덱스 저장
+            //             }
+            //         }
+
+            //         currentExcelColumn += colSpan; // 엑셀 열 인덱스 업데이트
+            //     });
+
+            //     currentExcelRow++; // 엑셀 행 인덱스 업데이트
+            // });
+
+            if (tabValue === 'tab2') { // 책무별 업무량 분석 탭
+                let currentExcelRow = 3;
+                Array.from(table.rows).forEach((htmlRow) => {
+                    const excelRow = worksheet.getRow(currentExcelRow);
+                    let currentExcelColumn = 1;
+
+                    Array.from(htmlRow.cells).forEach(htmlCell => {
+                        const excelCell = excelRow.getCell(currentExcelColumn);
+                        excelCell.value = htmlCell.innerText;
+                        applyStylesToCell(excelCell, htmlCell);
+
+                        const colSpan = htmlCell.colSpan || 1;
+                        const rowSpan = htmlCell.rowSpan || 1;
+
+                        if (colSpan > 1 || rowSpan > 1) {
+                            let mergeEndColumn = currentExcelColumn + colSpan - 1;
+                            let mergeEndRow = currentExcelRow + rowSpan - 1;
+                            worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn);
+                        }
+                        currentExcelColumn += colSpan;
+                    });
+                    currentExcelRow++;
+                });
+            }
+            else {
+                Array.from(table.rows).forEach((htmlRow, rowIndex) => { // 테이블의 각 행에 대해 반복
+                const excelRow = worksheet.getRow(currentExcelRow); // 현재 엑셀 행 가져오기
+                let currentExcelColumn = 1; // 엑셀 열 인덱스 초기화
+
+                Array.from(htmlRow.cells).forEach(htmlCell => { // 행의 각 셀에 대해 반복
+                    while (mergeMap[currentExcelColumn] >= currentExcelRow) { // 병합된 셀이면 다음 셀로 이동
+                        currentExcelColumn++; // 다음 셀로 이동
                     }
 
-                    const excelCell = excelRow.getCell(currentExcelColumn);
-                    excelCell.value = htmlCell.innerText.trim();
-                    applyStylesToCell(excelCell, htmlCell);
+                    const excelCell = excelRow.getCell(currentExcelColumn); // 현재 엑셀 셀 가져오기
+                    excelCell.value = htmlCell.innerText.trim(); // 셀 값 설정
+                    applyStylesToCell(excelCell, htmlCell); // 셀 스타일 적용
 
-                    const colSpan = htmlCell.colSpan || 1;
-                    const rowSpan = htmlCell.rowSpan || 1;
+                    const colSpan = htmlCell.colSpan || 1; // 셀의 colSpan 속성 가져오기
+                    const rowSpan = htmlCell.rowSpan || 1; // 셀의 rowSpan 속성 가져오기
 
-                    if (colSpan > 1 || rowSpan > 1) {
-                        let mergeEndColumn = currentExcelColumn + colSpan - 1;
-                        let mergeEndRow = currentExcelRow + rowSpan - 1;
-                        worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn);
+                    if (colSpan > 1 || rowSpan > 1) { // 병합할 셀이면
+                        let mergeEndColumn = currentExcelColumn + colSpan - 1; // 병합할 마지막 열 인덱스 계산
+                        let mergeEndRow = currentExcelRow + rowSpan - 1; // 병합할 마지막 행 인덱스 계산
+                        worksheet.mergeCells(currentExcelRow, currentExcelColumn, mergeEndRow, mergeEndColumn); // 셀 병합
 
-                        for (let col = currentExcelColumn; col <= mergeEndColumn; col++) {
-                            mergeMap[col] = mergeEndRow;
+                        for (let col = currentExcelColumn; col <= mergeEndColumn; col++) { // 병합된 셀에 대해 병합 정보 저장
+                            mergeMap[col] = mergeEndRow; // 병합된 셀의 마지막 행 인덱스 저장
                         }
                     }
 
-                    currentExcelColumn += colSpan;
+                    currentExcelColumn += colSpan; // 엑셀 열 인덱스 업데이트
                 });
 
-                currentExcelRow++;
+                currentExcelRow++; // 엑셀 행 인덱스 업데이트
             });
 
-            autoSizeColumns(worksheet);
+
+            }
+
+            autoSizeColumns(worksheet); // 열 너비 자동 조정
 
             // 프린트 영역 설정
             worksheet.pageSetup.printArea = `A1:${worksheet.lastColumn.letter}${worksheet.lastRow.number}`;
@@ -406,14 +527,14 @@
             }
         }
 
-        function autoSizeColumns(worksheet) {
-            worksheet.columns.forEach(column => {
-                let maxColumnLength = 0;
-                column.eachCell({ includeEmpty: true }, cell => {
-                    const cellValue = cell.value ? cell.value.toString() : '';
-                    const columnLength = cellValue.length;
-                    if (columnLength > maxColumnLength) {
-                        maxColumnLength = columnLength;
+        function autoSizeColumns(worksheet) { // 열 너비 자동 조정
+            worksheet.columns.forEach(column => { // 각 열에 대해 반복
+                let maxColumnLength = 0; // 열의 최대 길이 초기화
+                column.eachCell({ includeEmpty: true }, cell => { // 열의 각 셀에 대해 반복
+                    const cellValue = cell.value ? cell.value.toString() : ''; // 셀 값 가져오기
+                    const columnLength = cellValue.length; // 셀 값의 길이
+                    if (columnLength > maxColumnLength) { // 최대 길이 업데이트
+                        maxColumnLength = columnLength; // 최대 길이 업데이트
                     }
                 });
                 column.width = maxColumnLength < 15 ? 15 : maxColumnLength + 2; // 최소 너비를 15로 설정
@@ -443,6 +564,8 @@
             // 모든 'number-format' 클래스를 가진 요소 찾기
             const numberElements = document.querySelectorAll('.number-format p');
 
+            const tabValue = document.getElementById('tab-value').value;
+
             // 각 요소에 대해 숫자 형식 변경
             numberElements.forEach(element => {
                 // 요소의 텍스트를 float으로 변환하고, 로케일 문자열로 포맷
@@ -459,6 +582,56 @@
                     element.innerText = '';
                 }
             });
+
+            // 분석 테이블의 모든 셀 가져옴
+            const tableCells = document.querySelectorAll('#analysis_by_duty td p');
+
+            // 0인 데이터 처리. 0인 데이터에 대해서 빈칸으로 처리하도록 함.
+            tableCells.forEach(cell => { // 각 셀에 대해 반복
+                // 부모 행에서 "직무" 정보를 확인
+                const row = cell.closest('tr'); // 셀이 속한 행을 찾음
+                const jobCell = row.querySelector('td.job-cell-class'); // "직무" 셀을 찾음
+
+                // "직무" 셀이 "팀리더"인 경우에만 빈 문자열로 설정
+                if (jobCell && jobCell.innerText.trim() === "팀리더") { // "직무" 셀이 "팀리더"인 경우
+                    if (cell.innerText.trim() === "0.0" || cell.innerText.trim() === "0") { // 셀 값이 "0.0" 또는 "0"인 경우
+                        cell.innerText = ""; // 셀 값을 빈 문자열로 설정
+                    }
+                }
+            });
+
+            function mergeCellsByColumn(tableId, columnIndex) {
+                const table = document.getElementById(tableId);
+
+                if (!table) {
+                    return;
+                }
+
+                let previousText = "";
+                let rowspanCount = 1;
+                let firstCell;
+
+                for (let row of table.rows) {
+                    let currentCell = row.cells[columnIndex];
+
+                    if (currentCell.innerText === previousText) {
+                        rowspanCount++;
+                        firstCell.rowSpan = rowspanCount;
+                        currentCell.style.display = 'none';
+                    } else {
+                        previousText = currentCell.innerText;
+                        firstCell = currentCell;
+                        rowspanCount = 1;
+                    }
+                }
+            }
+
+            // const tabValue = document.getElementById('tab-value').value;
+
+            if (tabValue === 'tab2') {
+                mergeCellsByColumn('analysis_by_duty', 0); // 직무명 컬럼 인덱스 0
+            }
+
         });
 
     </script>
