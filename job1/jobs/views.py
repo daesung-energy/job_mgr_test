@@ -970,10 +970,10 @@ def JB103_4(request): # 직무 상세정보 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.112.100', # 데이터베이스 주소
+            host='130.1.200.200', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='cdh0706**', # 데이터베이스 비밀번호
-            db='betadb',
+            password='1234', # 데이터베이스 비밀번호
+            db='jobdb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -7735,8 +7735,8 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
         elif action == 'action2': # 업무 분장표 눌렀을 때
 
             # SQLAlchemy 엔진을 사용하여 데이터베이스에 연결
-            engine = create_engine('mysql+pymysql://cdh:cdh0706**@130.1.112.100/betadb')
-            db_name = 'betadb'
+            engine = create_engine('mysql+pymysql://cdh:1234@130.1.200.200/jobdb')
+            db_name = 'jobdb'
 
             # prd_cd = '2022A'
             prd_cd = prd_cd_selected
@@ -8231,10 +8231,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -8306,10 +8306,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = 'cdh0706**'  # 비밀번호
-    db_host = '130.1.112.100'  # 호스트명/IP
+    pwd = '1234'  # 비밀번호
+    db_host = '130.1.200.200'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "betadb"  # 사용할 데이터베이스 betadb
+    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
