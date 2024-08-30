@@ -31,201 +31,9 @@ from pathlib import Path #추가
 
 now = dt.datetime.now() #지금 날짜를 가져옴
 
-# def round_half_up(number, decimals=1):
-#     multiplier = 10 ** decimals
-#     return int(number * multiplier + 0.5) / multiplier
-
 # Create your views here.
 def index(request):
     return HttpResponse("Hello World")
-
-
-def ag_grid(request):
-
-    # # original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd="DD10")
-    # # data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-    # #         'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_sum': rows.work_lv_sum } for rows in original_rows]
-
-
-
-    # # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-    # df1 = pd.DataFrame(data_list)
-    # print(df1)
-
-    dataframe = pd.DataFrame({
-        'name': ['John Doe', 'Jane Doe', 'John Smith'],
-        'age': [30, 25, 40],
-        'city': ['Seoul', 'Busan', 'Daegu']
-    })
-
-    context = {
-        'data' : dataframe,
-    }
-
-    return render(request, 'jobs/SEED_AG-Grid.html', context)
-
-
-def ag_grid_pr(request): #ag_grid_pr 초기화면 - 회기 선택할 수 있도록 함.
-
-    context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
-        'prd' : BsPrd.objects.all(),
-        'activate' : 'no' #버튼 컨트롤 off
-        }
-
-    return render(request, 'jobs/SEED_AG-Grid-pr.html', context)
-
-
-def ag_grid_pr_1(request): #ag_grid_pr 둘째 화면 - 회기 선택 후 Grid에 띄워주는 화면
-
-    if request.method == 'POST':
-
-        # 회기 데이터를 받아옴
-        prd_cd_selected = request.POST['prd_cd']
-
-        # 회기 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
-        original_rows=JobTask.objects.filter(prd_cd=prd_cd_selected)
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id,
-                      'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_sum': rows.work_lv_sum } for rows in original_rows]
-        df1 = pd.DataFrame(data_list)
-
-        # dataframe의 index를 열로 만들어줌
-        df1.reset_index(inplace=True)
-
-        # df1의 index 열을 복사하여, 새로운 열인 index_pos를 만들어줌. 이 값은 변하지 않는 값이며, grid에서 추가가 되면 999가 되는 값이다.
-        df1['index_pos'] = df1['index']
-        print(df1)
-
-        # 데이터프레임을 JSON 형식으로 변환하여 전달
-        df_json = df1.to_json(orient='records')
-
-        context = {
-            'data' : df_json,
-            'prd_cd_selected' : prd_cd_selected,
-            'prd' : BsPrd.objects.all(),
-        }
-
-    # return render(request, 'jobs/AGgrid.html', {'html_table': html_table})
-    return render(request, 'jobs/SEED_AG-Grid-pr.html', context)
-
-
-def ag_grid_pr_2(request): #ag_grid_pr 셋째 화면 - 데이터 저장 버튼 누르면 수행하는 것
-
-    if request.method == 'POST':
-
-        # 회기 정보를 받아옴
-        prd_cd_selected = request.POST['prd_cd']
-
-        # 전송된 JSON 형태의 데이터를 파싱
-        grid_data_str = request.POST.get('grid_data', '')
-        grid_data = json.loads(grid_data_str)
-
-        # JSON 데이터를 DataFrame df으로 변환. 그리드 그대로 가져옴
-        df = pd.DataFrame(grid_data)
-        print('--')
-        # print(df)
-        print('--')
-
-        # df의 번호, 업무수준 열은 object형태이므로, 우리가 비교해야 하는 대상인 db data와 자료형이 같도록 int64로 바꿔준다.
-        df['번호'] = df['번호'].astype('int64')
-        df['번호_위치'] = df['번호_위치'].astype('int64')
-        df['업무수준'] = df['업무수준'].astype('int64')
-        df = df.drop(columns=df.columns[0])
-        df = df.drop(columns=df.columns[0])
-        # print(df)
-
-        # DB를 가져와서 df1을 만들어준다. 이걸 UI에서 가져온 dataframe df와 비교할 것이다. 만들때는 index도 만들어줄 것이다.
-        original_rows=JobTask.objects.filter(prd_cd=prd_cd_selected)
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id,
-                      'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_sum': rows.work_lv_sum } for rows in original_rows]
-        df1 = pd.DataFrame(data_list)
-        df1.reset_index(inplace=True)
-
-        # 그리고 열 이름도 가져온 UI와 같이 만들어줄것이다. 열 이름 매핑을 사용하여 치환
-        column_mapping = {'index': '번호_위치', 'prd_cd': '회기', 'dept_cd':'부서', 'job_cd':'직무코드', 'task_nm':'책무', 'task_prsn_chrg':'담당자', 'work_lv_sum':'업무수준'}
-        df1.rename(columns=column_mapping, inplace=True)
-
-        ## 비교 하는 부분 ## merge 기능을 이용해 수정된 행, 추가된 행, 삭제된 행을 추출할 것이다.
-        #df1(DB)에 있고 df(UI)에 없는 것. 즉, 수정되거나 삭제된 것
-        df_left = pd.merge(df1, df, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
-        #df(UI)에 있고 df1(DB)에 없는 것. 즉, 수정되거나 추가된 것
-        df_right = pd.merge(df1, df, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
-
-        print(df_left)
-        print(df_right)
-
-        ## DB에 적용하는 부분 ## index를 활용하고 DB key값은 책무로 할 것이다.
-        # df_left을 다룬다.
-        for i in range(0, len(df_left)):
-            # df_right의 번호 컬럼 내에 df_left의 번호 컬럼이 들어가 있는가? 를 확인하는 logic
-            is_same = df_right['번호_위치'] == df_left.iloc[i, 0]
-
-            # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다.
-            if is_same.sum() > 0:
-
-                # df1을 다룬다(DB쪽)
-                # df1의 번호열 값이 df_left.iloc[i,0](df_left는 수정해야되는 값만 있는 df지)인 행을 찾아서 그 행이 어딘지 행 번호를 알아냄.
-                n = int(df1[df1['번호_위치'] == df_left.iloc[i,0]].index[0])
-
-                # 행 번호를 알았으니 df_left에서는 변하는 값이 아니고 기존 값이니, 그 df_left에서 task_nm을 찾아가지고 df_right의 task_nm으로 바꿔줄 것이다.
-                # index로 접근하려고 하니 안되는거 같아서.
-                # df_left의 '번호' 열의 값이 n인 행의 '책무' 열 값 가져오기
-                print(df_left.loc[df_left['번호_위치']==n, '책무'].values[0])
-
-                # 위에서 가져온 그 값을 가지고 DB에 접근하여, df_left의 값으로 update하기(책무 이름은 update하고 난 후에 바뀌니까 그것도 적용해주기)
-                JobTask.objects.filter(prd_cd_id = prd_cd_selected,
-                                        task_nm = df_left.loc[df_left['번호_위치']==n, '책무'].values[0]).update(task_nm =
-                                                                                                         df_right.loc[df_right['번호_위치']==n, '책무'].values[0])
-                JobTask.objects.filter(prd_cd_id = prd_cd_selected,
-                                        task_nm = df_right.loc[df_right['번호_위치']==n, '책무'].values[0]).update(task_prsn_chrg =
-                                                                                                           df_right.loc[df_right['번호_위치']==n, '담당자'].values[0])
-                JobTask.objects.filter(prd_cd_id = prd_cd_selected,
-                                        task_nm = df_right.loc[df_right['번호_위치']==n, '책무'].values[0]).update(work_lv_sum =
-                                                                                                           df_right.loc[df_right['번호_위치']==n, '업무수준'].values[0])
-
-            # 삭제했으면 df_left에는 있고 df_right에는 없을 것이다. 삭제보다 추가 먼저 만들어주자.
-            else:
-                # 여기서 row_to_delete 따로 정의하고 (get으로) row_to_delete.delete()하면 싹 다 지워짐. prd_cd도 잘 지정해줘야 함.
-                # df1을 다룬다(DB쪽)
-                # df의 번호열 값이 df_left.iloc[i,0](df_left는 수정or삭제해야되는 값만 있는 df지)인 행을 찾아서 그 행이 어딘지 행 번호를 알아냄.
-                # 그 행 번호를 알아내서(열 이름 '번호'), 그 행에 대항하는 책무 이름을 찾고, 그 책무 이름을 가진 DB의 object를 delete할 것임.
-                # print('난 다른거', df_left.iloc[i, 0])
-                n = int(df1[df1['번호_위치'] == df_left.iloc[i,0]].index[0])
-                JobTask.objects.filter(prd_cd_id = prd_cd_selected,
-                                        task_nm = df_left.loc[df_left['번호_위치']==n, '책무'].values[0]).delete()
-
-        # df_right을 다룬다.
-        for i in range(0, len(df_right)):
-            # df_left의 name column 내에 df_right의 i열 값이 들어가 있는가?
-            is_same = df_left['번호_위치'] == df_right.iloc[i, 0]
-
-            # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다.
-            if is_same.sum() == 0: # 추가라면, is_same값은 0일 것이다. df_right 에만 있고 df_left에는 없는 것이다.
-                #여기서 .save()쓰면 foreign key 때문에 참조무결성 오류 발생하므로 create를 써준다.
-                # BsDept.objects.create(prd_cd_id = prd_cd_selected, dept_cd = df_right.iloc[i, 0], dept_nm = df_right.iloc[i, 1], dept_to = df_right.iloc[i, 2])
-                JobTask.objects.create(prd_cd_id=prd_cd_selected, dept_cd_id="DD10", job_cd_id="JU006", duty_nm="새거",
-                                       task_nm=df_right.iloc[i, 4], task_prsn_chrg=df_right.iloc[i, 5], work_lv_sum=df_right.iloc[i, 6])
-            else:
-                is_same = 1
-
-        # 변경 후에 다시 UI에 띄워줄 data는 df2로 새로 생성할 것이다.
-        original_rows = JobTask.objects.filter(prd_cd=prd_cd_selected)
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id,
-                      'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_sum': rows.work_lv_sum } for rows in original_rows]
-        df2 = pd.DataFrame(data_list)
-
-        # dataframe의 index를 열로 만들어줌
-        df2.reset_index(inplace=True)
-
-        # 데이터프레임을 JSON 형식으로 변환하여 전달
-        df_json = df2.to_json(orient='records')
-
-        context = {
-            'data' : df_json,
-            'prd_cd_selected' : prd_cd_selected,
-            'prd' : BsPrd.objects.all(),
-        }
-
-    return render(request, 'jobs/SEED_AG-Grid-pr.html', context)
 
 
 def my_view(request):
@@ -262,7 +70,7 @@ def BS101(request): # 회기 관리(회기 등록) 초기화면
     return render(request, 'jobs/BS101.html', context1) #장고가 context를 meshup해서 html template으로 보내줌
 
 
-def BS200(request):
+def BS200(request): # 직무 조사 초기화면
 
     result_object = BsPrd.objects.all().order_by('turn').last()
     prd_cd_selected = result_object.prd_cd
@@ -282,7 +90,7 @@ def BS200(request):
     return render(request, 'jobs/BS200.html', context2) #장고가 context를 meshup해서 html template으로 보내줌
 
 
-def BS300(request): #BS300 초기화면 + 회기 선택 화면
+def BS300(request): # 조직 정보 초기화면 + 회기 선택 화면
 
     context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
         'prd' : BsPrd.objects.all(),
@@ -307,36 +115,7 @@ def BS300(request): #BS300 초기화면 + 회기 선택 화면
     return render(request, 'jobs/BS300.html', context)
 
 
-def BS301(request): #BS300 초기화면
-
-    context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
-        'prd' : BsPrd.objects.all(),
-        'activate' : 'no' #버튼 컨트롤 off
-        }
-
-    return render(request, 'jobs/BS301.html', context)
-
-
-def BS302(request): #BS300 초기화면
-
-    context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
-        'prd' : BsPrd.objects.all(),
-        }
-
-    return render(request, 'jobs/BS302.html', context)
-
-
-def BS303(request): #BS300 초기화면
-
-    context = { #context를 넘겨줌. context는 어떤 type도 가능(?)
-        'prd' : BsPrd.objects.all(),
-        'activate' : 'no' #버튼 컨트롤 off
-        }
-
-    return render(request, 'jobs/BS303.html', context)
-
-
-def BS103(request): #BS103 초기화면
+def BS103(request): # 회기 마감 초기화면
 
     # 회기 최종 마감일에 표시되는 날짜와 최종 마감 버튼 control
     if BsPrd.objects.last().prd_done_yn == "Y": # 디폴트로 뜨는 마지막 회기가 마감된 회기이면
@@ -360,15 +139,7 @@ def BS103(request): #BS103 초기화면
     return render(request, 'jobs/BS103.html', context) #장고가 context를 meshup해서 html template으로 보내줌
 
 
-def BS104(request): ##회기 삭제 초기화면
-
-    context4 = {
-        'contents': BsPrd.objects.all()  ##BsPrd 모든 값 가져옴
-    }
-    return render(request, 'jobs/BS104.html', context4)
-
-
-def BS105(request):
+def BS105(request): # 표준 정보 초기화면
 
     prd_cd_selected = BsPrd.objects.all().last().prd_cd
 
@@ -417,7 +188,7 @@ def BS105(request):
         return render(request, 'jobs/BS105.html', context)
 
 
-def BS106(request): #BS106 초기화면 + 회기 선택 화면
+def BS106(request): # 직무 관리 초기화면 + 회기 선택 화면
 
     context = {
         'title' : '직무 관리', # 제목
@@ -442,28 +213,6 @@ def BS106(request): #BS106 초기화면 + 회기 선택 화면
     return render(request, 'jobs/BS106.html', context)
 
 
-def BS104_pr(request): ##회기 삭제 초기화면
-
-    context4 = {
-        'contents': BsPrd.objects.all()  ##BsPrd 모든 값 가져옴
-    }
-    return render(request, 'jobs/BS104_pr.html', context4)
-
-
-def CC101_1(request): ## 직무코드관리 초기화면
-    context_cc101_1 = {
-        'contents_cc101_1': BsJob.objects.all(), ##BsPrd 모든 값 가져옴
-    }
-    return render(request, 'jobs/CC101_1.html', context_cc101_1)
-
-
-def CC102_1(request): ## 공통코드관리 초기화면
-    context_cc102_1 = {
-        'contents_cc102_1': CcCdHeader.objects.exclude(domain_cd="A5").all(), #CcCdHeader는 코드에 대한 개략적 정보, A5행을 제외한 모든 값을 가져옴
-    }
-    return render(request, 'jobs/CC102_1.html', context_cc102_1)
-
-
 def CC102(request): ## 공통코드관리 초기화면
 
     context = {
@@ -476,7 +225,7 @@ def CC102(request): ## 공통코드관리 초기화면
     return render(request, 'jobs/CC102.html', context)
 
 
-def CC105(request):
+def CC105(request): # 비밀번호 변경 초기화면
 
     context = {
             'dept_mgr_yn' : get_dept_mgr_yn(request.user.username),
@@ -518,7 +267,7 @@ def popup(request):
     return render(request, 'jobs/popup.html')
 
 
-def JB101(request): # JB101 초기화면 + 회기 선택 화면
+def JB101(request): # 부서 기본정보 초기화면 + 회기 선택 화면
 
     # 초기화면
 
@@ -578,7 +327,7 @@ def JB101(request): # JB101 초기화면 + 회기 선택 화면
     return render(request, 'jobs/JB101.html', context)
 
 
-def JB102(request): # JB102 페이지의 초기화면 - 회기 선택은 JB102_1에서 함
+def JB102(request): # 직무 기본정보 초기화면 - 회기 선택은 JB102_1에서 함
 
     # 경영기획팀이면 team_list 있고 경영기획팀 아니면 team_list 없음
 
@@ -607,22 +356,7 @@ def JB102(request): # JB102 페이지의 초기화면 - 회기 선택은 JB102_1
     return render(request, 'jobs/JB102.html', context)
 
 
-def JB102_copy(request): #JB102 회기 띄워줌
-
-    last_prd_cd = BsPrd.objects.all().last().prd_cd # 마지막 회기가 뭔지 확인
-
-    context = {
-        'title' : '직무 기본정보', # 제목
-        'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-        'team_list' : BsDept.objects.filter(prd_cd=last_prd_cd), # 마지막 회기의 팀 목록이 뜰 것임
-        'last_prd_cd' : last_prd_cd, # 마지막 회기의 값
-        'key' : 'no_change', #회기를 바꿨느냐 안바꿨느냐
-    }
-
-    return render(request, 'jobs/JB102_copy.html', context)
-
-
-def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로그인 부서에 대한 정보를 가져옴)
+def JB103(request): # 직무 상세정보 초기화면(가장 최근 회기와 로그인 부서에 대한 정보를 가져옴)
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
 
@@ -702,7 +436,7 @@ def JB103(request): # JB103페이지의 초기화면(가장 최근 회기와 로
     return render(request, 'jobs/JB103.html', context)
 
 
-def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화면).
+def JB103_1(request): # 직무 상세정보 회기 선택 후 화면(부서 띄워주는 화면).
 
     if request.method == 'POST':
 
@@ -818,7 +552,7 @@ def JB103_1(request): # JB103 회기 선택 후 화면(부서 띄워주는 화�
     return render(request, 'jobs/JB103.html', context)
 
 
-def JB103_2(request): #JB103 부서 선택 후 화면(직무 띄워주는 화면)_경영기획팀만 해당
+def JB103_2(request): # 직무 상세정보 부서 선택 후 화면(직무 띄워주는 화면)_경영기획팀만 해당
 
     if request.method == 'POST':
 
@@ -900,7 +634,7 @@ def JB103_2(request): #JB103 부서 선택 후 화면(직무 띄워주는 화면
     return render(request, 'jobs/JB103.html', context)
 
 
-def JB103_3(request): # 저장, 취소 버튼 누른 후
+def JB103_3(request): # 직무 상세정보 저장, 취소 버튼 누른 후
 
     if request.method == 'POST':
 
@@ -1221,7 +955,7 @@ from string import ascii_uppercase
 from io import BytesIO
 import urllib.parse
 
-def JB103_4(request): # 직무 현황표, 기술서 print
+def JB103_4(request): # 직무 상세정보 직무 현황표, 기술서 print
 
     if request.method == 'POST':
 
@@ -1236,10 +970,10 @@ def JB103_4(request): # 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.200.200', # 데이터베이스 주소
+            host='130.1.112.100', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
-            password='1234', # 데이터베이스 비밀번호
-            db='jobdb',
+            password='cdh0706**', # 데이터베이스 비밀번호
+            db='betadb',
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -2028,122 +1762,6 @@ def JB103_4(request): # 직무 현황표, 기술서 print
     return render(request, 'jobs/JB103.html', context)
 
 
-def JB103_test(request):
-
-    context ={
-            'dept_list' : BsDept.objects.filter(prd_cd="2023A")
-        }
-
-    if request.method == 'POST':
-
-        # select box에서 팀을 선택함에 따라, 직무(job)칸에는 해당 팀의 직무 목록이 뜨게 된다. select box 형태로.
-        team_selected = request.POST["team_selected"]
-
-        context = {
-            'job_list' : BsJobDept.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-            #'text' : "팀 선택 후",
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-            'select_team' : team_selected,
-            #'activity_table' : JobActivity.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-            #'action_key' : '초기화면'
-        }
-
-    return render(request, 'jobs/JB103_test.html', context)
-
-
-def JB103_test2(request):
-
-    # 초기에 띄워줄 내용
-    context = {
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A")
-        }
-
-    if request.method == 'POST':
-
-        # select box에서 부서를 선택함에 따라, 직무(job)칸에는 해당 팀의 직무 목록이 뜨게 된다. select box 형태로.
-        team_selected = request.POST["team_selected"]
-
-        context = {
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"), # 부서 목록은 그대로 둬야 한다.
-            'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected), # 해당 부서의 직무 목록을 띄워줄 것이다.
-            'team_selected' : team_selected, # 선택한 부서는 그대로 html로 넘겨준다.
-            'text' : "팀 선택 후",
-            #'activity_table' : JobActivity.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-            #'action_key' : '초기화면'
-        }
-
-    return render(request, 'jobs/JB103_test2.html', context)
-
-
-def JB103_test4(request):
-
-    context = {
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A")
-        }
-
-    if request.method == 'POST':
-
-        # select box에서 팀을 선택함에 따라, 직무(job)칸에는 해당 팀의 직무 목록이 뜨게 된다. select box 형태로.
-        dept_cd_selected = request.POST["dept_selected"]
-
-
-        # 회기, 부서 데이터에 해당하는 JobTask 값에 접근하여, dataframe 생성
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_imprt': rows.work_lv_imprt,
-                    'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                    'work_grade': rows.work_grade_id, 'work_attrbt': rows.work_attrbt,
-                    'prfrm_tm_ann': rows.prfrm_tm_ann } for rows in original_rows]
-
-        df1 = pd.DataFrame(data_list)
-
-
-        # job_activity 접근
-        original_rows_2=JobActivity.objects.filter(prd_cd="2022A", dept_cd=dept_cd_selected) # 나중에 prd_cd 바꿔줘야 함
-        data_list_2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
-                    'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg, 'act_prfrm_freq': rows.act_prfrm_freq,
-                    'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs, 'act_prfrm_tm_ann': rows.act_prfrm_tm_ann,
-                    'rpt_nm': rows.rpt_nm, 'job_seq': rows.job_seq, 'duty_seq': rows.duty_seq, 'task_seq': rows.task_seq, 'act_seq': rows.act_seq } for rows in original_rows_2]
-
-        df2 = pd.DataFrame(data_list_2)
-
-        df3 = pd.merge(df1, df2)
-        # df3.to_excel('df3.xlsx')
-        df_json = df3.to_json(orient='records')
-
-
-        context = {
-            'job_list' : BsJobDept.objects.filter(prd_cd="2022A", dept_cd = dept_cd_selected),
-            #'text' : "팀 선택 후",
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-            'select_team' : dept_cd_selected,
-            'data' : df_json
-
-
-        }
-
-    return render(request, 'jobs/JB103_test4.html', context)
-
-
-def JB103_test4_1(request):
-    if request.method == 'POST':
-        # JSON 데이터를 받아옵니다.
-        json_data = request.POST.get('jsonData')
-        # JSON 문자열을 Python 객체로 변환합니다.
-        data = json.loads(json_data)
-        # Pandas DataFrame으로 변환합니다.
-        df = pd.DataFrame(data)
-        # df.to_excel('df.xlsx')
-
-        # 여기에서 DataFrame을 사용하여 필요한 작업을 수행합니다.
-        # 예: 파일로 저장, 데이터베이스에 저장, 추가 처리 등
-
-        return HttpResponse("Data processed successfully")
-    else:
-        return HttpResponse("Invalid request", status=400)
-
-
 def JB103_grid(request): # 직무정보 조회 초기화면
 
     last_prd_cd = BsPrd.objects.all().last().prd_cd # 가장 최근 회기. default로 띄워줌
@@ -2848,264 +2466,6 @@ def JB300(request): # 직무 분류 체계 초기화면
             'dept_domain_list' : dept_domain_list,
             'dept_domain_selected' : dept_domain_selected,
         }
-
-        # # 조직그룹
-        # org_grp = ['대표이사직속', '경영지원본부', '전략기획본부', 'CS본부', '마케팅본부', '가스솔루션본부', '신성장본부']
-        # # 그룹별 부서 목록
-        # org_grp_dept = {'대표이사직속' : ['홍보CSR팀'],
-        #                 '경영지원본부' : ['법무팀', '총무팀', 'HR팀', '안전기획팀'],
-        #                 '전략기획본부' : ['경영기획팀', '경영정보팀', '재무팀', '회계팀'],
-        #                 'CS본부' : ['CS지원팀', 'CS빌링팀', 'CS채권팀', '자원관리팀', '안전기술팀'],
-        #                 '마케팅본부' : ['공사지원팀', '공무팀', '수요개발팀', '기술마케팅팀'],
-        #                 '가스솔루션본부' : ['종합상황팀', '공급기획팀', '공급기술팀', '서부안전팀', '경산안전팀', '북부안전팀', '수성안전팀'],
-        #                 '신성장본부' : ['사업개발팀', 'HCNG사업팀', '세너지사업팀']
-        #                 }
-        # # 부서 현인원
-        # dept_emp_to = {'홍보CSR팀' : 2,
-        #             '법무팀' : 2, '총무팀' : 7, 'HR팀' : 8, '안전기획팀' : 5,
-        #             '경영기획팀' : 5, '경영정보팀' : 5, '재무팀' : 4, '회계팀' : 5,
-        #             'CS지원팀' : 9, 'CS빌링팀' : 12, 'CS채권팀' : 8, '자원관리팀' : 10, '안전기술팀' : 9,
-        #             '공사지원팀' : 9, '공무팀' : 27, '수요개발팀' : 11, '기술마케팅팀' : 7,
-        #             '종합상황팀' : 10, '공급기획팀' : 9, '공급기술팀' : 24, '서부안전팀' : 28, '경산안전팀' : 26, '북부안전팀' : 25, '수성안전팀' : 33,
-        #             '사업개발팀' : 3, 'HCNG사업팀' : 9, '세너지사업팀' : 8
-        #             }
-        # # 부서 직무 목록
-        # dept_jobs = {'홍보CSR팀' : ['팀리더', '일반관리', '홍보CSR'],
-        #             '법무팀' : ['팀리더', '일반관리', '법무'],
-        #             '총무팀' : ['팀리더', '일반관리', '총무', '외주/구매'],
-        #             'HR팀' : ['팀리더', '일반관리', '인사기획 및 인력운영', '급여', '근태관리', '채용', '노사관계 및 복지', '교육훈련'],
-        #             '안전기획팀' : ['팀리더', '일반관리', '안전문화활동', '안전진단·점검', '안전기획 및 관리', '보건활동'],
-        #             '경영기획팀' : ['팀리더', '일반관리', '경영진 지원', '업무 표준화', '성과관리'],
-        #             '경영정보팀' : ['팀리더', '일반관리', 'IT 기획', '정보화 추진·관리', '전산자원관리', '정보보안'],
-        #             '재무팀' : ['팀리더', '일반관리', '재무', '재무 기획', '자금', '주식/공시'],
-        #             '회계팀' : ['팀리더', '일반관리', '회계', '세무', '22년 중점추진'],
-        #             'CS지원팀' : ['팀리더', '일반관리', 'CS지원팀 기획', '위탁 운영 지원', '고객센터운영'],
-        #             'CS빌링팀' : ['팀리더', '일반관리', '청구', '수납', '빌링 전반'],
-        #             'CS채권팀' : ['팀리더', '일반관리', '계량기관리', '자원관리'],
-        #             '자원관리팀' : ['팀리더', '일반관리', '계량기관리', '자원관리'],
-        #             '안전기술팀' : ['팀리더', '일반관리', '업무 표준화'],
-        #             '공사지원팀' : ['팀리더', '일반관리', '공사 사업 계획', '공사비 관리'],
-        #             '공무팀' : ['팀리더', '일반관리', '(공무1)공사업무', '(공무2)65A미만 배관공사관리', '(공무2)일반시설 안전점검 관리', '(공무2)인허가업무'],
-        #             '수요개발팀' : ['팀리더', '일반관리', '전략 기획 및 계획관리', '신규투자관리', '영업 관리', '경쟁연료 방어 및 수요개발', '공동주택 공급관리', '영업용/주택용 공급관리'],
-        #             '기술마케팅팀' : ['팀리더', '일반관리', '마케팅1', '마케팅2'],
-        #             '종합상황팀' : ['팀리더', '일반관리', '원방시설물 관리', '정압기 관리', '시스템 관리', '이벤트 업무'],
-        #             '공급기획팀' : ['팀리더', '일반관리', '본부업무지원', '구조물관리', 'GIS시스템관리', 'GIS시설관리', '배관망운영관리'],
-        #             '공급기술팀' : ['팀리더', '일반관리', '배관진단', '공동주택'],
-        #             '서부안전팀' : ['팀리더', '일반관리', '부팀 리더', '일상관리', '시설물관리', '이벤트업무'],
-        #             '경산안전팀' : ['팀리더', '일반관리', '부팀 리더', '일상관리', '시설물관리', '이벤트업무'],
-        #             '북부안전팀' : ['팀리더', '일반관리', '부팀 리더', '일상관리', '시설물관리', '이벤트업무'],
-        #             '수성안전팀' : ['팀리더', '일반관리', '부팀 리더', '일상관리', '시설물관리', '이벤트업무'],
-        #             '사업개발팀' : ['팀리더', '일반관리', '신사업 추진', '신규 사업 기획', '사업 관리'],
-        #             'HCNG사업팀' : ['팀리더', '일반관리', '일반행정', 'A/S총괄', '산업안전'],
-        #             '세너지사업팀' : ['팀리더', '일반관리', '영업관리', '기술운영']
-        #             }
-        # # 공통직무 개수
-        # commont_job = 2
-
-        # # org_job_data 구성
-        # org_job_data = {}
-        # for grp in org_grp:
-        #     dept_data = {}
-        #     dept_job_data = {}
-        #     for dept in org_grp_dept[grp]:
-        #         dept_job_data['현인원'] = dept_emp_to[dept]
-        #         dept_job_data['직무수'] = len(dept_jobs[dept])
-        #         dept_job_data['직무'] = dept_jobs[dept]
-        #         dept_data[dept] = dept_job_data
-        #     org_job_data[grp] = dept_data
-
-        # # 본부, 부서, 직무
-        # for dk, dv in org_job_data.items(): # 본부 - Dictionary
-        #     print("\n본부:", dk)
-        #     for tk, tv in dv.items():   # 부서 - Dictionary
-        #         print("부서:\t", tk)
-        #         print("현인원:\t\t", tv["현인원"])
-        #         print("직무수:\t\t", tv["직무수"])
-        #         for job in tv["직무"]:  # 직무 - List
-        #             print("직무:\t\t", job)
-
-        # # 본부, 부서, 직무
-        # cnt_all_div = 0
-        # cnt_all_dept = 0
-        # cnt_all_job = 0
-        # for dk, dv in org_job_data.items(): # 본부 - Dictionary
-        #     cnt_all_div += 1
-        #     for tk, tv in dv.items():   # 부서 - Dictionary
-        #         cnt_all_dept += 1
-        #         for job in tv["직무"]:  # 직무 - List
-        #             cnt_all_job += 1
-        # print(f"본부 {cnt_all_div}, 부서 {cnt_all_dept}, 직무 {cnt_all_job}")
-
-        # wb = Workbook()
-        # ws = wb.active  # 현재 활성화된 sheet 가져옴
-        # ws.title = "직무분류체계"
-
-        # TITLE_ROW = 1   # 첫번째 행 "제목"
-        # DIV_ROW = 3     # 본부명 Row
-        # DEP_ROW = 5     # 부서명 Row
-        # EMP_ROW = 6     # 현인원 Row
-        # JOB_CNT_ROW = 7 # 직무수 Row
-        # JOB_START_ROW = 8   # 직무명 Start Row
-
-        # COMMON_JOB_CNT = commont_job  # 공통직무 개수
-
-        # TAG_COL = 1     # 태그 컬럼
-        # START_COL = 3
-
-        # JOB_ROW_HEIGHT = 70 # 직무명 행 높이
-
-        # COL_WIDTH = 15      # 컬럼 기본 크기
-        # COL_INTERVAL = 2    # 열과 열의 구분 간격
-
-        # # 행 높이 지정
-        # for c in range(1,30):
-        #     if c == TITLE_ROW:
-        #         ws.row_dimensions[c].height = 70
-        #     elif c == DIV_ROW:
-        #         ws.row_dimensions[c].height = 50
-        #     elif c == DIV_ROW+1:
-        #         ws.row_dimensions[c].height = 10
-        #     elif c == DEP_ROW:
-        #         ws.row_dimensions[c].height = 40
-        #     elif c == EMP_ROW or c == JOB_CNT_ROW:
-        #         ws.row_dimensions[c].height = 30
-        #     else:
-        #         ws.row_dimensions[c].height = JOB_ROW_HEIGHT
-
-        # # 열 너비 지정(A~Z열)
-        # alphabet_list = list(ascii_uppercase)
-        # for c in alphabet_list:
-        #     if c == "A":    # 설명 Tag
-        #         ws.column_dimensions[c].width = COL_WIDTH
-        #     elif c == "B":  # 간격
-        #         ws.column_dimensions[c].width = COL_INTERVAL
-        #     else:
-        #         ws.column_dimensions[c].width = COL_WIDTH
-        # # 열 너비 지정(AA~AZ열)
-        # for c in alphabet_list:
-        #     ws.column_dimensions["A"+c].width = COL_WIDTH
-
-        # # 테두리 적용
-        # border_thin = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-        # border_medium = Border(left=Side(style='medium'), right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
-        # border_thick = Border(left=Side(style='thick'), right=Side(style='thick'), top=Side(style='thick'), bottom=Side(style='thick'))
-
-        # """
-        # 설명 Tag 표시
-        # """
-        # EMP_ROW = 6     # 현인원 Row
-        # JOB_CNT_ROW = 7 # 직무수 Row
-        # JOB_START_ROW = 8   # 직무명 Start Row
-        # tag_emp = ws.cell(row=EMP_ROW, column=TAG_COL)
-        # tag_emp.value = "현 인 원 :"
-        # tag_emp.alignment = Alignment(horizontal="center", vertical="center")
-        # tag_emp.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
-        # tag_job_cnt = ws.cell(row=JOB_CNT_ROW, column=TAG_COL)
-        # tag_job_cnt.value = "직 무 수 :"
-        # tag_job_cnt.alignment = Alignment(horizontal="center", vertical="center")
-        # tag_job_cnt.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
-        # tag_common_job = ws.cell(row=JOB_START_ROW, column=TAG_COL)
-        # tag_common_job.value = "공통직무 :"
-        # tag_common_job.alignment = Alignment(horizontal="center", vertical="center")
-        # tag_common_job.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
-        # tag_specific_job = ws.cell(row=JOB_START_ROW+COMMON_JOB_CNT, column=TAG_COL)
-        # tag_specific_job.value = "고유직무 :"
-        # tag_specific_job.alignment = Alignment(horizontal="center", vertical="center")
-        # tag_specific_job.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
-
-        # """
-        # 본부, 부서, 직무 데이터 표시
-        # """
-        # cnt_dep = 0
-        # col_div = START_COL
-        # last_col = 0
-        # for dk, dv in org_job_data.items(): # 본부 - Dictionary
-        #     col_div += cnt_dep
-        #     # print(dk, col_div)
-        #     # 본부명
-        #     div_name = ws.cell(row=DIV_ROW, column=col_div)
-        #     div_name.value = dk
-        #     div_name.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        #     div_name.font = Font(color="0000FF", size=13, bold=True)
-        #     div_name.fill = PatternFill(fgColor="99ccff", fill_type="solid")
-        #     cnt_dep = 0
-        #     for tk, tv in dv.items():   # 부서 - Dictionary
-        #         # 부서명
-        #         dep_name = ws.cell(row=DEP_ROW, column=col_div+cnt_dep)
-        #         dep_name.value = tk
-        #         dep_name.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        #         dep_name.border = border_medium
-        #         # 현인원
-        #         employee = ws.cell(row=EMP_ROW, column=col_div+cnt_dep)
-        #         employee.value = tv["현인원"]
-        #         employee.alignment = Alignment(horizontal="center", vertical="center")
-        #         employee.border = border_thin
-        #         # 직무수
-        #         job_cnt = ws.cell(row=JOB_CNT_ROW, column=col_div+cnt_dep)
-        #         job_cnt.value = tv["직무수"]
-        #         job_cnt.alignment = Alignment(horizontal="center", vertical="center")
-        #         job_cnt.border = border_thin
-        #         cnt_job = 0
-        #         for job in tv["직무"]:  # 직무 - List
-        #             # 직무명
-        #             job_name = ws.cell(row=JOB_START_ROW+cnt_job, column=col_div+cnt_dep)
-        #             job_name.value = job
-        #             job_name.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        #             job_name.border = border_thin
-        #             # 공통직무는 셀 색상을 다르게 설정
-        #             if job_name.row < JOB_START_ROW + COMMON_JOB_CNT:
-        #                 job_name.fill = PatternFill(fgColor="edf0f3", fill_type="lightGray")
-        #             cnt_job += 1
-        #             last_col = col_div+cnt_dep
-        #         cnt_dep += 1
-
-        #     # 본부명 셀 병합
-        #     if cnt_dep > 0:
-        #         ws.merge_cells(start_row=DIV_ROW, start_column=col_div, end_row=DIV_ROW, end_column=col_div+cnt_dep-1)
-
-        #     # 본부와 본부 사이를 구분하는 열 추가
-        #     col_letter = get_column_letter(col_div+cnt_dep)
-        #     ws.column_dimensions[col_letter].width = COL_INTERVAL
-        #     cnt_dep += 1
-
-        # """
-        # 제목 표시
-        # """
-        # title = ws.cell(row=TITLE_ROW, column=1)
-        # title.value = "대성에너지 직무분류체계"
-        # title.font = Font(color="0000FF", size=25, bold=True)   # Font 스타일
-        # title.alignment = Alignment(horizontal="center", vertical="center")
-        # # 제목 셀 병합
-        # if last_col > 0:
-        #     ws.merge_cells(start_row=TITLE_ROW, start_column=1, end_row=TITLE_ROW, end_column=last_col)
-
-        # """
-        # 페이지 설정 및 인쇄 옵션
-        # """
-        # ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
-        # ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-        # ws.page_setup.paperSize = ws.PAPERSIZE_A3
-        # ws.print_options.horizontalCentered = True
-        # ws.print_options.verticalCentered = False
-
-        # """
-        # 엑셀 파일 저장
-        # """
-
-        # # 엑셀 파일을 BytesIO 객체에 저장
-        # excel_buffer = BytesIO()
-        # excel_file = "org_job_" + str(now) + ".xlsx"
-        # wb.save(excel_buffer)
-        # wb.close()
-        # excel_buffer.seek(0)
-
-        # encoded_filename = urllib.parse.quote(excel_file)
-
-        # # HttpResponse로 파일 전송
-        # response = HttpResponse(excel_buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        # response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-
-        # return response # 엑셀 파일 다운로드
 
     return render(request, 'jobs/JB300.html', context)
 
@@ -3952,231 +3312,6 @@ def BS300_6(request): # 조직 그룹 탭에서 저장, 취소
     return render(request, 'jobs/BS300.html', context)
 
 
-def BS301_1(request): #BS300 회기 선택 후
-
-    if request.method == 'POST':
-
-        # 선택한 회기를 input으로 받아옴.
-        prd_cd_selected = request.POST['prd_cd']
-
-        # df1이라는 dataframe을 만들기 위한 것임. df1은 선택한 회기의 dept_cd, dept_nm, dept_to 값으로 구성된 df이다.
-        original_rows=BsDept.objects.filter(pk=prd_cd_selected)
-        data_list = [{'dept_cd' : rows.dept_cd, 'dept_nm' : rows.dept_nm, 'dept_to': rows.dept_to} for rows in original_rows]
-        df1 = pd.DataFrame(data_list)
-
-    context = {
-        'prd' : BsPrd.objects.all(),
-        'prd_cd_selected' : prd_cd_selected,
-        'dept_list' : df1,
-        'activate' : 'yes' #버튼 컨트롤 on
-        }
-
-    return render(request, 'jobs/BS301.html', context)
-
-
-def BS301_2(request): #BS300 수정(저장, 취소 후)
-
-    if request.method == 'POST':
-
-        action = request.POST['action']
-        # 선택한 회기를 input으로 받아옴.
-        prd_cd_selected = request.POST['prd_cd']
-
-        dept_cd = request.POST.getlist('dept_cd')
-        dept_nm = request.POST.getlist('dept_nm')
-        dept_to = request.POST.getlist('dept_to')
-
-        result = zip(dept_cd, dept_nm, dept_to)
-
-        original_rows=BsDept.objects.filter(pk=prd_cd_selected)
-        data_list = [{'dept_cd' : rows.dept_cd, 'dept_nm' : rows.dept_nm, 'dept_to': rows.dept_to} for rows in original_rows]
-        df1 = pd.DataFrame(data_list)
-        print(df1.dtypes)
-
-        # 저장 버튼을 눌렀을 때
-        if action == 'action1':
-
-            df2 = pd.DataFrame()
-
-            for i, j, k in result:
-                new_rows = [{'dept_cd':i, 'dept_nm':j, 'dept_to':k}]
-                df2 = pd.concat([df2, pd.DataFrame(new_rows)], ignore_index=True)
-
-            print(df2.dtypes)
-            # df2의 dept_to는 object의 형태이므로, integer로 바꿔준다.
-            df2['dept_to'] = df2['dept_to'].astype(int)
-
-            # df_left는 df1에는 있는데 df2에는 없는 것이다.(수정했거나 삭제한 것), df_right은 df2에는 있는데 df1에는 없는 것이다.(수정했거나 추가한 것)
-            df_left = pd.merge(df1, df2, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
-            df_right = pd.merge(df1, df2, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
-
-            print(df_left)
-            print(df_right)
-
-            for i in range(0, len(df_left)):
-                # df_right의 name column 내에 df_left의 1열 값이 들어가 있는가? 를 확인하는 logic
-                is_same = df_right['dept_cd'] == df_left.iloc[i, 0]
-
-                # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다.
-                if is_same.sum() > 0:
-
-                    #df1을 다룬다(DB쪽)
-                    #df2의 name값이 df_left.iloc[i,0](df_left는 수정해야되는 값만 있는 df지)인 행을 찾아서 그 행이 어딘지 알아냄.
-                    n = int(df2[df2['dept_cd'] == df_left.iloc[i,0]].index[0])
-
-                    #그래서 df2의 n행 dept_nm열(1열), dept_to열(2열)을 update해줄 것임
-                    BsDept.objects.filter(prd_cd_id = prd_cd_selected, dept_cd=df_left.iloc[i,0]).update(dept_nm = str(df2.iloc[n,1]))
-                    BsDept.objects.filter(prd_cd_id = prd_cd_selected, dept_cd=df_left.iloc[i,0]).update(dept_to = df2.iloc[n,2])
-
-                    # for j in range (1, len(df1.columns)):
-                    #     column_name = df1.columns[j]
-                    #     #df2의 해당되는 행의 값과 Testbulk(DB)를 비교해서 바뀐 것이 있으면 바꾼다. 열은 바뀌지 않는다.
-                    #     #row_to_update는 TestBulk 테이블에서 pk값이 df_left즉 바뀌어야 하는 것만 빼놓은 df에서 i행 0열값, 즉 name과 같은 row가 row_to_update
-                    #     #row_to_update = BsDept.objects.filter(prd_cd_id = prd_cd_selected, dept_cd=df_left.iloc[i,0])
-                    #     #df2의 name값이 df_left.iloc[i,0](df_left는 수정해야되는 값만 있는 df지)인 행을 찾아서 그 행이 어딘지 알아냄.
-                    #     n = int(df2[df2['dept_cd'] == df_left.iloc[i,0]].index[0])
-                    #     # 그래서 df2의 n행 j열 값을 알아내서 그걸 row_to_update에다가 넣을 것임
-                    #     # setattr(row_to_update, column_name, str(df2.iloc[n,j]))
-                    #     # row_to_update.save()
-
-                # 삭제했으면 df_left에는 있고 df_right에는 없을 것이다.
-                else:
-                    # 여기서 row_to_delete 따로 정의하고 (get으로) row_to_delete.delete()하면 싹 다 지워짐. prd_cd도 잘 지정해줘야 함.
-                    print(df_left.iloc[i, 0])
-                    BsDept.objects.filter(prd_cd=prd_cd_selected, dept_cd=df_left.iloc[i, 0]).delete()
-
-            # df_right을 다룬다.
-            for i in range(0, len(df_right)):
-                # df_left의 name column 내에 df_right의 i열 값이 들어가 있는가?
-                is_same = df_left['dept_cd'] == df_right.iloc[i, 0]
-
-                # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다.
-                if is_same.sum() == 0: # 추가라면, is_same값은 0일 것이다. df_right 에만 있고 df_left에는 없는 것이다.
-                    #여기서 .save()쓰면 foreign key 때문에 참조무결성 오류 발생하므로 create를 써준다.
-                    BsDept.objects.create(prd_cd_id = prd_cd_selected, dept_cd = df_right.iloc[i, 0], dept_nm = df_right.iloc[i, 1], dept_to = df_right.iloc[i, 2])
-                else:
-                    is_same = 1
-
-            context = {
-                'prd' : BsPrd.objects.all(),
-                'prd_cd_selected' : prd_cd_selected,
-                'dept_list' : df2,
-                'activate' : 'yes' #버튼 컨트롤 on
-                }
-
-        elif action == 'action2':
-
-            context = {
-                'prd' : BsPrd.objects.all(),
-                'prd_cd_selected' : prd_cd_selected,
-                'dept_list' : df1,
-                'activate' : 'yes' #버튼 컨트롤 on
-            }
-
-    return render(request, 'jobs/BS301.html', context)
-
-
-def BS302_1(request): #BS300 회기 선택 후
-
-    if request.method == 'POST':
-
-        # 선택한 회기를 input으로 받아옴.
-        prd_cd_selected = request.POST['prd_cd']
-
-        # df1이라는 dataframe을 만들기 위한 것임. df1은 선택한 회기의 dept_cd, dept_nm, dept_to 값으로 구성된 df이다.
-        original_rows=BsDeptGrpDomain.objects.filter(pk=prd_cd_selected)
-        data_list = [{'dept_cd' : rows.dept_cd, 'dept_nm' : rows.dept_nm, 'dept_to': rows.dept_to} for rows in original_rows]
-        df1 = pd.DataFrame(data_list)
-
-    context = {
-        'prd' : BsPrd.objects.all(),
-        'prd_cd_selected' : prd_cd_selected,
-        'dept_list' : df1,
-        }
-
-    return render(request, 'jobs/BS302.html', context)
-
-
-def BS303_1(request): #BS300 회기 선택 후
-
-    if request.method == 'POST':
-
-        # 선택한 회기를 input으로 받아옴.
-        prd_cd_selected = request.POST['prd_cd']
-
-        # df1이라는 dataframe을 만들기 위한 것임. df1은 선택한 회기의 work_grade, pos_nm 값으로 구성된 df이다.
-        original_rows = BsPosGrade.objects.filter(prd_cd_id=prd_cd_selected)
-        data_list = [{'pos_nm' : rows.pos_nm, 'work_grade' : rows.work_grade_id} for rows in original_rows]
-        df1 = pd.DataFrame(data_list)
-
-    context = {
-        'prd' : BsPrd.objects.all(),
-        'prd_cd_selected' : prd_cd_selected,
-        'pos_grade_list' : df1,
-        'pos_list' : BsPosGrade.objects.filter(prd_cd_id = prd_cd_selected),
-        'activate' : 'yes' #버튼 컨트롤 on
-        }
-
-    return render(request, 'jobs/BS303.html', context)
-
-
-def BS303_2(request): #BS300 회기 선택 후
-
-    if request.method == 'POST':
-
-        action = request.POST['action']
-        # 선택한 회기를 input으로 받아옴.
-        prd_cd_selected = request.POST['prd_cd']
-
-        if action == 'action1':
-            pos_nm = request.POST.getlist('pos_nm')
-            work_grade = request.POST.getlist('work_grade')
-            result = zip(pos_nm, work_grade)
-
-            BsPosGrade.objects.filter(prd_cd_id=prd_cd_selected).delete()
-            BsPosList.objects.filter(prd_cd_id=prd_cd_selected).delete()
-
-            for i, j in result:
-                BsPosGrade.objects.create(prd_cd_id = prd_cd_selected, pos_nm=i, work_grade_id=j)
-                BsPosList.objects.create(prd_cd_id = prd_cd_selected, pos_nm=i)
-
-            # df1이라는 dataframe을 만들기 위한 것임. df1은 선택한 회기의 work_grade, pos_nm 값으로 구성된 df이다.
-            original_rows = BsPosGrade.objects.filter(prd_cd_id=prd_cd_selected)
-            data_list = [{'pos_nm' : rows.pos_nm, 'work_grade' : rows.work_grade_id} for rows in original_rows]
-            df1 = pd.DataFrame(data_list)
-
-            # for i, j in result:
-            #     BsPosGrade.objects.create(prd_cd_id=prd_cd_selected, pos_nm_id=i, work_grade_id=j)
-            #     BsPosList.objects.create(prd_cd_id=prd_cd_selected, pos_nm_id=i)
-            #new_object = BsPosGrade(prd_cd_id = prd_cd_selected, pos_nm_id="a", work_grade_id="G5")
-            #new_object.save()
-
-            context = {
-                'prd' : BsPrd.objects.all(),
-                'prd_cd_selected' : prd_cd_selected,
-                'pos_grade_list' : df1,
-                'pos_list' : BsPosGrade.objects.filter(prd_cd_id = prd_cd_selected),
-                'activate' : 'yes' #버튼 컨트롤 on
-                }
-
-        elif action == 'action2':
-
-            # df1이라는 dataframe을 만들기 위한 것임. df1은 선택한 회기의 work_grade, pos_nm 값으로 구성된 df이다.
-            original_rows = BsPosGrade.objects.filter(prd_cd_id=prd_cd_selected)
-            data_list = [{'pos_nm' : rows.pos_nm, 'work_grade' : rows.work_grade_id} for rows in original_rows]
-            df1 = pd.DataFrame(data_list)
-
-            context = {
-                'prd' : BsPrd.objects.all(),
-                'prd_cd_selected' : prd_cd_selected,
-                'pos_grade_list' : df1,
-                'pos_list' : BsPosGrade.objects.filter(prd_cd_id = prd_cd_selected),
-                'activate' : 'yes' #버튼 컨트롤 on
-                }
-
-    return render(request, 'jobs/BS303.html', context)
-
-
 def BS103_1(request): ## 회기 선택 후 화면
 
     if request.method == 'POST':
@@ -4227,20 +3362,6 @@ def BS103_2(request): ## 회기 확정일 지정
         }
 
     return render(request, 'jobs/BS103.html', context) #장고가 context를 meshup해서 html template으로 보내줌
-
-
-def delete_bs_prd(request): # 회기 삭제-BS104
-    if request.method == 'POST':
-        past_history_str = request.POST["past_history"] #html에서 선택한 값(prd_cd)를 POST메소드를 이용해 받아옴
-
-        context5 = {
-            'zzz' : past_history_str + "가 삭제되었습니다.", # 확인용
-            'contents': BsPrd.objects.all() # 지우고 난 후의 BsPrd를 BS104로 context에 얹어서 보냄
-        }
-        item = get_object_or_404(BsPrd, pk=past_history_str) #html에서 선택한 값(prd_cd)를 Primary Key로 하는 데이터를 item이라는 값에 지정
-        item.delete() #그걸 삭제
-
-    return render(request, 'jobs/BS104.html', context5)
 
 
 def BS105_1(request): #회기 표준정보에서 회기 선택할 시 그 회기에 해당하는 데이터 표시
@@ -4805,136 +3926,6 @@ def BS106_4(request): # 직무 성과책임 저장 혹은 취소
     return render(request, 'jobs/BS106.html', context)
 
 
-def change(request): #직무코드관리-CC101_1
-    if request.method == 'POST':
-        codeofjob_str = request.POST["codeofjob"]
-
-        context5 = {
-            'contents_cc101_1': BsJob.objects.all(),
-            'zzz' : BsJob.objects.get(pk=codeofjob_str).create_by
-        }
-
-    return render(request, 'jobs/CC101_1.html', context5)
-
-
-def CC102_1_1(request): #공통코드관리-CC102_1 관련 함수
-    if request.method == 'POST':
-        common_code = request.POST["common_code"] #html에서 선택한 값(CcCdHeader 모델의 domain_cd)를 common_code라는 변수에 지정(str)
-        context = {
-            'contents_cc102_1': CcCdHeader.objects.exclude(domain_cd="A5").all(), #A1은 직무 유형이라서 필요없고 다 가져옴
-            'new_value' : "ready", #신규추가 버튼을 나타나게 해줌
-            'create_target' : common_code, #신규추가를 할 domain_cd를 넘겨줌
-            'radio_list' : CcCdDetail.objects.filter(domain_cd=common_code) #중요; common_code를 domain_cd로 갖고 있는 BsCodeDetail모델의 모든 테이블을 가져와 html에 보냄. 거기서 라디오 버튼 목록 생성
-        }
-
-    return render(request, 'jobs/CC102_1.html', context)
-
-
-def BS104_pr_1(request):
-    if request.method == 'POST':
-        delete_target = request.POST["past_history"] ##선택한 prd_cd
-
-        if BsPrd.objects.get(prd_cd=delete_target).prd_done == "Y":
-            context6 = {
-            'contents_BS104_pr_1': BsPrd.objects.get(prd_cd=delete_target).prd_cd + " 회기는 확정되었으므로 삭제할 수 없습니다",
-            'contents': BsPrd.objects.all(),
-            'del_target' : delete_target
-        }
-
-        else:
-            context6 = {
-            'contents_BS104_pr_1': BsPrd.objects.get(prd_cd=delete_target).prd_cd + " 회기는 삭제 가능합니다",
-            'contents': BsPrd.objects.all(),
-            'del_target' : delete_target
-        }
-
-    return render(request, 'jobs/BS104_pr.html', context6)
-
-
-def delete_bs_prd_pr(request): #회기 삭제 - BS104_pr 관련 화면
-    if request.method == 'POST':
-        del_target_pr = request.POST["delete"]
-
-        context5 = {
-            'del_target_pr_pk' : del_target_pr,
-            'contents': BsPrd.objects.all()
-        }
-        item = get_object_or_404(BsPrd, pk=del_target_pr)
-        item.delete()
-
-    return render(request, 'jobs/BS104_pr.html', context5)
-
-
-def delete_bs_code_detail(request): #라디오 버튼 값을 받아서 삭제함
-    if request.method == 'POST':
-        target_code_nm = request.POST["radanswer"] #타겟 code_nm을 받아옴.
-        target_domain_cd_in = request.POST["item_domain_cd"]
-        item = CcCdDetail.objects.filter(cc_code_nm=target_code_nm) #BsCodeDetail에서 그 code_nm에 해당하는 값을 가져와서 item이라는 변수에 할당.
-        #item = get_object_or_404(BsCodeDetail, code_nm = del_target_code)
-        update_code = CcCdDetail.objects.get(cc_code_nm=target_code_nm).cc_code
-        print(target_domain_cd_in)
-        print(update_code)
-        print(target_code_nm)
-
-        # if request.POST["delete_key"] == "delete":
-        #     item.delete() # 그 item을 삭제
-
-        context = {
-            'contents_cc102_1': CcCdHeader.objects.all(), #A1은 직무 유형이라서 필요없고 다 가져옴
-            'check' : target_code_nm,
-            'new_value2' : "ready", #신규추가 버튼을 나타나게 해줌
-            'check2' : target_domain_cd_in,
-            'radio_list' : CcCdHeader.objects.filter(domain_cd=target_domain_cd_in),
-            'update_code_nm' : target_code_nm,
-            'update_domain_cd_code' : target_domain_cd_in + update_code
-        }
-
-    return render(request, 'jobs/CC102_1.html', context)
-
-
-def new_bs_code_detail(request): #신규추가할 domain_cd를 submit받고, 그 신규추가할 domain_cd의 새로운 code를 만들어서 html에 보내줌. 그럼 html에서 code_nm만들어서 추가함.
-    #bs_code_detail_new = BsCodeDetail() #BsCodeDetail 새로운 것을 만들어줌.
-    if request.method == 'POST':
-
-        domain_cd_target = request.POST["new_token"] #BsCodeDetail에서 새로 만들어줄 target이 되는 domain_cd. 그 domain_cd의 마지막줄을 생성하기 위한 code 값을 char로 넘겨줘야 함.
-        code_target = domain_cd_target + str(int(CcCdDetail.objects.filter(domain_cd=domain_cd_target).latest('code').cc_code) + 1).zfill(2) #domain_cd와 새로운 code값의 결합, char형.
-        print(code_target)
-
-        context = {
-            'contents_cc102_1': CcCdHeader.objects.all(),
-            'code_target' : code_target,
-            'new_value' : "ready",
-            'create_token' : "y", #이제 domain_cd와 code값이 준비되었으니 input값을 띄워도 된다는 token
-            'create_target' : domain_cd_target
-        }
-
-    return render(request, 'jobs/CC102_1.html', context)
-
-
-def create_bs_code_detail(request):
-    if request.method == 'POST':
-        #a = BsCodeHeader.objects.exclude(domain_cd="A1").all() #리스트 띄워주기
-        b = request.POST["create_code"] #html에서 받아온 input으로, 이 값이 새로운 code값의 code_nm이 된다.
-
-        t = request.POST["target_domain_cd"]
-        print(t)
-        #bs_code_detail_new = BsCodeDetail() #BsCodeDetail의 형태를 가진 새로운 모델을 만들어 준다.
-        #bs_code_detail_new.pk = t #새로 만든 모델의 domain_cd 즉, CC102_1_1의 create_target
-        new_code = str(int(CcCdDetail.objects.filter(pk=t).latest('code').cc_code) + 1).zfill(2)#그 domain_cd의 기존의 마지막 code보다 +1된 것, char형
-        #bs_code_detail_new.code_nm = b #새로운 code_nm은 html의 create_code
-        #bs_code_detail_new.save()
-        #print(bs_code_detail_new.pk)
-        #print(bs_code_detail_new.code)
-        #print(bs_code_detail_new.code_nm)
-        CcCdDetail.objects.create(pk=t, cc_code=new_code, cc_code_nm=b) #DB에 한 줄 추가하겠다
-        context = {
-            'abc' : t,
-            'def' : "성공"
-        }
-
-    return render(request, 'jobs/CC102_1.html', context)
-
-
 def CC102_a(request): ## 공통코드관리 초기화면
     if request.method == 'POST':
         common_code = request.POST["common_code"] #html에서 선택한 값(CcCdHeader 모델의 domain_cd)를 common_code라는 변수에 지정(str)
@@ -5059,7 +4050,7 @@ def CC102_c(request): ## 공통코드 관리 수정
     return render(request, 'jobs/CC102.html', context)
 
 
-def jb101_1(request): #JB101에서 회기를 선택한 후 탭을 선택했을 때. 바로 탭 선택에 대한 결과를 띄워줌
+def jb101_1(request): # JB101에서 회기를 선택한 후 탭을 선택했을 때. 바로 탭 선택에 대한 결과를 띄워줌
 
     context = {}
 
@@ -6234,464 +5225,6 @@ def JB102_5(request): # 새로운 직무를 선택하고, 직무 수행자를 �
     return render(request, 'jobs/JB102.html', context)
 
 
-def JB102_copy_1(request): #JB102 회기 선택 후 화면. 바뀐 회기의 부서 목록을 띄워줌.
-
-    if request.method == 'POST':
-
-        prd_selected = request.POST["prd_selected"] # 초기 화면에서 선택한 회기를 가져옴
-        key = request.POST["key"] # 변경된 key값을 가져옴(change)
-
-        context = {
-            'title' : '직무 기본정보', # 제목
-            'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-            'prd_selected' : prd_selected,
-            'team_list' : BsDept.objects.filter(prd_cd=prd_selected), # 선택한 회기의 팀 목록이 뜰 것임
-            'key' : key, #회기를 바꿨다는 뜻
-        }
-
-    return render(request, 'jobs/JB102_copy.html', context)
-
-
-def JB102_copy_2(request): #JB102 부서 선택 후 회기와 부서 데이터를 저장, 다시 보내줌. 돌려준 정보는 후에 직무 유형과 같이 submit될 것임
-
-    if request.method == 'POST':
-
-        prd_selected = request.POST["prd_selected"] # 초기 or 선택한 회기를 가져옴.
-        key = request.POST["key"] # key값을 가져옴(no_change or change)
-        dept_selected = request.POST["dept_selected"]
-
-        print(prd_selected, dept_selected)
-
-        context = {
-            'title' : '직무 기본정보', # 제목
-            'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-            'prd_selected' : prd_selected,
-            'team_list' : BsDept.objects.filter(prd_cd=prd_selected), # 선택한 회기의 팀 목록이 뜰 것임
-            'dept_selected' : dept_selected, # 선택한 부서 정보를 다시 돌려줌
-            'key' : key, # 바꾸거나 바꾸지 않거나
-        }
-
-    return render(request, 'jobs/JB102_copy.html', context)
-
-
-def JB102_copy_3(request): # 직무 유형 선택 후 화면
-
-    if request.method == 'POST':
-
-        prd_selected = request.POST["prd_selected"] # 회기
-        dept_selected = request.POST['dept_selected'] # 부서
-        key = request.POST["key"] # key값을 가져옴(no_change or change) 근데 필요없어도 될 듯 이제.
-
-        # job_type을 라디오 버튼으로 받고 submit함. job_type과 부서에 따라 직무 기본 정보를 표시할 것임.
-        job_type = request.POST['job_type']
-
-        # 필터링 공통
-        filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected) # 해당 회기, 부서의 BsJobDept object들
-        filtered_value = list(filtered_set.values_list('job_cd', flat=True)) # 위의 object들의 job_cd 리스트. 이를 이용해 BsJob 테이블에 접근.
-
-        # job_type의 값에 따라 다른 액션을 취함. job_type의 key도 필요하다.
-        if job_type == 'all': # job_type이 all일 경우 해당 dept_cd에 해당하는 bs_job 데이터를 모두 가져옴
-
-            # 전체 직무에 대한 필터링
-            filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_cd__in=filtered_value)
-
-            context = {
-                'title' : '직무 기본정보', # 제목
-                'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                'prd_selected' : prd_selected,
-                'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                'dept_selected' : dept_selected,
-                'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                'job_by_list' : filtered_set, # job_by_list는 BsJobDept이고, job_by가 누군지 알 수 있다.
-                'job_type' : "all",
-                'activate' : "activate", # 직무유형 라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                'save' : "no", #저장 버튼 deactivate
-            }
-
-        #job_type이 common일 경우 해당 dept_cd에서 job_type이 공통인 bs_job 데이터만 모두 가져옴
-        elif job_type == 'common':
-
-            # 공통 직무에 대한 필터링
-            filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통", job_cd__in=filtered_value)
-            filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-            filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-            context = {
-                'title' : '직무 기본정보', # 제목
-                'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                'prd_selected' : prd_selected,
-                'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                'dept_selected' : dept_selected,
-                'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                'job_by_list' : filtered_result_job_by,
-                'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                'job_type' : "common",
-                'save' : "yes", #저장 버튼 activate
-            }
-
-        #job_type이 spec일 경우 해당 dept_cd에서 job_type이 고유인 bs_job 데이터만 모두 가져옴
-        elif job_type == 'unique':
-
-            # 고유 직무에 대한 필터링
-            filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-            filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-            filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-            context = {
-                'title' : '직무 기본정보', # 제목
-                'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                'prd_selected' : prd_selected,
-                'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                'dept_selected' : dept_selected,
-                'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                'job_by_list' : filtered_result_job_by,
-                'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                'job_type' : 'unique',
-                'save' : "yes", #저장 버튼 activate
-            }
-
-    return render(request, 'jobs/JB102_copy.html', context)
-
-
-def JB102_copy_4(request): # 직무 선택 후 / 행 추가 누를 때 화면(직무 성과책임 조회)
-    if request.method == 'POST':
-        prd_selected = request.POST["prd_selected"] # 회기
-        dept_selected = request.POST['dept_selected'] # 부서
-        key = request.POST["key"] # key값을 가져옴(no_change or change) 근데 필요없어도 될 듯 이제.
-
-        # job_type을 라디오 버튼으로 받고 submit함. job_type과 부서에 따라 직무 기본 정보를 표시할 것임.
-        job_type = request.POST['job_type']
-
-        # 필터링 공통
-        filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected) # 해당 회기, 부서의 BsJobDept object들
-        filtered_value = list(filtered_set.values_list('job_cd', flat=True)) # 위의 object들의 job_cd 리스트. 이를 이용해 BsJob 테이블에 접근.
-
-        if 'job_radio_102' in request.POST:
-            print('라디오 버튼 선택')
-
-            radio_selected = request.POST['job_radio_102']
-
-            # job_type의 값에 따라 다른 액션을 취함. job_type의 key도 필요하다.
-            if job_type == 'all': # job_type이 all일 경우 해당 dept_cd에 해당하는 bs_job 데이터를 모두 가져옴
-
-                # 전체 직무에 대한 필터링
-                filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_cd__in=filtered_value)
-
-                context = {
-                    'title' : '직무 기본정보', # 제목
-                    'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                    'prd_selected' : prd_selected,
-                    'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                    'dept_selected' : dept_selected,
-                    'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                    'job_by_list' : filtered_set, # job_by_list는 BsJobDept이고, job_by가 누군지 알 수 있다.
-                    'job_type' : "all",
-                    'activate' : "activate", # 직무유형 라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                    'save' : "no", #저장 버튼 deactivate
-                    'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
-                    'radio_selected' : radio_selected,
-                    'act_del' : "yes"
-                }
-
-            #job_type이 common일 경우 해당 dept_cd에서 job_type이 공통인 bs_job 데이터만 모두 가져옴
-            elif job_type == 'common':
-
-                # 공통 직무에 대한 필터링
-                filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통", job_cd__in=filtered_value)
-                filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-                filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-                context = {
-                    'title' : '직무 기본정보', # 제목
-                    'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                    'prd_selected' : prd_selected,
-                    'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                    'dept_selected' : dept_selected,
-                    'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                    'job_by_list' : filtered_result_job_by,
-                    'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                    'job_type' : "common",
-                    'save' : "yes", #저장 버튼 activate
-                    'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
-                    'radio_selected' : radio_selected,
-                    'act_del' : "yes" # 삭제 버튼 activate
-                }
-
-            #job_type이 spec일 경우 해당 dept_cd에서 job_type이 고유인 bs_job 데이터만 모두 가져옴
-            elif job_type == 'unique':
-
-                # 고유 직무에 대한 필터링
-                filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-                filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-                filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-                context = {
-                    'title' : '직무 기본정보', # 제목
-                    'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                    'prd_selected' : prd_selected,
-                    'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                    'dept_selected' : dept_selected,
-                    'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                    'job_by_list' : filtered_result_job_by,
-                    'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                    'job_type' : 'unique',
-                    'save' : "yes", #저장 버튼 activate
-                    'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
-                    'radio_selected' : radio_selected,
-                    'act_del' : "yes"
-                }
-
-        if 'action' in request.POST:
-            print('그냥 버튼 선택')
-
-            #html에서 띄워진 결과값들을 수정한 결과를 가져옴.
-            input_cd = request.POST.getlist('job_cd_hidden')
-            input_nm = request.POST.getlist('job_nm_102')
-            input_descrp = request.POST.getlist('job_desc_102')
-            input_resp = request.POST.getlist('job_resp_102')
-            input_job_by = request.POST.getlist('job_by_102')
-
-            action = request.POST['action']
-
-            # 저장
-            if action == 'action1':
-
-                if job_type == "unique":
-
-                    for value, code, descrp, by in zip(input_nm, input_cd, input_descrp, input_job_by):
-                        BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=code).update(job_nm=value, job_descrp=descrp)
-                        BsJobDept.objects.filter(prd_cd_id=prd_selected, job_cd_id=code).update(job_by=by)
-                    column_values = BsJobDept.objects.values('job_by')
-                    column_values_list = list(column_values)
-
-                    # 고유 직무에 대한 필터링
-                    filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-                    filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-                    filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-                elif job_type == "common":
-
-                    for code, by in zip(input_cd, input_job_by):
-                        BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd_id=code).update(job_by=by)
-
-                    # 공통 직무에 대한 필터링
-                    filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="공통", job_cd__in=filtered_value)
-                    filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-                    filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-                context = {
-                    'title' : '직무 기본정보', # 제목
-                    'prd_list' : BsPrd.objects.all(), #회기 목록
-                    'prd_selected' : prd_selected,
-                    'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                    'job_list' : filtered_result,
-                    'job_by_list' : filtered_result_job_by,
-                    'dept_selected' : dept_selected,
-                    'job_type' : job_type,
-                    'activate' : "activate",
-                    'save' : "yes", #저장 버튼 activate
-                }
-
-            elif action == 'action2': #action이 삭제버튼 눌렀을 때(삭제) 라디오 버튼 값을 받는다(job_cd), job_cd와 해당 팀 정보를 이용해 삭제할 행을 삭제한다.
-
-                # 삭제할 라디오 버튼 값을 받는다.
-                radio_value = request.POST['job_radio_102']
-
-                BsJob.objects.filter(prd_cd_id=prd_selected, job_cd=radio_value).delete()
-                BsJobDept.objects.filter(prd_cd_id=prd_selected, job_cd=radio_value).delete()
-
-                context = {
-                    'title' : '직무 기본정보', # 제목
-                    'prd_list' : BsPrd.objects.all(), #회기 목록
-                    'prd_selected' : prd_selected,
-                    'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                    'job_list' : filtered_result,
-                    'job_by_list' : filtered_result_job_by,
-                    'dept_selected' : dept_selected,
-                    'job_type' : job_type,
-                    'activate' : "activate",
-                    'save' : "yes", #저장 버튼 activate
-                }
-
-            #action이 추가버튼 눌렀을 때(추가) - 입력할 수 있는 칸을 늘려주는 것.
-            elif action == 'action3':
-
-                filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-                filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-                filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-                # 행 추가 시 띄워주는 새로운 code: BsJob 테이블의 job_cd 중 order_by해서 가장 뒤의 job_cd를 가져온다.
-                char = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유").order_by('job_cd').last().job_cd
-                new_code = "JU" + f"{(int(char[2:6])+1):03}" #char에는 char의 마지막 세 글자(숫자)만 입력한다.
-                print(new_code)
-
-                context = {
-                    'title' : '직무 기본정보', # 제목
-                    'prd_list' : BsPrd.objects.all(), #회기 목록
-                    'prd_selected' : prd_selected,
-                    'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                    'job_list' : filtered_result,
-                    'job_by_list' : filtered_result_job_by,
-                    'dept_selected' : dept_selected,
-                    'job_type' : job_type,
-                    'activate' : "activate",
-                    'save' : "yes", #저장 버튼 activate
-                    'new_key' : "activate", # 새 칸을 만들어준다는 뜻으로 이걸로 화면 컨트롤 가능(편집불가하게 만들거나 버튼 컨트롤)
-                    'new_code' : new_code
-                }
-
-    return render(request, 'jobs/JB102_copy.html', context)
-
-
-def JB102_copy_5(request): # 직무 해당 칸에서 행추가 누르고 난 후, 저장 혹은 취소 화면
-
-    if request.method == 'POST':
-
-        prd_selected = request.POST["prd_selected"]
-        dept_selected = request.POST['dept_selected'] # 부서
-        job_cd_102_new = request.POST['job_cd_102_new'] # 새로운 추가 직무코드
-        job_type = request.POST['job_type']
-        string=str(now)
-
-        action = request.POST['action'] #취소버튼이냐 저장버튼이냐
-
-        if action == 'action1': #저장 누르면
-            # 추가 버튼을 누른 후 저장, 이 부분 multivaluekeyerror 발생할 수 있으므로 html에서 new_y가 아닐때도 값을 지정해줘야 함. 직무코드를 건드려 줌.
-            if request.POST["new_y"] == "new_member_yes" :
-                BsJob.objects.create(pk=prd_selected, job_cd=job_cd_102_new, job_nm=request.POST['job_nm_102_new'], job_type="고유",
-                                    job_descrp=request.POST['job_desc_102_new'])
-
-                BsJobDept.objects.create(pk=prd_selected, dept_cd_id=dept_selected, job_cd_id=job_cd_102_new, job_by=request.POST['job_by_102_new'],
-                                        create_by="관리자", create_dttm=string[:19], alter_by=None, alter_dttm=string[:19],)
-            else :
-                text = "ㅁㅁㅁ"
-
-            # 필터링 공통
-            filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected)
-            filtered_value = list(filtered_set.values_list('job_cd', flat=True))
-            filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-            filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-            filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-            context = {
-                'title' : '직무 기본정보', # 제목
-                'prd_list' : BsPrd.objects.all(), #회기 목록
-                'prd_selected' : prd_selected,
-                'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                'job_list' : filtered_result,
-                'job_by_list' : filtered_result_job_by,
-                'dept_selected' : dept_selected,
-                'job_type' : job_type,
-                'save' : "yes", #저장 버튼 activate
-                'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-            }
-
-        elif action == 'action2': #취소 누르면
-
-            filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected)
-            filtered_value = list(filtered_set.values_list('job_cd', flat=True))
-            filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-            filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-            filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-            context = {
-            'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-            # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-            'job_list' : filtered_result,
-            'job_by_list' : filtered_result_job_by,
-            'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-            'dept_selected' : dept_selected,
-            'job_type' : job_type,
-            'save' : "yes", #저장 버튼 activate
-            'prd_selected' : prd_selected,
-            'prd_list' : BsPrd.objects.all(),
-            'title' : '직무 기본정보' # 제목
-            }
-
-    return render(request, 'jobs/JB102_copy.html', context)
-
-
-def JB102_copy_6(request): # 직무 성과책임 편집 화면에서 버튼 누르고 난 후
-
-    if request.method == 'POST':
-
-        action = request.POST['action']
-
-        prd_selected = request.POST['prd_selected']
-        dept_selected = request.POST['dept_selected']
-        job_type = request.POST['job_type']
-        radio_selected = request.POST['radio_selected']
-
-        # 저장 버튼을 눌렀을 때
-        if action == 'action1':
-
-            # job_resp의 list를 가져와서 dataframe을 형성한 다음, index라는 열을 만들고, index 순서대로 order 매겨서 bs_job_resp에 집어넣을 것임.
-            job_resp = request.POST.getlist('job_resp')
-            columns = ['job_resp']
-            df1 = pd.DataFrame(job_resp, columns=columns)
-            df1.reset_index(inplace=True)
-
-            # BsJobResp 테이블에서 해당 회기, 직무 데이터를 삭제하고 새로 create해준다.
-            BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).delete()
-
-            for i in range(0, len(df1)):
-                print(i)
-                BsJobResp.objects.create(pk=prd_selected, job_cd_id=radio_selected, job_resp_ordr=i+1, job_resp=df1.iloc[i, 1])
-
-            filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected)
-            filtered_value = list(filtered_set.values_list('job_cd', flat=True))
-            filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-            filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-            filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-            context = {
-                'title' : '직무 기본정보', # 제목
-                'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                'prd_selected' : prd_selected,
-                'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                'dept_selected' : dept_selected,
-                'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                'job_by_list' : filtered_result_job_by,
-                'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                'job_type' : 'unique',
-                'save' : "yes", #저장 버튼 activate
-                'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
-                'radio_selected' : radio_selected,
-                'act_del' : "yes"
-            }
-
-
-
-
-        # 취소 버튼 눌렀을 때 - 그 전 값으로 돌아감
-        elif action == 'action2':
-
-            filtered_set = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected)
-            filtered_value = list(filtered_set.values_list('job_cd', flat=True))
-            filtered_result = BsJob.objects.filter(prd_cd_id=prd_selected, job_type="고유", job_cd__in=filtered_value)
-            filtered_value_job_by = list(filtered_result.values_list('job_cd', flat=True))
-            filtered_result_job_by = BsJobDept.objects.filter(prd_cd_id=prd_selected, dept_cd_id=dept_selected, job_cd__in=filtered_value_job_by)
-
-            context = {
-                'title' : '직무 기본정보', # 제목
-                'prd_list' : BsPrd.objects.all().order_by('-prd_cd'), # 회기 리스트. 마지막 회기가 디폴트로 뜰 것임
-                'prd_selected' : prd_selected,
-                'team_list' : BsDept.objects.filter(prd_cd=prd_selected), #부서정보에 띄울 팀 목록
-                'dept_selected' : dept_selected,
-                'job_list' : filtered_result, # job_list는 html에 띄워줄 결과값으로, 전체를 다 가져옴
-                'job_by_list' : filtered_result_job_by,
-                'activate' : "activate", #라디오 버튼이 작동하면 key값을 html로 넘겨주어 하단에 직무 기본사항 표시하는데 사용함.
-                'job_type' : 'unique',
-                'save' : "yes", #저장 버튼 activate
-                'job_resp_list' : BsJobResp.objects.filter(prd_cd_id=prd_selected, job_cd_id=radio_selected).order_by('job_resp_ordr'),
-                'radio_selected' : radio_selected,
-                'act_del' : "yes"
-            }
-
-
-    return render(request, 'jobs/JB102_copy.html', context)
-
-
 def home(request):
     chat = 'Hello'
     name = 'inu'
@@ -6741,814 +5274,6 @@ def test(request):
         #     BsPrd.objects.create(prd_cd=i, year=j, turn=k, job_srv_str_dt=l, job_srv_end_dt=m, job_srv_fix_dt=n, prd_done_yn=o)
 
     return render(request, 'jobs/test.html', context)
-
-
-def jb103_0(request): # select box에서 직무를 선택함에 따라, 책무(duty)칸에는 해당 직무의 책무 목록이 뜨게 된다. select box 형태로.
-
-    if request.method == 'POST' :
-
-        job_selected = request.POST["job_selected"]
-        team_selected = request.POST["team_selected"]
-
-        #job_task 테이블을 이용해 df1을 만들어야 함. 책무를 화면에 띄울 때는 df1을 이용할 것임.
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-        #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                    'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                    'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                    'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-        # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-        df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-        context = {
-                'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                'text' : "직무 선택 후", #flag값
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                'select_team' : team_selected, #선택한 부서가 뭔지에 대한 값을 그대로 보내준다.
-                'duty_list' : df1,
-                'job_selected': job_selected # 직무
-                #'duty_list' : JobTask.objects.filter(prd_cd="2022A", dept_cd = team_selected, job_cd = job_selected)
-        }
-
-    return render(request, 'jobs/JB103.html', context)
-
-
-def jb103_1(request): # select box에서 책무를 선택함에 따라, 과업(task)칸에는 해당 책무의 과업 목록이 뜨게 된다. select box 형태로.
-
-    if 'select_change' in request.POST:
-
-        team_selected = request.POST["team_selected"]
-        job_selected = request.POST["job_selected"]
-        duty_selected = request.POST["duty_selected"] #select input
-        duty_name_list = request.POST.getlist('duty_name')
-        print(duty_name_list)
-
-        # #job_task 테이블을 이용해 df1을 만들어야 함. 책무를 화면에 띄울 때는 df1을 이용할 것임.
-        # original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-        # #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-        # data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-        #             'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-        #             'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-        #             'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-        #             'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-        # # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-        # df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-        # 여기서 original duty_nm을 띄우지 않고 바뀐 값을 띄운다.
-        df1 = pd.DataFrame({'duty_nm': duty_name_list})
-
-        original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected)
-
-        data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                    'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                    'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                    'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows2]
-
-        df2 = pd.DataFrame(data_list2)
-
-        #df2 = pd.DataFrame(data_list2).drop_duplicates(subset='task_nm')
-
-        context = {
-                'job_list' : BsJob.objects.filter( prd_cd="2022A", dept_cd = team_selected),
-                'text' : "책무 선택 후",
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                'select_team' : team_selected,
-                'job_selected' : job_selected,
-                'duty_selected' : duty_selected,
-                'duty_list' : df1,
-                'task_list' : df2,
-                'action' : 'select_change'
-        }
-
-    if 'apply' in request.POST:
-
-        team_selected = request.POST["team_selected"]
-        job_selected = request.POST["job_selected"]
-        duty_selected2 = request.POST["duty_selected2"]
-        #duty_selected = request.POST["duty_selected"]
-        status = request.POST["status"]
-        duty_nm_change = request.POST["duty_nm_change"] #input value, 바꿔주려고 한다.
-        duty_name_list = request.POST.getlist('duty_name')
-        task_text = ""
-
-        # # 어떤 한 팀(team_selected)의 어떤 한 직무(job_selected)에 대한 책무와 과업 리스트를 DB에서 가져온다.
-        # original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-        # data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-        #         'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-        #         'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-        #         'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-        #         'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-        # # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-        # df3 = pd.DataFrame(data_list)
-
-        # #print(df3)
-
-        # df4 = df3.copy()
-        # #print(duty_selected)
-        # #print(duty_selected2)
-        # #print(duty_nm_change)
-        # for i in range (0, len(df4)):
-        #     if df4.iloc[i, 3] == duty_selected2:
-        #         if duty_nm_change != duty_selected2:
-        #             df4.iloc[i, 3] = duty_nm_change
-
-        # df4 = df4.drop_duplicates(subset='duty_nm')
-        print(duty_nm_change)
-        print(duty_selected2)
-        df3 = pd.DataFrame({'duty_nm': duty_name_list})
-        print(df3)
-        df4 = df3.copy()
-        print(len(df4))
-        for i in range (0, len(df4)):
-            if df4.iloc[i, 0] == duty_selected2:
-                if duty_nm_change != duty_selected2:
-                    df4.iloc[i, 0] = duty_nm_change
-        print(df4)
-
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-        #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm} for rows in original_rows]
-
-        # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-
-        df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-        original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected2)
-
-        data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm} for rows in original_rows2]
-
-        df2 = pd.DataFrame(data_list2).drop_duplicates(subset='task_nm')
-
-        context = {
-            'job_list' : BsJob.objects.filter( prd_cd="2022A", dept_cd = team_selected),
-            'text' : "책무 선택 후",
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-            'select_team' : team_selected,
-            'job_selected' : job_selected,
-            'duty_selected2' : duty_selected2,
-            'duty_selected' : duty_selected2,
-            'duty_list' : df4, #이름 바뀐 duty list
-            'task_list' : df2, #과업 때문임
-            'action' : 'apply',
-            'duty_nm_change' : duty_nm_change,
-        }
-
-    if 'add' in request.POST:
-        team_selected = request.POST["team_selected"]
-        job_selected = request.POST["job_selected"]
-        #duty_selected = request.POST["duty_selected"]
-        duty_name_list = request.POST.getlist('duty_name')
-        #duty_selected2 = request.POST["duty_selected2"]
-
-        df1 = pd.DataFrame({'duty_nm': duty_name_list})
-        print(team_selected)
-        print(job_selected)
-
-        context = {
-            'action_key' : "추가",
-            'select_team' : team_selected,
-            'job_selected' : job_selected,
-            'text' : "책무 선택 후",
-            'duty_list' : df1,
-            'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A")
-            #'duty_selected2' : duty_selected2,
-            #'duty_selected' : duty_selected2,
-
-        }
-
-    return render(request, 'jobs/JB103.html', context)
-
-
-def jb103_2(request): # select box에서 과업을 선택함에 따라, 활동(activity)칸에는 해당 과업의 활동 목록이 뜨게 된다. select box 형태로.
-
-    if request.method == 'POST' :
-
-        job_selected = request.POST["job_selected"]
-        team_selected = request.POST["team_selected"]
-        duty_selected = request.POST["duty_selected"]
-        task_selected = request.POST["task_selected"]
-
-        #job_task 테이블을 이용해 df1을 만들어야 함. 책무를 화면에 띄울 때는 df1을 이용할 것임.
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-        #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm} for rows in original_rows]
-
-        # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-        df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-        original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected)
-
-        data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm} for rows in original_rows2]
-
-        df2 = pd.DataFrame(data_list2).drop_duplicates(subset='task_nm')
-
-        original_rows3 = JobActivity.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected, task_nm=task_selected)
-
-        data_list3 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm_id,
-                    'task_nm': rows.task_nm_id, 'act_nm': rows.act_nm, 'act_prsn_chrg': rows.act_prsn_chrg,
-                    'act_prfrm_freq': rows.act_prfrm_freq, 'act_prfrm_cnt_ann': rows.act_prfrm_cnt_ann, 'act_prfrm_tm_cs': rows.act_prfrm_tm_cs,
-                    'rpt_nm': rows.rpt_nm} for rows in original_rows3]
-
-        df3 = pd.DataFrame(data_list3)
-
-        context = {
-                'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                'text' : "과업 선택 후",
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                'select_team' : team_selected,
-                'duty_list' : df1,
-                'task_list' : df2,
-                'activity_list' : df3,
-                'job_selected' : job_selected,
-                'duty_selected' : duty_selected
-        }
-
-    return render(request, 'jobs/JB103.html', context)
-
-
-def jb103_3(request): #활동을 선택함에 따라, 세부 내역을 작성할 수 있게 된다.
-
-    if request.method == 'POST' :
-
-        display_duty = request.POST["display_duty"]
-        display_job = "duty_selected"
-
-        print("동작")
-        context = {
-                'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = display_job),
-                'text' : "활동 선택 후",
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                'select_team' : display_job,
-                'duty_list' : JobTask.objects.filter(prd_cd="2022A", dept_cd = display_job, job_cd = display_duty)
-        }
-
-    return render(request, 'jobs/JB103.html', context)
-
-
-def jb103_test_0(request):
-
-    context ={
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A")
-        }
-
-    if request.method == 'POST':
-
-        # select box에서 팀을 선택함에 따라, 직무(job)칸에는 해당 팀의 직무 목록이 뜨게 된다. select box 형태로.
-        team_selected = request.POST["team_selected"]
-        job_selected = request.POST["job_selected"]
-
-        context = {
-            'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-            #'text' : "팀 선택 후",
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-            'select_team' : team_selected,
-            'select_job' : job_selected,
-            'activity_table' : JobActivity.objects.filter(prd_cd="2022A", dept_cd = team_selected, job_cd = job_selected),
-            'action_key' : '초기화면'
-        }
-
-    return render(request, 'jobs/JB103_test.html', context)
-
-
-def jb103_test_1(request):
-
-    # team_selected는 hidden input으로, 앞에서 선택했던 부서를 나타냄.
-    team_selected = request.POST["team_selected"]
-    job_selected = request.POST["job_selected"]
-
-    # df1이라는 dataframe을 만들기 위한 것임. 원래 DB와 같은 형태의 dataframe을 만들어서 사용함. df1은 앞의 선택했던 부서의 직무, 책무, 과업, 활동 리스트.
-    original_rows = JobActivity.objects.filter(prd_cd="2022A", dept_cd = team_selected)
-
-    data_list = [{'duty_nm' : rows.duty_nm_id, 'task_nm' : rows.task_nm_id, 'act_nm': rows.act_nm} for rows in original_rows]
-
-    # datalist 리스트를 이용해 dataframe df1생성. df1는 초기 DB값을 복사한 것이다.
-    df1 = pd.DataFrame(data_list)
-
-    # df2는 사용자 UI에서 받아올 dataframe이다. 선언만 해준다.
-    df2 = pd.DataFrame()
-
-    if request.method == 'POST':
-
-        action = request.POST['action']
-
-        if action == 'action1': # 저장 버튼 누를 경우: 최종 결과값을 DB에 저장한다.
-
-            # 우선 df2(UI와 같음)를 만들어준다.
-            input_values_duty = request.POST.getlist('duty_nm')
-            input_values_task = request.POST.getlist('task_nm')
-            input_values_act = request.POST.getlist('act_nm')
-
-            result = zip(input_values_duty, input_values_task, input_values_act)
-
-            for i, j, k, in result:
-                new_rows = [{'duty_nm':i, 'task_nm':j, 'act_nm':k}]
-                df2 = pd.concat([df2, pd.DataFrame(new_rows)], ignore_index=True)
-
-            #df_left는 df1에는 있는데 df2에는 없는 것이다.(수정했거나 삭제한 것), df_right은 df2에는 있는데 df1에는 없는 것이다.(수정했거나 추가한 것)
-            df_left = pd.merge(df1, df2, how='outer', indicator=True).query('_merge == "left_only"').drop(columns=['_merge']).reset_index(drop=True)
-            df_right = pd.merge(df1, df2, how='outer', indicator=True).query('_merge == "right_only"').drop(columns=['_merge']).reset_index(drop=True)
-
-            print(df_left)
-            print(df_right)
-            # # 먼저 df_left를 다룬다.
-            # for i in range(0, len(df_left)):
-            #     # df_right의 name column 내에 df_left의 1열 값이 들어가 있는가? 를 확인하는 logic
-            #     is_same = df_right['name'] == df_left.iloc[i, 0]
-
-            #     # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다.
-            #     if is_same.sum() > 0:
-
-            #         #df1을 다룬다(DB쪽)
-            #         for j in range (0, len(df1.columns)):
-            #             column_name = df1.columns[j]
-
-            #             # df2의 해당되는 행의 값과 Testbulk(DB)를 비교해서 바뀐 것이 있으면 바꾼다. 열은 바뀌지 않는다.
-            #             # row_to_update는 TestBulk 테이블에서 pk값이 df_left즉 바뀌어야 하는 것만 빼놓은 df에서 i행 0열값, 즉 name과 같은 row가 row_to_update
-            #             row_to_update = TestBulk.objects.get(pk=df_left.iloc[i,0])
-
-            #             #df2의 name값이 df_left.iloc[i,0](df_left는 수정해야되는 값만 있는 df지)인 행을 찾아서 그 행이 어딘지 알아냄.
-            #             n = int(df2[df2['name'] == df_left.iloc[i,0]].index[0])
-
-            #             print(n, j)
-
-            #             #그래서 df2의 n행 j열 값을 알아내서 그걸 row_to_update에다가 넣을 것임
-            #             setattr(row_to_update, column_name, str(df2.iloc[n,j]))
-            #             row_to_update.save()
-
-            #     # 삭제했으면 df_left에는 있고 df_right에는 없을 것이다.
-            #     else:
-            #         row_to_delete = TestBulk.objects.get(pk=df_left.iloc[i, 0])
-            #         row_to_delete.delete()
-
-            # # df_right을 다룬다.
-            # for i in range(0, len(df_right)):
-            #     # df_left의 name column 내에 df_right의 i열 값이 들어가 있는가?
-            #     is_same = df_left['name'] == df_right.iloc[i, 0]
-
-            #     # 수정했으면 df_left에도 있을 것이고 df_right에도 있을 것이다.
-            #     if is_same.sum() == 0: # 추가라면, is_same값은 0일 것이다. df_right 에만 있고 df_left에는 없는 것이다.
-            #         # TeskBulk 모델 형태의 새로운 row인 row_to_plus를 생성해준다.
-            #         row_to_plus = TestBulk()
-            #         # TeskBulk의 새로운 행에 데이터를 넣어준다.
-            #         row_to_plus.name = df_right.iloc[i, 0]
-            #         row_to_plus.address = df_right.iloc[i, 1]
-            #         row_to_plus.dept = df_right.iloc[i, 2]
-            #         row_to_plus.save()
-            #     else:
-            #         is_same = 1
-
-            context = {
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"),
-            'action_key' : '초기화면'
-        }
-
-        if action == 'action2': #추가 버튼 누를 경우: 실제로는 추가하기 위한 key값만 넘겨준다. 그리고 html에서 추가를 위한 입력란을 형성한다.
-
-            # 추가 버튼을 누르면, UI에 있는 input들을 일단은 임시저장 상태로 만들고 그걸 이용해 df를 만들어서 다시 뿌려준다.
-            input_values_duty = request.POST.getlist('duty_nm')
-            input_values_task = request.POST.getlist('task_nm')
-            input_values_act = request.POST.getlist('act_nm')
-
-            result = zip(input_values_duty, input_values_task, input_values_act)
-
-            for i, j, k, in result:
-                new_rows = [{'duty_nm':i, 'task_nm':j, 'act_nm':k}]
-                df2 = pd.concat([df2, pd.DataFrame(new_rows)], ignore_index=True)
-
-            context = {
-                'list' : df2,
-                'action_key' : '추가',
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"),
-                'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                'select_team' : team_selected,
-            }
-
-            print(df2)
-
-        elif action == 'action3': #등록 버튼 누를 경우: 추가했던 추가 칸이 합쳐진다.
-
-            # 등록 버튼을 누르면 지금까지 수정, 추가했던 내용을 df2로 만들어주고 UI에 보낸다. 그러면 추가된 값도 input_values가 된다!
-            input_values_duty = request.POST.getlist('duty_nm')
-            input_values_task = request.POST.getlist('task_nm')
-            input_values_act = request.POST.getlist('act_nm')
-
-            result = zip(input_values_duty, input_values_task, input_values_act)
-
-            for i, j, k in result:
-                new_rows = [{'duty_nm':i, 'task_nm':j, 'act_nm':k}]
-                df2 = pd.concat([df2, pd.DataFrame(new_rows)], ignore_index=True)
-
-            # 새로운 줄도 추가해준다.
-            duty_new = request.POST['duty_new']
-            task_new = request.POST['task_new']
-            act_new = request.POST['act_new']
-
-            if duty_new == "none" : # new라는 것이 없을수도 있는데 없는대로 그냥 두면 multivaluerror 발생함. 따라서 none일 상황을 html에서 만들어준다.
-                context = {
-                'list' : df2,
-                'action_key' : '등록',
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"),
-                'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                'select_team' : team_selected,
-            }
-
-            else : # new는 새로운 줄이다. 새로운 줄을 df2에 추가해준다.
-                new_rows_new = [{'duty_nm': duty_new, 'task_nm': task_new, 'act_nm': act_new}]
-
-                df2 = pd.concat([df2, pd.DataFrame(new_rows_new)], ignore_index=True)
-
-                context = {
-                'list' : df2,
-                'action_key' : '등록',
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"),
-                'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                'select_team' : team_selected,
-            }
-
-        elif action == 'action4': #삭제 버튼을 누를 경우: df2에서 해당 선택한 라인을 지워주고 다시 보내준다.
-            #multivalueDictkeyerror 해결방법
-            if 'radio_name' in request.POST:
-                del_target_name = request.POST["radio_name"] #삭제 버튼 누르면, 라디오 버튼의 선택값(radio_name, 여기서는 act_nm이 value)을 넘겨받는다.
-
-                print("del_target_name:", del_target_name)
-                # 일단 df2는 만들어주고, 그 후에 삭제 해당하는 것을 df2에서 없애주자.
-                input_values_duty = request.POST.getlist('duty_nm')
-                input_values_task = request.POST.getlist('task_nm')
-                input_values_act = request.POST.getlist('act_nm')
-
-                result = zip(input_values_duty, input_values_task, input_values_act)
-
-                for i, j, k in result:
-                    new_rows = [{'duty_nm':i, 'task_nm':j, 'act_nm':k}]
-                    df2 = pd.concat([df2, pd.DataFrame(new_rows)], ignore_index=True)
-
-                # 삭제를 df2에서만 해준다.
-                name_idx = df2[df2['act_nm']==del_target_name].index
-                print(name_idx)
-                df2 = df2.drop(name_idx)
-
-                context = {
-                    'list' : df2,
-                    'action_key' : '삭제',
-                    'select_team' : team_selected,
-                }
-            else:
-                context = {
-
-                }
-
-            print(input_values_duty)
-            print(df2)
-
-    return render(request, 'jobs/JB103_test.html', context)
-
-
-def jb103_test2_job(request): #select box에서 직무를 선택함에 따라, 책무(duty)칸에는 해당 직무의 책무 목록이 뜨게 된다. select box 형태로.
-
-    if request.method == 'POST' :
-
-        team_selected = request.POST["team_selected"]
-        job_selected = request.POST["job_selected"]
-
-        print("job_selected:", job_selected)
-        print(team_selected)
-        #job_task 테이블을 이용해 df1을 만들어야 함. 책무를 화면에 띄울 때는 df1을 이용할 것임.
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-        #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                    'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                    'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                    'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-        # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-        df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-        context = {
-                    'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                    'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                    'team_selected' : team_selected, #선택한 부서가 뭔지에 대한 값을 그대로 보내준다.
-                    'job_selected': job_selected, # 선택한 직무가 뭔지에 대한 값을(직무코드) 그대로 보내준다.
-                    'text' : "직무 선택 후", #flag값
-                    'duty_list' : df1, #책무 리스트를 보내준다.
-            }
-
-    return render(request, 'jobs/JB103_test2.html', context)
-
-
-def jb103_test2_duty(request): #select box에서 책무를 선택함에 따라, 과업(task)칸에는 해당 책무의 과업 목록이 뜨게 된다. select box 형태로.
-
-    team_selected = request.POST["team_selected"]
-    job_selected = request.POST["job_selected"]
-
-    original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-    #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-    data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-    # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-    df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-    if 'select_change' in request.POST:
-
-        duty_selected = request.POST["duty_selected"] #select input
-        print("duty:", duty_selected)
-
-        original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected)
-
-        data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                        'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                        'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows2]
-
-        df2 = pd.DataFrame(data_list2)
-
-        print("선택")
-        context = {
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                'job_list' : BsJob.objects.filter( prd_cd="2022A", dept_cd = team_selected),
-                'team_selected' : team_selected,
-                'job_selected' : job_selected,
-                'duty_selected' : duty_selected,
-                'text' : "책무 선택 후",
-                'duty_list' : df1,
-                'task_list' : df2,
-                'action' : 'select_change'
-        }
-
-    if 'apply' in request.POST:
-        status = request.POST["status"]
-        duty_nm_change = request.POST["duty_nm_change"]
-        duty_selected = request.POST["duty_selected2"] #select input
-        print("duty:", duty_selected)
-
-        original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected)
-
-        data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                        'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                        'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows2]
-
-        df2 = pd.DataFrame(data_list2)
-
-        print("duty_nm_change:", duty_nm_change)
-
-        #중요
-        JobTask.objects.filter(prd_cd_id="2022A", dept_cd_id=team_selected, job_cd_id=job_selected, duty_nm=duty_selected).update(duty_nm=duty_nm_change)
-
-        # 책무명 바꾸고 난 다음에 책무 리스트 duty_list를 ㅁ나들어준다.
-        original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-        data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-        # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-        df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-        context = {
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                'job_list' : BsJob.objects.filter( prd_cd="2022A", dept_cd = team_selected),
-                'team_selected' : team_selected,
-                'job_selected' : job_selected,
-                'duty_selected' : duty_nm_change, # 하드코딩 해서 바꾼 값
-                # 'duty_nm_change' : duty_nm_change, # 하드코딩 해서 바꾼 값
-                'text' : "책무 선택 후",
-                'duty_list' : df1,
-                'task_list' : df2,
-                'action' : 'apply'
-        }
-
-        # JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected).duty_nm =
-
-    return render(request, 'jobs/JB103_test2.html', context)
-
-
-def jb103_test2_task(request): #select box에서 과업을 선택함에 따라, 활동(activity)칸에는 해당 과업의 활동 목록이 뜨게 된다. select box 형태로.
-
-    team_selected = request.POST["team_selected"]
-    job_selected = request.POST["job_selected"]
-    duty_selected = request.POST["duty_selected"]
-
-    original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-    #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-    data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-    # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-    df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-    if 'select_change2' in request.POST:
-
-        task_selected = request.POST["task_selected"]
-        original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected)
-
-        data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                        'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                        'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows2]
-
-        df2 = pd.DataFrame(data_list2)
-
-        task_selected_object = JobTask.objects.get(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_selected)
-
-        context = {
-                    'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                    'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                    'team_selected' : team_selected,
-                    'job_selected' : job_selected,
-                    'duty_selected' : duty_selected,
-                    'task_selected' : task_selected,
-                    'text' : "과업 선택 후",
-                    'duty_list' : df1,
-                    'task_list' : df2,
-                    'activity_list' : JobActivity.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_selected), #활동 정보는 그냥 queryset 이용하면 됨.
-                    'task_prsn_chrg' : task_selected_object.task_prsn_chrg, 'work_lv_imprt' : task_selected_object.work_lv_imprt,
-                    'work_lv_dfclt' : task_selected_object.work_lv_dfclt, 'work_lv_prfcn' : task_selected_object.work_lv_prfcn,
-                    'work_lv_sum' : task_selected_object.work_lv_sum, 'work_grade' : task_selected_object.work_grade_id,
-                    'final_rpt_to' : task_selected_object.final_rpt_to, 'work_attrbt' : task_selected_object.work_attrbt,
-                    'prfrm_tm_ann' : task_selected_object.prfrm_tm_ann, 'dept_rltd' : task_selected_object.dept_rltd,
-            }
-
-    if 'apply' in request.POST:
-
-        task_nm_change = request.POST["task_nm_change"]
-        task_selected = request.POST["task_selected2"]
-
-        task_prsn_chrg_change = request.POST["task_prsn_chrg_change"]
-        work_lv_imprt_new = request.POST["work_lv_imprt_new"]
-        work_lv_dfclt_new = request.POST["work_lv_dfclt_new"]
-        work_lv_prfcn_new = request.POST["work_lv_prfcn_new"]
-        work_lv_sum_new = request.POST["work_lv_sum_new"]
-        work_grade_new = request.POST["work_grade_new"]
-        final_rpt_to_new = request.POST["final_rpt_to_new"]
-        work_attrbt_new = request.POST["work_attrbt_new"]
-        prfrm_tm_ann_new = request.POST["prfrm_tm_ann_new"]
-        dept_rltd_new = request.POST["dept_rltd_new"]
-
-        task_selected_object = JobTask.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_selected)
-
-        task_selected_object.update(task_nm=task_nm_change)
-        task_selected_object = JobTask.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_nm_change)
-        task_selected_object.update(task_prsn_chrg=task_prsn_chrg_change, work_lv_imprt=work_lv_imprt_new, work_lv_dfclt=work_lv_dfclt_new, work_lv_prfcn=work_lv_prfcn_new,
-                                    work_lv_sum=work_lv_sum_new, work_grade=work_grade_new, final_rpt_to=final_rpt_to_new, work_attrbt=work_attrbt_new,
-                                    prfrm_tm_ann=prfrm_tm_ann_new, dept_rltd=dept_rltd_new)
-
-        original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected)
-
-        data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                        'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                        'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                        'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                        'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows2]
-
-        df2 = pd.DataFrame(data_list2)
-
-        context = {
-                'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-                'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-                'team_selected' : team_selected,
-                'job_selected' : job_selected,
-                'duty_list' : df1,
-                'task_list' : df2,
-                'duty_selected' : duty_selected, 'task_selected' : task_nm_change, 'task_prsn_chrg' : task_prsn_chrg_change, 'work_lv_imprt' : work_lv_imprt_new,
-                'work_lv_dfclt' : work_lv_dfclt_new, 'work_lv_prfcn'  : work_lv_prfcn_new, 'work_lv_sum' : work_lv_sum_new, 'work_grade' : work_grade_new,
-                'final_rpt_to' : final_rpt_to_new, 'work_attrbt' : work_attrbt_new, 'prfrm_tm_ann' : prfrm_tm_ann_new, 'dept_rltd' : dept_rltd_new,
-                'activity_list' : JobActivity.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_nm_change),
-                'text' : "과업 선택 후"
-            }
-
-    return render(request, 'jobs/JB103_test2.html', context)
-
-
-def jb103_test2_activity(request):
-
-    # 부서, 직무, 책무, 과업 정보를 가져옴.
-    team_selected = request.POST["team_selected"]
-    job_selected = request.POST["job_selected"]
-    duty_selected = request.POST["duty_selected"]
-    task_selected = request.POST["task_selected"]
-
-    original_rows=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected)
-
-    #prd_cd_id 이런거 유의. multiple objects returned 오류 발생했었음.
-    data_list = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows]
-
-    # duty_nm열 즉, 책무명이 중복되는 것은 띄우지 않는다. 하나만 띄운다.
-    df1 = pd.DataFrame(data_list).drop_duplicates(subset='duty_nm')
-
-    original_rows2=JobTask.objects.filter(prd_cd="2022A", dept_cd=team_selected, job_cd=job_selected, duty_nm=duty_selected)
-
-    data_list2 = [{'prd_cd' : rows.prd_cd_id, 'dept_cd' : rows.dept_cd_id, 'job_cd': rows.job_cd_id, 'duty_nm': rows.duty_nm,
-                    'task_nm': rows.task_nm, 'task_prsn_chrg': rows.task_prsn_chrg, 'work_lv_impt': rows.work_lv_imprt,
-                    'work_lv_dfclt': rows.work_lv_dfclt, 'work_lv_prfcn': rows.work_lv_prfcn, 'work_lv_sum': rows.work_lv_sum,
-                    'work_grade': rows.work_grade_id, 'final_rpt_to': rows.final_rpt_to, 'work_attrbt': rows.work_attrbt,
-                    'prfrm_tm_ann': rows.prfrm_tm_ann, 'dept_rltd': rows.dept_rltd} for rows in original_rows2]
-
-    df2 = pd.DataFrame(data_list2)
-
-    if 'select_change3' in request.POST:
-
-        activity_selected = request.POST["activity_selected"]
-
-        act_object = JobActivity.objects.get(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_selected, act_nm=activity_selected)
-
-        context = {
-            'team_selected' : team_selected,
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-            'job_selected' : job_selected,
-            'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-            'duty_selected' : duty_selected,
-            'duty_list' : df1,
-            'task_selected' : task_selected,
-            'task_list' : df2,
-            'activity_selected' : activity_selected,
-            'activity_list' : JobActivity.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_selected),
-            'act_prsn_chrg' : act_object.act_prsn_chrg, 'act_prfrm_freq' : act_object.act_prfrm_freq, 'act_prfrm_cnt_ann' : act_object.act_prfrm_cnt_ann,
-            'act_prfrm_tm_cs' : act_object.act_prfrm_tm_cs, 'act_prfrm_tm_ann' : act_object.act_prfrm_tm_ann, 'rpt_nm' : act_object.rpt_nm,
-            'text' : "활동 선택 후"
-        }
-
-    if 'apply' in request.POST:
-
-        activity_selected = request.POST["activity_selected"]
-
-        activity_nm_change = request.POST["activity_nm_change"]
-        activity_prsn_chrg_change = request.POST["activity_prsn_chrg_change"]
-        act_prfrm_freq_new = request.POST["act_prfrm_freq"]
-        act_prfrm_cnt_ann_new = request.POST["act_prfrm_cnt_ann_new"]
-        act_prfrm_tm_cs_new = request.POST["act_prfrm_tm_cs_new"]
-        act_prfrm_tm_ann_new = request.POST["act_prfrm_tm_ann_new"]
-        rpt_nm_new = request.POST["rpt_nm_new"]
-
-        activity_selected_object = JobActivity.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm_id=duty_selected, task_nm_id=task_selected, act_nm=activity_selected)
-
-        activity_selected_object.update(act_nm=activity_nm_change)
-        activity_selected_object = JobActivity.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm_id=duty_selected, task_nm_id=task_selected, act_nm=activity_nm_change)
-
-        activity_selected_object.update(act_nm = activity_nm_change, act_prsn_chrg = activity_prsn_chrg_change, act_prfrm_freq = act_prfrm_freq_new,
-                                        act_prfrm_cnt_ann = act_prfrm_cnt_ann_new, act_prfrm_tm_cs = act_prfrm_tm_cs_new, act_prfrm_tm_ann = act_prfrm_tm_ann_new,
-                                        rpt_nm = rpt_nm_new)
-
-        context = {
-            'team_selected' : team_selected,
-            'dept_list' : BsDept.objects.filter(prd_cd="2022A"), #부서 목록은 그대로 둔다.
-            'job_selected' : job_selected,
-            'job_list' : BsJob.objects.filter(prd_cd="2022A", dept_cd = team_selected),
-            'duty_selected' : duty_selected,
-            'duty_list' : df1,
-            'task_selected' : task_selected,
-            'task_list' : df2,
-            'activity_selected' : activity_nm_change,
-            'activity_list' : JobActivity.objects.filter(prd_cd_id="2022A", dept_cd_id = team_selected, job_cd_id=job_selected,
-                                                                duty_nm=duty_selected, task_nm=task_selected),
-            'act_prsn_chrg' : activity_prsn_chrg_change, 'act_prfrm_freq' :  act_prfrm_freq_new, 'act_prfrm_cnt_ann': act_prfrm_cnt_ann_new,
-            'act_prfrm_tm_ann' : act_prfrm_tm_ann_new, 'act_prfrm_tm_cs' : act_prfrm_tm_cs_new, 'act_prfrm_tm_ann' : act_prfrm_tm_ann_new,
-            'rpt_nm' : rpt_nm_new, 'text' : "활동 선택 후"
-        }
-
-    return render(request, 'jobs/JB103_test2.html', context)
 
 
 def JB103_grid_1(request): # 회기 선택 후 Grid에 띄워주는 화면
@@ -8173,7 +5898,7 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후 - 업무�
                 # for i in range(len(df2)):
                 #     df2.loc[i, 'duty_imprt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].mean(), 1)
 
-                
+
                 for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
 
                     # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_imprt를 곱한 값을 구하여 duty_imprt열에 추가한다.
@@ -8190,7 +5915,7 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후 - 업무�
                         work_lv_imprt_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].tolist()
                         # work_lv_imprt_list의 자료형을 float으로 변경
                         work_lv_imprt_list = [float(x) for x in work_lv_imprt_list]
-                        
+
                         # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
                         prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
                         # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
@@ -8200,12 +5925,12 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후 - 업무�
 
                         # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
                         df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)]), 1)
-                        
-                        
+
+
                         # prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']/sum_prfrm_tm_ann
                         # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
                         # prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
-                        
+
                         # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
                         # df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)])*100, 1)
 
@@ -8306,7 +6031,7 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후 - 업무�
                     # 그 행의 job_cd가 JC001이면 work_lv_mean열에 빈칸을 부여한다.
                     if df2.loc[i, 'job_cd'] == 'JC001':
                         df2.loc[i, 'work_lv_mean'] = ''
-                    
+
                     # 그 행의 job_cd가 JC001이 아니면
                     else:
 
@@ -8322,7 +6047,7 @@ def JB109_3(request): # 업무량 분석화면 - 부서 선택한 후 - 업무�
                             df2.loc[i, 'work_lv_mean'] = 'G4'
                         elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g5_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g5_min:
                             df2.loc[i, 'work_lv_mean'] = 'G5'
-                
+
                 # BsJob 테이블을 이용해 해당 job_cd의 job_nm 열을 추가할 것이다.
                 job_nm_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm for x in df2['job_cd']]
                 df2['job_nm'] = job_nm_list
@@ -8780,7 +6505,7 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                 # for i in range(len(df2)):
                 #     df2.loc[i, 'duty_imprt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].mean(), 1)
 
-                
+
                 for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
 
                     # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_imprt를 곱한 값을 구하여 duty_imprt열에 추가한다.
@@ -8797,7 +6522,7 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                         work_lv_imprt_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].tolist()
                         # work_lv_imprt_list의 자료형을 float으로 변경
                         work_lv_imprt_list = [float(x) for x in work_lv_imprt_list]
-                        
+
                         # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
                         prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
                         # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
@@ -8807,12 +6532,12 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
 
                         # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
                         df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)]), 1)
-                        
-                        
+
+
                         # prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']/sum_prfrm_tm_ann
                         # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
                         # prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
-                        
+
                         # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
                         # df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)])*100, 1)
 
@@ -8911,7 +6636,7 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                     # 그 행의 job_cd가 JC001이면 work_lv_mean열에 빈칸을 부여한다.
                     if df2.loc[i, 'job_cd'] == 'JC001':
                         df2.loc[i, 'work_lv_mean'] = ''
-                    
+
                     # 그 행의 job_cd가 JC001이 아니면
                     else:
 
@@ -8927,7 +6652,7 @@ def JB110_1(request): # 부서 업무량 분석 - 탭 선택 후, 로그인한 �
                             df2.loc[i, 'work_lv_mean'] = 'G4'
                         elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g5_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g5_min:
                             df2.loc[i, 'work_lv_mean'] = 'G5'
-                
+
                 # BsJob 테이블을 이용해 해당 job_cd의 job_nm 열을 추가할 것이다.
                 job_nm_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm for x in df2['job_cd']]
                 df2['job_nm'] = job_nm_list
@@ -9050,7 +6775,7 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
 
 
         elif tab == "tab2": # 책무별 업무량 분석 탭일 경우
-        
+
             context['tab'] = "tab2"
 
             job_task = JobTask.objects.filter(prd_cd=prd_cd_selected, dept_cd=dept_selected)
@@ -9103,7 +6828,7 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
                 # for i in range(len(df2)):
                 #     df2.loc[i, 'duty_imprt'] = round(df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].mean(), 1)
 
-                
+
                 for i in range(len(df2)): # df2의 행의 개수만큼 반복한다.
 
                     # 그 행이 해당 job_cd의 해당 duty_nm을 가지고 있는 행들 중에서 prfrm_tm_ann의 비율이 얼마나 되는지 구하고 그 값에 work_lv_imprt를 곱한 값을 구하여 duty_imprt열에 추가한다.
@@ -9120,7 +6845,7 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
                         work_lv_imprt_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['work_lv_imprt'].tolist()
                         # work_lv_imprt_list의 자료형을 float으로 변경
                         work_lv_imprt_list = [float(x) for x in work_lv_imprt_list]
-                        
+
                         # df1에서 해당 job_cd의 해당 duty_nm을 가지고 있는 행들의 prfrm_tm_ann을 float으로 변경한 것을 sum_prfrm_tm_ann으로 나눈 값의 리스트 생성
                         prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']
                         # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
@@ -9130,12 +6855,12 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
 
                         # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
                         df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)]), 1)
-                        
-                        
+
+
                         # prfrm_tm_ann_ratio_list = df1[(df1['job_cd'] == df2.loc[i, 'job_cd']) & (df1['duty_nm'] == df2.loc[i, 'duty_nm'])]['prfrm_tm_ann']/sum_prfrm_tm_ann
                         # prfrm_tm_ann_ratio_list의 자료형을 float으로 변경
                         # prfrm_tm_ann_ratio_list = [float(x) for x in prfrm_tm_ann_ratio_list]
-                        
+
                         # 두 리스트를 곱한 값을 구하여 duty_imprt열에 추가한다.
                         # df2.loc[i, 'duty_imprt'] = round(sum([a*b for a, b in zip(work_lv_imprt_list, prfrm_tm_ann_ratio_list)])*100, 1)
 
@@ -9234,7 +6959,7 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
                     # 그 행의 job_cd가 JC001이면 work_lv_mean열에 빈칸을 부여한다.
                     if df2.loc[i, 'job_cd'] == 'JC001':
                         df2.loc[i, 'work_lv_mean'] = ''
-                    
+
                     # 그 행의 job_cd가 JC001이 아니면
                     else:
 
@@ -9250,7 +6975,7 @@ def JB110_2(request): # 탭이 선택된 상태에서 부서를 선택했을 때
                             df2.loc[i, 'work_lv_mean'] = 'G4'
                         elif round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) < g5_max+1 and round((df2.loc[i, 'duty_imprt'] + df2.loc[i, 'duty_dfclt'] + df2.loc[i, 'duty_prfcn']), 1) >= g5_min:
                             df2.loc[i, 'work_lv_mean'] = 'G5'
-                
+
                 # BsJob 테이블을 이용해 해당 job_cd의 job_nm 열을 추가할 것이다.
                 job_nm_list = [BsJob.objects.get(prd_cd=prd_cd_selected, job_cd=x).job_nm for x in df2['job_cd']]
                 df2['job_nm'] = job_nm_list
@@ -9801,9 +7526,10 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
                 dept_nm = BsDept.objects.get(prd_cd=prd_cd_selected, dept_cd=dept).dept_nm
                 dept_jobs[dept_nm] = dept_jobs.pop(dept)
 
-
-            # 공통직무 개수
-            commont_job = 4
+            # # 공통직무 개수
+            # 공통직무 개수는 해당 회기의 BsJob 테이블에서 job_cd가 "JC"로 시작하는 job_cd의 개수이다.
+            # commont_job = 4
+            commont_job = BsJob.objects.filter(prd_cd=prd_cd_selected, job_cd__startswith='JC').count()
 
             # org_job_data 구성
             org_job_data = {}
@@ -9821,16 +7547,6 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
                     dept_data[dept] = dept_job_data
 
                 org_job_data[grp] = dept_data
-                
-            # # 본부, 부서, 직무
-            # for dk, dv in org_job_data.items(): # 본부 - Dictionary
-            #     print("\n본부:", dk)
-            #     for tk, tv in dv.items():   # 부서 - Dictionary
-            #         print("부서:\t", tk)
-            #         print("현인원:\t\t", tv["현인원"])
-            #         print("직무수:\t\t", tv["직무수"])
-            #         for job in tv["직무"]:  # 직무 - List
-            #             print("직무:\t\t", job)
 
             # 본부, 부서, 직무
             cnt_all_div = 0
@@ -9842,18 +7558,17 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
                     cnt_all_dept += 1
                     for job in tv["직무"]:  # 직무 - List
                         cnt_all_job += 1
-            # print(f"본부 {cnt_all_div}, 부서 {cnt_all_dept}, 직무 {cnt_all_job}")
 
             wb = Workbook()
             ws = wb.active  # 현재 활성화된 sheet 가져옴
             ws.title = "직무분류체계"
 
-            TITLE_ROW = 1   # 첫번째 행 "제목"
-            DIV_ROW = 3     # 본부명 Row
-            DEP_ROW = 5     # 부서명 Row
-            EMP_ROW = 6     # 현인원 Row
+            TITLE_ROW = 1 # 첫번째 행 "제목"
+            DIV_ROW = 3 # 본부명 Row
+            DEP_ROW = 5 # 부서명 Row
+            EMP_ROW = 6 # 현인원 Row
             JOB_CNT_ROW = 7 # 직무수 Row
-            JOB_START_ROW = 8   # 직무명 Start Row
+            JOB_START_ROW = 8 # 직무명 Start Row
 
             COMMON_JOB_CNT = commont_job  # 공통직무 개수
 
@@ -10020,8 +7735,8 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
         elif action == 'action2': # 업무 분장표 눌렀을 때
 
             # SQLAlchemy 엔진을 사용하여 데이터베이스에 연결
-            engine = create_engine('mysql+pymysql://cdh:1234@130.1.200.200/jobdb')
-            db_name = 'jobdb'
+            engine = create_engine('mysql+pymysql://cdh:cdh0706**@130.1.112.100/betadb')
+            db_name = 'betadb'
 
             # prd_cd = '2022A'
             prd_cd = prd_cd_selected
@@ -10313,7 +8028,6 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
                     task_prsn_chrg.value = r['task_prsn_chrg']
                     task_prsn_chrg.alignment = Alignment(horizontal="left", vertical="top", wrapText=True)
 
-
             """
             페이지 설정 및 인쇄 옵션
             """
@@ -10336,7 +8050,6 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
             title.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
             ws_data.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
             ws_data.row_dimensions[1].height = 75
-
 
             # 데이터 항목 개수
             DATA_COLS = 5
@@ -10473,7 +8186,6 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
 
             return response # 엑셀 파일 다운로드
 
-
     return render(request, 'jobs/JB300.html', context)
 
 
@@ -10485,51 +8197,6 @@ def main(request):
 
     return render(request, 'jobs/main.html', context)
 
-
-def get_duty_names(request): # 직무 선택에 따라 책무 불러오기
-    job_cd = request.GET.get('jobCd')
-    dept_cd = request.GET.get('teamSelected')
-
-    if job_cd:
-        duties = JobTask.objects.filter(job_cd=job_cd, dept_cd=dept_cd).values_list('duty_nm', flat=True).distinct()
-        duty_list = [{'duty_nm': duty} for duty in duties]  # JSON으로 전송 가능한 형태로 변환
-        return JsonResponse(duty_list, safe=False)  # JsonResponse로 목록 반환
-    else:
-        return JsonResponse({'error': 'Invalid job_cd'}, status=400)
-
-
-def get_tasks(request): # 책무 선택에 따라 과업 불러오기(이름만)
-    # URL 쿼리 파라미터에서 dutyNm을 받음
-    duty_nm = request.GET.get('dutyNmRadio')
-    dept_cd = request.GET.get('teamSelected')
-
-    # 해당 책무에 속하는 과업들을 조회
-    tasks = JobTask.objects.filter(duty_nm=duty_nm, dept_cd=dept_cd).values('task_nm')
-    # 조회된 과업 정보를 JSON 형식으로 변환하여 반환
-    return JsonResponse(list(tasks), safe=False)
-
-
-def get_activities(request):
-    # URL 쿼리 파라미터에서 taskNm과 dept_cd를 받음
-    task_nm = request.GET.get('taskNmRadio')
-    dept_cd = request.GET.get('teamSelected')
-
-    # 해당 과업에 속하는 활동들을 조회
-    activities = JobActivity.objects.filter(task_nm=task_nm, dept_cd=dept_cd).values('act_nm').distinct()
-    # 조회된 활동 정보를 JSON 형식으로 변환하여 반환
-    activity_list = [{'act_nm': activity['act_nm']} for activity in activities]
-    return JsonResponse(activity_list, safe=False)
-
-
-def submit_activity(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        # 데이터를 pandas 데이터프레임으로 변환
-        df = pd.DataFrame(data)
-        # 데이터프레임 처리 로직 (예: 파일로 저장, 데이터베이스에 저장 등)
-        print(df)
-        return JsonResponse({"status": "success", "data": "Data processed"})
-    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
 
 ############################################ 함수 ############################################
 
@@ -10564,10 +8231,10 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'bs_prd': '회기',
@@ -10639,10 +8306,10 @@ def copy_period_data(period_old, period_new):
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
-    pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    pwd = 'cdh0706**'  # 비밀번호
+    db_host = '130.1.112.100'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
-    db_name = "jobdb"  # 사용할 데이터베이스 jobdb
+    db_name = "betadb"  # 사용할 데이터베이스 betadb
 
     dict_table = {  # 테이블 목록
         'job_spcfc': '직무명세서',
