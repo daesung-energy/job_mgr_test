@@ -24,7 +24,7 @@ SECRET_KEY = "django-insecure-s0=g(aab+0xz#*s^v+cwukx=9$=^1=8=z(ntr^a!rm)19_isk!
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True ##배포할때는 false로
-DEBUG = True #배포때 추가
+DEBUG = False #배포때 추가
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = ['*'] # 모든 호스트 허용. 배포때 추가
@@ -83,7 +83,7 @@ DATABASES = {
         'NAME': 'betadb', #MariaDB에서 내가 접근할 DB이름 testdb / betadb / jobdb(운영)
         'USER': 'cdh', #내 계정(모든 권한이 필요함)
         'PASSWORD': 'cdh0706**', #내 계정의 비밀번호 - 개발서버: cdh0706** / 운영서버: 1234
-        'HOST': '130.1.112.100', #DB IP주소 - 개발서버 IP: 130.1.112.100 / 운영서버 IP: 130.1.200.200
+        'HOST': '218.159.103.251', #DB IP주소 - 개발서버 IP: 130.1.112.100 / 운영서버 IP: 130.1.200.200 / 새 운영서버 IP: 218.159.103.251
         'PORT': '3306' #DB port
     }
 

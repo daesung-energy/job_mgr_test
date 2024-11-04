@@ -970,7 +970,7 @@ def JB103_4(request): # 직무 상세정보 직무 현황표, 기술서 print
 
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
-            host='130.1.200.200', # 데이터베이스 주소
+            host='218.159.103.251', # 데이터베이스 주소
             user='cdh', # 데이터베이스 사용자 이름
             password='1234', # 데이터베이스 비밀번호
             db='jobdb',
@@ -7735,7 +7735,7 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
         elif action == 'action2': # 업무 분장표 눌렀을 때
 
             # SQLAlchemy 엔진을 사용하여 데이터베이스에 연결
-            engine = create_engine('mysql+pymysql://cdh:1234@130.1.200.200/jobdb')
+            engine = create_engine('mysql+pymysql://cdh:1234@218.159.103.251/jobdb')
             db_name = 'jobdb'
 
             # prd_cd = '2022A'
@@ -8232,7 +8232,7 @@ def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
     pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    db_host = '218.159.103.251'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
     db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
@@ -8307,7 +8307,7 @@ def delete_period_data(period):
     # 데이터베이스 연결 파라미터
     user_id = 'cdh'  # 사용자 이름
     pwd = '1234'  # 비밀번호
-    db_host = '130.1.200.200'  # 호스트명/IP
+    db_host = '218.159.103.251'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
     db_name = "jobdb"  # 사용할 데이터베이스 jobdb
 
