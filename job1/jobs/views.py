@@ -971,7 +971,7 @@ def JB103_4(request): # 직무 상세정보 직무 현황표, 기술서 print
         # pymysql을 사용하여 데이터베이스에 연결
         conn = pymysql.connect(
             host='218.159.103.251', # 데이터베이스 주소
-            user='cdh', # 데이터베이스 사용자 이름
+            user='jyj', # 데이터베이스 사용자 이름
             password='1234', # 데이터베이스 비밀번호
             db='jobdb',
             charset='utf8',
@@ -8230,7 +8230,7 @@ def BsMbrArrange(prd, dept): # 부서원 표시 함수 - 수정해야함
 
 def copy_period_data(period_old, period_new):
     # 데이터베이스 연결 파라미터
-    user_id = 'cdh'  # 사용자 이름
+    user_id = 'jyj'  # 사용자 이름
     pwd = '1234'  # 비밀번호
     db_host = '218.159.103.251'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
@@ -8305,7 +8305,7 @@ def copy_period_data(period_old, period_new):
 
 def delete_period_data(period):
     # 데이터베이스 연결 파라미터
-    user_id = 'cdh'  # 사용자 이름
+    user_id = 'jyj'  # 사용자 이름
     pwd = '1234'  # 비밀번호
     db_host = '218.159.103.251'  # 호스트명/IP
     db_port = 3306  # 포트번호 (고정값)
