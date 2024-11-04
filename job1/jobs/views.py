@@ -7735,7 +7735,7 @@ def JB300_1(request): # 직무 분류 체계에서 버튼 클릭 시
         elif action == 'action2': # 업무 분장표 눌렀을 때
 
             # SQLAlchemy 엔진을 사용하여 데이터베이스에 연결
-            engine = create_engine('mysql+pymysql://cdh:1234@218.159.103.251/jobdb')
+            engine = create_engine('mysql+pymysql://jyj:1234@218.159.103.251/jobdb')
             db_name = 'jobdb'
 
             # prd_cd = '2022A'
